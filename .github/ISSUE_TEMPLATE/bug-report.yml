@@ -1,0 +1,28 @@
+name: Bug report
+description: Report unexpected server behavior or a documentation problem
+body:
+  - type: markdown
+    attributes:
+      value: "Do not publish vulnerability details here. Use [private vulnerability reporting](https://github.com/reponomics/best-practices-mcp/security/advisories/new). Remove credentials, cookies and private draft content from examples, logs and proposal URLs."
+  - type: textarea
+    id: problem
+    attributes:
+      label: Current and expected behavior
+      description: Describe what happened and what you expected. For documentation problems, identify the page and unclear or incorrect text.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction
+      description: Share steps or a minimal tool call and result, if available. For form issues, distinguish the generated URL or script from the behavior observed in BadgeApp. Do not save changes merely to reproduce a problem.
+  - type: textarea
+    id: environment
+    attributes:
+      label: Versions and environment
+      description: Include the server version, MCP host and version, operating system, installation method, and Python or browser version if known and relevant.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Relevant output or screenshots
+      description: Share only the evidence needed to understand the issue, with sensitive content removed.

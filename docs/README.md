@@ -6,6 +6,9 @@ This is an independent Reponomics project, not affiliated with, sponsored by, en
 
 | Document | Purpose |
 | --- | --- |
+| [Support](../SUPPORT.md) | Usage questions, bug reports and reporting routes |
+| [Security policy](../SECURITY.md) | Supported releases and private vulnerability reporting |
+| [Code of Conduct](../CODE_OF_CONDUCT.md) | Community expectations and conduct reporting |
 | [Roadmap](roadmap.md) | Planned work and proposals under consideration |
 | [Contributing](../CONTRIBUTING.md) | Development setup, validation commands and MCP client tooling |
 | [Server specification](specification.md) | Supported behavior, nine tools and host/server responsibilities |

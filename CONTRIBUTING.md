@@ -2,6 +2,18 @@
 
 This guide covers development, local MCP connections, verification and maintainer tooling. For package installation and everyday use, start with the [README](README.md). See the [roadmap](docs/roadmap.md) for planned work and proposals.
 
+## Propose a change
+
+Bug reports, documentation corrections, focused fixes and suggestions are welcome. Use [Support](SUPPORT.md) to choose a reporting route and prepare a useful example. Search existing issues and the [roadmap](docs/roadmap.md) before proposing substantial work; discuss changes to tool contracts or scope in an issue before implementing them.
+
+Participation follows the [Code of Conduct](CODE_OF_CONDUCT.md). Report vulnerabilities privately using the [security policy](SECURITY.md).
+
+Keep contributions within the server's bounded BadgeApp capabilities. Assessment strategy belongs to the host. Generated artifacts faithfully carry supplied fields; they do not predict BadgeApp's saved state. The server does not authenticate to BadgeApp or submit updates. Changes to upstream compatibility should cite the documented procedure they implement and include appropriate contract tests.
+
+Create a feature branch and open a pull request against `main`. Explain the problem, resulting behavior and relevant validation. Use a conventional PR title such as `fix: preserve supplied field values` or `docs: clarify host configuration`; CI validates the title for the squash-and-release workflow. Update maintained documentation when behavior changes. Release Please manages release versions and changelogs, so ordinary contributions should not edit them manually.
+
+Run checks appropriate to the change using the commands below. For documentation-only changes, verify links, commands and formatting; runtime changes should include focused tests and pass `make check`. State which checks you ran and any remaining limitations in the pull request. Never include credentials, cookies or private draft content in a report or test fixture.
+
 ## Develop
 
 Use Python 3.11 or newer and a local `venv`:

@@ -1,0 +1,18 @@
+name: Suggestion
+description: Suggest a focused improvement to the server or its documentation
+body:
+  - type: markdown
+    attributes:
+      value: "Review the [roadmap](https://github.com/reponomics/best-practices-mcp/blob/main/docs/roadmap.md) and existing issues first. The server provides bounded BadgeApp tools; assessment strategy and workflow decisions belong to MCP hosts."
+  - type: textarea
+    id: need
+    attributes:
+      label: What task would this improve?
+      description: Describe the problem and who would benefit.
+    validations:
+      required: true
+  - type: textarea
+    id: approach
+    attributes:
+      label: Possible approach and alternatives
+      description: Share ideas or alternatives if useful. You do not need to design the solution to suggest an improvement.

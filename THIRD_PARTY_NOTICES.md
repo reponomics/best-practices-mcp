@@ -14,6 +14,10 @@ The complete upstream license is retained in `src/best_practices_mcp/data/BADGEA
 
 Public BadgeApp project records supply their own attribution and license metadata. The MCP preserves these values in observation metadata. The license for this project's original code does not replace the license or attribution of those records or reproduced project-entry content. Historical upstream naming in an attribution field is preserved as supplied.
 
+## Contributor Covenant
+
+`CODE_OF_CONDUCT.md` adapts [Contributor Covenant 3.0](https://www.contributor-covenant.org/version/3/0/), stewarded by the Organization for Ethical Source and licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). It specifies this project's reporting contact and maintainers, adopts the suggested enforcement ladder, and uses Community Moderators consistently. The adapted code of conduct remains under CC BY-SA 4.0; the MIT license for original project code does not replace those terms.
+
 ## Dependencies
 
 Python and development-only Node dependencies are installed separately under their respective licenses; their code is not vendored into this distribution. The dependency manifests identify direct requirements and the development lockfiles record resolved versions. Retain the notices accompanying those separately installed packages when redistributing them.

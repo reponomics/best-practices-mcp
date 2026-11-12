@@ -77,6 +77,9 @@ To choose another location, set `BESTPRACTICES_DATA_DIR` in the server's environ
 
 ## Documentation
 
+- [Support](SUPPORT.md): usage questions, bug reports and where to seek help.
+- [Security policy](SECURITY.md): supported releases, private vulnerability reporting and response commitments.
+- [Code of Conduct](CODE_OF_CONDUCT.md): community expectations and private conduct reporting.
 - [Documentation index](docs/README.md): the complete guide to maintained documentation and historical records.
 - [Design](docs/design.md) and [architecture](docs/architecture.md): responsibilities, data flow and the human-review boundary.
 - [Specification](docs/specification.md) and [contracts](docs/contracts.md): tool behavior, exact payloads and operational limits.

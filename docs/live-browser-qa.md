@@ -1,6 +1,6 @@
 # Local live browser QA
 
-Exercise the first published beta before promoting it to stable; until then this check is **pending**. Repeat it for subsequent release candidates. Use an MCP host connected to the exact installed candidate, an authenticated Chrome session, and the [PolicyChecks silver form](https://www.bestpractices.dev/en/projects/14356/silver/edit). This is a short supervised integration check, not an automated production save. Discard the previews when finished.
+Exercise the published beta before promoting it to stable. Repeat this check for subsequent release candidates. Use an MCP host connected to the exact installed candidate, an authenticated Chrome session, and the [PolicyChecks silver form](https://www.bestpractices.dev/en/projects/14356/silver/edit). This is a short supervised integration check, not an automated production save. Discard the previews when finished.
 
 ## Preparation
 
