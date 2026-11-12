@@ -139,6 +139,68 @@ def test_retryable_statuses_have_three_attempts_and_backoff(status) -> None:
     assert starts == [0, 1, 3]
 
 
+@pytest.mark.parametrize("status", [429, 503])
+@pytest.mark.parametrize("delay", [7, 90])
+def test_final_retry_after_preserves_error_precedence_and_shared_cooldown(status, delay) -> None:
+    clock = Clock()
+    starts = []
+
+    def handler(_request):
+        starts.append(clock())
+        if len(starts) < 3:
+            return httpx2.Response(503)
+        if len(starts) == 3:
+            return httpx2.Response(status, headers={"Retry-After": str(delay)})
+        return httpx2.Response(200, json=[])
+
+    async def run():
+        async with client(handler, clock) as api:
+            with pytest.raises(DomainError) as error:
+                await api.get_json("/projects.json")
+            rate_limited = status == 429 or delay == 90
+            assert error.value.code == ("rate_limited" if rate_limited else "upstream_unavailable")
+            if rate_limited:
+                assert error.value.retry_after_seconds == delay
+            assert starts == [0, 1, 3]
+            assert clock.delays == [1, 2]
+            assert clock() == 3
+
+            if delay == 90:
+                with pytest.raises(DomainError) as subsequent:
+                    await api.get_json("/projects.json")
+                assert subsequent.value.code == "rate_limited"
+                assert subsequent.value.retry_after_seconds == delay
+                assert starts == [0, 1, 3]
+                assert clock.delays == [1, 2]
+            else:
+                assert (await api.get_json("/projects.json")).data == []
+                assert starts == [0, 1, 3, 10]
+                assert clock.delays == [1, 2, 7]
+
+    asyncio.run(run())
+
+
+def test_transient_transport_exhaustion_does_not_sleep_after_final_failure() -> None:
+    clock = Clock()
+    starts = []
+
+    def handler(request):
+        starts.append(clock())
+        raise httpx2.ReadError("secret network detail", request=request)
+
+    async def run():
+        async with client(handler, clock) as api:
+            with pytest.raises(DomainError) as error:
+                await api.get_json("/projects.json")
+            assert error.value.code == "upstream_unavailable"
+            assert "secret" not in json.dumps(error.value.to_payload())
+
+    asyncio.run(run())
+    assert starts == [0, 1, 3]
+    assert clock.delays == [1, 2]
+    assert clock() == 3
+
+
 @pytest.mark.parametrize(
     "exception", [httpx2.ConnectError, httpx2.ReadError, httpx2.ConnectTimeout, httpx2.ReadTimeout]
 )
@@ -206,9 +268,9 @@ def test_later_shorter_retry_after_never_shortens_shared_cooldown() -> None:
     async def run():
         async with client(lambda _: httpx2.Response(200, json=[]), clock) as api:
             with pytest.raises(DomainError):
-                await api._retry(http._Retryable(429, "90"), 0, 30)
+                api._update_cooldown(http._Retryable(429, "90"), 30)
             with pytest.raises(DomainError) as error:
-                await api._retry(http._Retryable(429, "3"), 0, 30)
+                api._update_cooldown(http._Retryable(429, "3"), 30)
             assert error.value.retry_after_seconds == 90
 
     asyncio.run(run())
