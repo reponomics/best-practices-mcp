@@ -110,6 +110,15 @@ def test_overrides_reject_non_supplied_or_noncanonical_scope(override):
     assert error.value.code == "invalid_override"
 
 
+@pytest.mark.parametrize("overrides", [STATUS, (STATUS,), {STATUS: True}, False])
+def test_overrides_require_a_list_even_for_supplied_canonical_fields(overrides):
+    draft = {STATUS: "Met"}
+    with pytest.raises(DomainError, match="Overrides must be a list") as error:
+        prepare(draft, overrides=overrides)
+    assert error.value.code == "invalid_override"
+    assert draft == {STATUS: "Met"}
+
+
 def test_overrides_reject_alias_even_when_draft_alias_normalized():
     alias = "OSPS-AC-01.01_status"
     with pytest.raises(DomainError) as error:

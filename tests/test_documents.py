@@ -1,5 +1,7 @@
 """Structural parsing is independent of fields, persistence and future patch policy."""
 
+import sys
+
 import pytest
 
 from best_practices_mcp.documents import (
@@ -99,3 +101,15 @@ def test_type_distinct_alias_values_do_not_compare_as_equal() -> None:
 def test_input_objects_with_non_string_keys_are_rejected() -> None:
     with pytest.raises(DomainError):
         validate_document({1: "value"})
+
+
+def test_unserializable_integer_is_reported_as_invalid_document() -> None:
+    previous_limit = sys.get_int_max_str_digits()
+    try:
+        sys.set_int_max_str_digits(640)
+        with pytest.raises(DomainError) as error:
+            serialize_document({"value": 10**640})
+        assert error.value.code == "invalid_document"
+        assert isinstance(error.value.__cause__, ValueError)
+    finally:
+        sys.set_int_max_str_digits(previous_limit)

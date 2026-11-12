@@ -94,6 +94,14 @@ def test_invalid_id_is_unresolved(identity: object) -> None:
     assert error.value.code == "project_identity_unresolved"
 
 
+@pytest.mark.parametrize("project_id", [None, True, 0, -1, "8", 8.0])
+@pytest.mark.parametrize("draft", [{}, {"id": 8}])
+def test_invalid_requested_id_cannot_establish_association(project_id, draft) -> None:
+    with pytest.raises(DomainError, match="Project ID must be a positive integer") as error:
+        check_identity(project_id, draft)
+    assert error.value.code == "project_identity_unresolved"
+
+
 def test_identity_association_and_id_mismatch() -> None:
     assert check_identity(8, {}) == {
         "association": "explicit_target",
