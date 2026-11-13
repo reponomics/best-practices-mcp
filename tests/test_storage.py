@@ -85,6 +85,19 @@ def test_invalid_windows_default_fails_without_guessing(env):
         resolve_data_root(platform="win32", environ=env)
 
 
+@pytest.mark.parametrize("failure", [OSError, RuntimeError])
+def test_unresolvable_root_is_configuration_error(tmp_path, monkeypatch, failure):
+    def fail_resolve(path):
+        raise failure("private filesystem detail")
+
+    monkeypatch.setattr(Path, "resolve", fail_resolve)
+    with pytest.raises(ValueError, match="could not be resolved") as exc:
+        resolve_data_root(environ={"BESTPRACTICES_DATA_DIR": str(tmp_path / "drafts")})
+    assert isinstance(exc.value.__cause__, failure)
+    assert "private" not in str(exc.value)
+    assert list(tmp_path.iterdir()) == []
+
+
 def test_missing_read_no_creation_first_empty_update_and_restart(tmp_path):
     root = tmp_path / "new"
     store = DraftStore(root)
@@ -291,6 +304,33 @@ def test_permission_failure_mapped_without_echoing_content(tmp_path, monkeypatch
     assert "private" not in str(exc.value.to_payload())
 
 
+def test_opened_nonregular_file_is_rejected_and_closed(tmp_path, monkeypatch):
+    store = DraftStore(tmp_path)
+    path = seed(store, {"name": "before"})
+    before = path.read_bytes()
+    descriptors = []
+    original_fstat = storage.os.fstat
+    draft_inode = path.stat().st_ino
+
+    def nonregular_info(fd):
+        info = original_fstat(fd)
+        if info.st_ino == draft_inode:
+            descriptors.append(fd)
+            return os.stat_result((stat.S_IFIFO, *tuple(info)[1:]))
+        return info
+
+    # Model a path changing type between layout inspection and descriptor validation.
+    monkeypatch.setattr(storage.os, "fstat", nonregular_info)
+    with pytest.raises(DomainError) as exc:
+        run(store.read(123))
+    assert exc.value.code == "draft_read_failed"
+    assert str(exc.value.__cause__) == "Stored draft is not a regular file."
+    assert len(descriptors) == 1
+    with pytest.raises(OSError):
+        original_fstat(descriptors[0])
+    assert path.read_bytes() == before
+
+
 @pytest.mark.parametrize("failure", ["fsync", "replace"])
 def test_pre_replace_failure_preserves_old_file_and_cleans_temp(tmp_path, monkeypatch, failure):
     store = DraftStore(tmp_path)
@@ -316,6 +356,40 @@ def test_failed_first_creation_leaves_no_draft_or_temp(tmp_path, monkeypatch):
     assert_error("draft_write_failed", lambda: run(store.update(123, {})))
     assert not store.location(123).exists()
     assert list(store.location(123).parent.iterdir()) == []
+
+
+def test_failed_cleanup_is_reported_without_changing_destination(tmp_path, monkeypatch):
+    store = DraftStore(tmp_path)
+    path = seed(store, {"name": "before"})
+    before = path.read_bytes()
+    cleanup_attempts = []
+    original_unlink = Path.unlink
+
+    def fail_sync(fd):
+        raise OSError("injected sync failure")
+
+    def fail_cleanup(target, **kwargs):
+        cleanup_attempts.append(target)
+        raise PermissionError("private cleanup detail")
+
+    monkeypatch.setattr(storage.os, "fsync", fail_sync)
+    monkeypatch.setattr(Path, "unlink", fail_cleanup)
+    try:
+        with pytest.raises(DomainError) as exc:
+            run(store.update(123, {"name": "after"}))
+        assert exc.value.code == "draft_write_failed"
+        assert isinstance(exc.value.__cause__, PermissionError)
+        assert "private" not in str(exc.value.to_payload())
+        assert path.read_bytes() == before
+        assert len(cleanup_attempts) == 1
+        temporary = cleanup_attempts[0]
+        assert temporary.parent == path.parent
+        assert temporary.name.startswith(".bestpractices-")
+        assert temporary.suffix == ".tmp"
+        assert temporary.exists()
+    finally:
+        for temporary in cleanup_attempts:
+            original_unlink(temporary, missing_ok=True)
 
 
 async def wait_thread_event(event):
@@ -528,6 +602,35 @@ def test_windows_readonly_destination_rejected_before_temp_creation(tmp_path, mo
         assert list(path.parent.iterdir()) == [path]
     finally:
         path.chmod(stat.S_IREAD | stat.S_IWRITE)
+
+
+@pytest.mark.parametrize("existing", [False, True])
+def test_windows_writable_destination_and_path_chmod_fallback(tmp_path, monkeypatch, existing):
+    store = DraftStore(tmp_path)
+    path = store.location(123)
+    expected_mode = 0o600
+    if existing:
+        seed(store, {"name": "before"})
+        expected_mode = stat.S_IMODE(path.stat().st_mode)
+    original_chmod = storage.os.chmod
+    chmod_calls = []
+
+    def record_chmod(target, mode):
+        chmod_calls.append((target, mode))
+        original_chmod(target, mode)
+
+    monkeypatch.setattr(storage, "sys", SimpleNamespace(platform="win32"))
+    monkeypatch.delattr(storage.os, "fchmod", raising=False)
+    monkeypatch.setattr(storage.os, "chmod", record_chmod)
+    result = run(store.update(123, {"name": "after"}))
+    assert result["created"] is (not existing)
+    assert run(store.read(123))["draft"] == {"name": "after"}
+    assert len(chmod_calls) == 1
+    temporary, mode = chmod_calls[0]
+    assert temporary.parent == path.parent
+    assert temporary.suffix == ".tmp"
+    assert mode == expected_mode
+    assert list(path.parent.iterdir()) == [path]
 
 
 @pytest.mark.parametrize("part", ["projects", "project", "draft"])

@@ -181,7 +181,8 @@ def test_unreadable_or_mismatched_input_prevents_validation(draft: dict, code: s
     assert error.value.code == code
 
 
-def test_invalid_level_remains_operational_error() -> None:
+@pytest.mark.parametrize("level", [None, "unknown"])
+def test_invalid_level_remains_operational_error(level) -> None:
     with pytest.raises(DomainError) as error:
-        validate_draft(8, "unknown", {})
+        validate_draft(8, level, {})
     assert error.value.code == "invalid_level"

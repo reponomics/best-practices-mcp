@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
+import pytest
 from jsonschema import Draft202012Validator
 from mcp import Client, StdioServerParameters
 
@@ -105,3 +106,30 @@ def test_pure_handlers_and_missing_drafts_do_not_need_http(tmp_path):
             assert result.structured_content["error"]["code"] == "draft_not_found"
 
     asyncio.run(exercise())
+
+
+@pytest.mark.parametrize(
+    "name,arguments",
+    [
+        ("find_project", {"query": "example"}),
+        ("get_project_progress", {"project_id": 123}),
+        ("prepare_update_url", {"project_id": 123, "level": "passing", "draft": {}}),
+        ("prepare_update_script", {"project_id": 123, "level": "passing", "draft": {}}),
+    ],
+)
+def test_network_handlers_without_lifespan_return_safe_errors(tmp_path, name, arguments):
+    from best_practices_mcp.server import create_server
+
+    def unexpected_http():
+        pytest.fail("A call without lifespan must not start HTTP implicitly")
+
+    server = create_server(data_root=tmp_path / "untouched", http_factory=unexpected_http)
+    result = asyncio.run(server.call_tool(name, arguments))
+    assert result.is_error
+    payload = result.structured_content
+    Draft202012Validator(output_schema(name)).validate(payload)
+    assert payload["error"]["code"] == "internal_error"
+    assert payload["error"]["message"] == "The tool operation could not be completed."
+    assert "lifespan" not in json.dumps(payload)
+    assert json.loads(result.content[0].text) == payload
+    assert not list(tmp_path.iterdir())

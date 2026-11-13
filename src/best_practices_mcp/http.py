@@ -221,18 +221,17 @@ class BadgeAppHTTP:
         except (TypeError, ValueError, OverflowError):
             return None
 
-    async def _retry(self, failure: _Retryable, attempt: int, deadline: float) -> None:
+    def _update_cooldown(self, failure: _Retryable, deadline: float) -> float:
         delay = self._retry_delay(failure.retry_after)
         if delay is not None:
             self._cooldown_until = max(self._cooldown_until, self._clock() + delay)
         cooldown = max(0.0, self._cooldown_until - self._clock())
         if self._cooldown_until >= deadline:
             raise _rate_limited(cooldown)
-        if attempt == MAX_ATTEMPTS - 1:
-            if failure.status == 429:
-                raise _rate_limited(cooldown)
-            raise _unavailable()
-        backoff = float(attempt + 1)
+        return cooldown
+
+    async def _wait_for_retry(self, attempts: int, deadline: float) -> None:
+        backoff = float(attempts)
         if self._clock() + backoff >= deadline:
             raise _unavailable()
         await self._sleep(backoff)
@@ -294,13 +293,19 @@ class BadgeAppHTTP:
         deadline = self._clock() + OVERALL_TIMEOUT_SECONDS
         try:
             async with asyncio.timeout(OVERALL_TIMEOUT_SECONDS):
-                for attempt in range(MAX_ATTEMPTS):
+                attempts = 0
+                while True:
                     await self._wait_for_start(deadline)
                     try:
                         return await self._attempt(path, params, deadline)
                     except _Retryable as failure:
-                        await self._retry(failure, attempt, deadline)
+                        attempts += 1
+                        # Retain Retry-After even when this call cannot retry again.
+                        cooldown = self._update_cooldown(failure, deadline)
+                        if attempts >= MAX_ATTEMPTS:
+                            if failure.status == 429:
+                                raise _rate_limited(cooldown)
+                            raise _unavailable()
+                        await self._wait_for_retry(attempts, deadline)
         except TimeoutError as error:
             raise _unavailable() from error
-        # Every final failed attempt raises; never return an empty observation.
-        raise _unavailable()

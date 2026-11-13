@@ -3,6 +3,7 @@
 import asyncio
 import copy
 import json
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 from urllib.parse import quote, urlencode
@@ -116,6 +117,42 @@ def test_homepage_match_and_conservative_url_comparison():
     result, _ = find(records, "https://example.org/project")
     assert result["candidates"][0]["match_basis"] == "homepage_url"
     assert result["candidates"][1]["match_basis"] == "url_query"
+
+
+def test_url_matching_preserves_nondefault_ports():
+    query = "https://example.org:8443/project"
+    records = [
+        {"id": 123, "repo_url": "HTTPS://EXAMPLE.ORG:8443/project"},
+        {"id": 456, "repo_url": "https://example.org/project"},
+        {"id": 789, "repo_url": "https://example.org:9443/project"},
+    ]
+    result, http = find(records, query)
+    assert [row["match_basis"] for row in result["candidates"]] == [
+        "repo_url",
+        "url_query",
+        "url_query",
+    ]
+    assert http.calls == [("/projects.json", {"url": query, "page": 1})]
+
+
+def test_excessive_numeric_identifiers_and_next_pages_are_bounded():
+    previous_limit = sys.get_int_max_str_digits()
+    try:
+        sys.set_int_max_str_digits(640)
+        digits = "9" * 641
+        http = FakeHTTP([])
+        with pytest.raises(DomainError) as caught:
+            asyncio.run(BadgeAppClient(http).find_project(digits))
+        assert caught.value.code == "invalid_query"
+        assert http.calls == []
+
+        header = f'</projects.json?page={digits}&q=example>; rel="next"'
+        result, _ = find(fixture("search"), headers={"link": header})
+        assert result["next_page"] is None
+        assert result["pagination_complete"] is False
+        assert len(result["candidates"]) == 2
+    finally:
+        sys.set_int_max_str_digits(previous_limit)
 
 
 @pytest.mark.parametrize(
@@ -355,6 +392,17 @@ def test_oversized_selected_answers_fail_with_filter_recovery():
         progress(record, "passing", ["description_good"])
     assert caught.value.code == "response_too_large"
     assert "criterion" in caught.value.recovery
+
+
+def test_excessively_nested_public_answers_are_upstream_errors():
+    value = "answer"
+    for _ in range(65):
+        value = [value]
+    record = {"id": 123, "description_good_justification": value}
+    with pytest.raises(DomainError) as caught:
+        progress(record, "passing", ["description_good"])
+    assert caught.value.code == "upstream_invalid_response"
+    assert caught.value.__cause__.code == "invalid_document"
 
 
 def test_large_json_integer_percentage_is_preserved_without_float_conversion():

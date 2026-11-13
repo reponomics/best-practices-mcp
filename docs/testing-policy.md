@@ -38,4 +38,6 @@ make test-package
 
 Required GitHub Actions jobs retain the six Python 3.11/3.12 combinations across Linux, macOS and Windows, coverage and fresh wheel/sdist installation. The [release procedure](releasing.md) identifies the remaining package, remote CI and publication gates.
 
+The [November 2026 coverage gap review](coverage-review.md) records the measured baseline, added regression cases, and the remaining defensive paths that are unreachable under current invariants.
+
 Upstream implementation details do not define the public contract. The [design decisions](design.md#follow-documented-procedures-not-internal-save-behavior) explain the boundary between artifact preparation and a user's separate decision to authorize a host agent to operate the browser and save.
