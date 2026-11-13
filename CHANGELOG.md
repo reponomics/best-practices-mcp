@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-beta.1](https://github.com/reponomics/best-practices-mcp/compare/v0.1.0-beta.1...v0.1.0-beta.1) (2026-11-13)
+
+
+### Documentation
+
+* add issue forms and pull request template ([#3](https://github.com/reponomics/best-practices-mcp/issues/3)) ([542e283](https://github.com/reponomics/best-practices-mcp/commit/542e2836ba1db6fe7b4b1e3ef03f4fe44f9daab0))
+
 ## 0.1.0-beta.1 (2026-11-12)
 
 
