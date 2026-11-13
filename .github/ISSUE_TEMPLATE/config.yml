@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://github.com/reponomics/best-practices-mcp/blob/main/docs/README.md
+    about: Read installation, usage, and tool documentation.
+  - name: Contribution guide
+    url: https://github.com/reponomics/best-practices-mcp/blob/main/CONTRIBUTING.md
+    about: Find development setup and validation commands.

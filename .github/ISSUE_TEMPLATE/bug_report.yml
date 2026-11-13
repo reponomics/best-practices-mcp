@@ -1,0 +1,41 @@
+name: Bug report
+description: Report unexpected behavior in the server, tools, or reference host.
+title: "[Bug]: "
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Package version or source commit
+      description: Use bestpractices-mcp --version, or include the installation command if installation failed.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include your operating system, Python version, MCP host/version, and server launch command.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs or screenshots
+      description: Remove credentials and private project data before sharing.
