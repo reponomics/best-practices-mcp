@@ -51,6 +51,8 @@ For live-form QA, follow the brief [PolicyChecks browser runbook](docs/live-brow
 
 `make catalog-check` verifies byte-for-byte regeneration from vendored inputs. `make test-package` checks the distribution contents and an isolated installed wheel using the current environment's dependencies. Fresh-install qualification separately installs wheel and sdist into new environments.
 
+`make upstream-check` separately compares the bundled criteria and English locale against BadgeApp's `production` branch using public network reads. It does not update source files or GitHub issues. The weekly/manual workflow maintains one tracking issue for differences; follow the [upstream review and update procedure](docs/upstream-compatibility.md#checking-for-upstream-changes) before refreshing the catalog.
+
 ## Source installation and native Windows commands
 
 Python 3.11 is the supported minimum targeted by the compatibility matrix. Use an isolated environment; the assessed project does not need to use Python. From this checkout, a runtime-only installation on macOS/Linux is:

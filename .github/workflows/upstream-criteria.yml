@@ -1,0 +1,32 @@
+name: Upstream criteria check
+
+on:
+  schedule:
+    - cron: '23 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: upstream-criteria-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: github.repository == 'reponomics/best-practices-mcp' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Compare production inputs and synchronize the tracking issue
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/check_upstream.py --update-issue | tee "$GITHUB_STEP_SUMMARY"

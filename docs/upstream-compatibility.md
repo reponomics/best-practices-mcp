@@ -33,7 +33,42 @@ Original text, including whitespace, control characters and empty strings, is pr
 
 The form-fill script is a guarded project feature, not an upstream-supported API. It checks exact production origin, project ID and section; preflights intended controls; then replaces specified values without submitting. Its defensive behavior is verified against controlled synthetic forms; compatibility with current website controls is checked through the [live browser runbook](live-browser-qa.md). Neither script execution nor a URL preview establishes the final saved state.
 
+## Checking for upstream changes
+
+The [Upstream criteria check workflow](../.github/workflows/upstream-criteria.yml) runs every Monday at 09:23 UTC and supports **Run workflow** from GitHub Actions on `main`. It resolves `ossf/best-practices-badge`'s `production` branch once, then compares these files at that exact commit against the verified bundled copies:
+
+- `criteria/criteria.yml`
+- `criteria/baseline_criteria.yml`
+- `config/locales/en.yml`
+
+BadgeApp promotes `main` through `staging` to `production`; its [release policy](https://github.com/ossf/tac/blob/main/process/project-lifecycle-documents/best_practices_badge_graduation_stage.md#release-cadence) identifies releases by commit rather than semantic version. Monitoring `production` follows that release boundary. It does not independently verify which revision the website currently serves, and deployment can fail after a branch update.
+
+Comparison is byte-for-byte: minor wording, whitespace and any English locale text count, including UI strings outside the criteria. Different commit IDs alone do not count. A missing upstream file counts as a change. A failed fetch, invalid response or invalid local source hash fails the check and leaves the tracking issue untouched; it cannot produce an “unchanged” result. This check covers catalog inputs, not every upstream automation document or application change.
+
+When differences exist, the workflow creates or updates one issue titled **Review upstream production criteria and locale changes**. Its stable hidden marker identifies the issue even if renamed. The report lists changed files, links to both source revisions and all compared hashes. Repeated identical results make no issue writes or comments. A closed tracker reopens if differences remain or return; the tracker closes when all three files match. The workflow owns the issue body, so keep review decisions in comments and retain its marker. Closing the issue manually does not acknowledge an outstanding difference. Concurrent manual and scheduled runs are serialized to avoid duplicate creation.
+
+Run the same comparison locally without creating or updating issues:
+
+```sh
+make upstream-check
+```
+
+The script uses the Python standard library and public GitHub reads. It exits zero after a successful comparison, including detected changes, and nonzero on errors. The workflow explicitly enables issue synchronization with its job-scoped `GITHUB_TOKEN`; no PAT, release App credential or additional repository variable is required. It runs only on `main` in `reponomics/best-practices-mcp` and writes its report to the Actions job summary. After the workflow reaches `main`, a maintainer can trigger it from the CLI:
+
+```sh
+gh workflow run upstream-criteria.yml --ref main
+```
+
+Scheduled runs can be delayed, and GitHub can disable schedules in public repositories after 60 days without repository activity. Check the workflow's last successful run when reviewing catalog freshness, and re-enable it or use the manual trigger when needed. See [GitHub's schedule behavior](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule). This workflow is maintenance automation, not a required PR check or a runtime freshness guarantee.
+
 ## Updating the baseline
+
+For a tracking issue, review and update through a pull request:
+
+1. Inspect the file changes between the report's bundled and production commits, including wording-only clarifications. Identify changes to criterion IDs, levels, requirements, aliases and flags; distinguish unrelated locale text from criteria text. Record the assessment in the tracking issue or PR.
+2. Refresh retained source inputs from the reviewed commit and update `vendor/badgeapp/source.json` with the revision, timestamp and file hashes. Keep each manifest's revision and hashes consistent with its contents. Even a locale-only change can be incorporated after review so the bundled snapshot matches the reviewed source.
+3. Run `make catalog`, review the generated catalog and provenance diff, and adjust relevant contract tests or compatibility documentation if behavior changes. A wording-only change normally needs no runtime code change. Do not silently expand supported levels or tools to match new upstream features.
+4. Run `make check catalog-check` and the relevant protocol, artifact and package checks. Merge the reviewed update and manually rerun the upstream workflow; it closes the tracker when the bundled files match production. Publish the refreshed catalog through the ordinary release process so installed users receive it.
 
 Review changes to the upstream documentation and criteria before changing a compatibility rule. Regenerate the catalog from identified inputs, review semantic differences and retained notices, update provenance and required regression examples, then run the relevant protocol, artifact and package checks. Investigate discrepancies against the documented contract rather than copying internal behavior automatically. Live read/form checks complement deterministic tests; production saves are not required acceptance checks. The first live browser check follows beta publication and gates stable promotion; subsequent release candidates repeat that check.
 

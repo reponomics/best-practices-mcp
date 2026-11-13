@@ -62,6 +62,11 @@ catalog: ## Regenerate packaged catalog from pinned vendored inputs (offline)
 catalog-check: ## Check catalog and provenance reproducibility without rewriting
 	$(PYTHON) scripts/generate_catalog.py --check
 
+.PHONY: upstream-check
+
+upstream-check: ## Compare bundled criteria/locale with upstream production (network, read-only)
+	$(PYTHON) scripts/check_upstream.py
+
 test-network: ## Verify bounded HTTP retries, pacing and cancellation (offline)
 	$(PYTHON) -m pytest tests/test_http.py
 
