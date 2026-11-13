@@ -1,4 +1,4 @@
-"""Compare bundled catalog inputs with BadgeApp production; optionally sync one issue."""
+"""Compare bundled BadgeApp sources with production; optionally prepare a PR patch."""
 
 from __future__ import annotations
 
@@ -18,8 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 UPSTREAM = "ossf/best-practices-badge"
 UPSTREAM_URL = f"https://github.com/{UPSTREAM}"
 INPUTS = ("criteria/criteria.yml", "criteria/baseline_criteria.yml", "config/locales/en.yml")
-ISSUE_MARKER = "<!-- best-practices-mcp:upstream-criteria -->"
-ISSUE_TITLE = "Review upstream production criteria and locale changes"
+SOURCE_FILES = (*INPUTS, "docs/automation-approach.md", "docs/automation-proposals.md", "LICENSE")
 
 
 def revision(value: str) -> str:
@@ -63,16 +62,16 @@ class GitHub:
         return content
 
     def api(self, path: str, *, data: dict | None = None, method: str = "GET"):
-        return json.loads(self.request(f"https://api.github.com{path}", data=data, method=method))
+        content = self.request(f"https://api.github.com{path}", data=data, method=method)
+        return json.loads(content) if content else None
 
-    def file_hash(self, sha: str, name: str) -> str | None:
+    def source_file(self, sha: str, name: str) -> bytes | None:
         try:
-            content = self.request(f"https://raw.githubusercontent.com/{UPSTREAM}/{sha}/{name}")
+            return self.request(f"https://raw.githubusercontent.com/{UPSTREAM}/{sha}/{name}")
         except HTTPError as exc:
             if exc.code == 404:
                 return None
             raise
-        return hashlib.sha256(content).hexdigest()
 
 
 @dataclass(frozen=True)
@@ -80,22 +79,28 @@ class Report:
     bundled_revision: str
     production_revision: str
     bundled_hashes: dict[str, str]
-    production_hashes: dict[str, str | None]
+    production_files: dict[str, bytes | None]
+
+    @property
+    def production_hashes(self) -> dict[str, str | None]:
+        return {
+            name: None if content is None else hashlib.sha256(content).hexdigest()
+            for name, content in self.production_files.items()
+        }
 
     @property
     def changed(self) -> list[str]:
-        return [
-            name for name in INPUTS if self.bundled_hashes[name] != self.production_hashes[name]
-        ]
+        remote = self.production_hashes
+        return [name for name in SOURCE_FILES if self.bundled_hashes[name] != remote[name]]
 
 
 def read_baseline(source: Path) -> tuple[str, dict[str, str]]:
     manifest = json.loads((source / "source.json").read_text(encoding="utf-8"))
-    if manifest["repository"] != UPSTREAM_URL:
-        raise ValueError("Unexpected upstream repository in source manifest")
+    if manifest["repository"] != UPSTREAM_URL or set(manifest["files"]) != set(SOURCE_FILES):
+        raise ValueError("Unexpected upstream repository or retained source paths")
     sha = revision(manifest["revision"])
     hashes = {}
-    for name in INPUTS:
+    for name in SOURCE_FILES:
         actual = hashlib.sha256((source / name).read_bytes()).hexdigest()
         if actual != manifest["files"][name]:
             raise ValueError(f"Bundled source hash mismatch: {name}")
@@ -109,14 +114,13 @@ def check_upstream(client: GitHub, source: Path) -> Report:
     if ref["ref"] != "refs/heads/production" or ref["object"]["type"] != "commit":
         raise ValueError("Unexpected upstream production reference")
     production = revision(ref["object"]["sha"])
-    remote = {name: client.file_hash(production, name) for name in INPUTS}
+    remote = {name: client.source_file(production, name) for name in SOURCE_FILES}
     return Report(bundled, production, hashes, remote)
 
 
 def report_body(report: Report) -> str:
     lines = [
-        ISSUE_MARKER,
-        "# Upstream production criteria check",
+        "# Upstream production source update",
         "",
         f"Bundled source: [`{report.bundled_revision}`]"
         f"({UPSTREAM_URL}/commit/{report.bundled_revision}).",
@@ -124,122 +128,63 @@ def report_body(report: Report) -> str:
         f"({UPSTREAM_URL}/commit/{report.production_revision}).",
         "",
         "This compares the upstream production branch, not an independently verified live-site "
-        "deployment. All files are read at the same resolved commit.",
+        "deployment. All retained sources are read at the same resolved commit.",
         "",
     ]
     if not report.changed:
-        lines.append("All three monitored files match the bundled copies byte for byte.")
-    else:
-        lines.extend(
-            [
-                "Changes require review; the bundled catalog has not been updated automatically.",
-                "",
-                "| Changed file | Bundled source | Production source |",
-                "| --- | --- | --- |",
-            ]
-        )
-        for name in report.changed:
-            before = f"[view]({UPSTREAM_URL}/blob/{report.bundled_revision}/{name})"
-            after = (
-                f"[view]({UPSTREAM_URL}/blob/{report.production_revision}/{name})"
-                if report.production_hashes[name] is not None
-                else "Missing (HTTP 404)"
-            )
-            lines.append(f"| `{name}` | {before} | {after} |")
-        lines.extend(
-            [
-                "",
-                "Review wording as well as IDs, levels, requirements and flags. The full English "
-                "locale is monitored, so unrelated UI wording can also trigger this issue.",
-                "Follow [the review and update procedure](https://github.com/"
-                "reponomics/best-practices-mcp/blob/main/docs/"
-                "upstream-compatibility.md#checking-for-upstream-changes).",
-            ]
-        )
+        lines.append("All retained source files match the bundled copies byte for byte.")
+        return "\n".join(lines) + "\n"
     lines.extend(
         [
+            "Review the source and generated changes together. Labels are advisory; all updates "
+            "require maintainer review and passing CI. No runtime code is changed automatically.",
             "",
-            "## Compared SHA-256 hashes",
-            "",
-            "| File | Bundled | Production |",
+            "| Changed file | Bundled source | Production source |",
             "| --- | --- | --- |",
         ]
     )
-    for name in INPUTS:
-        remote = report.production_hashes[name] or "missing"
-        lines.append(f"| `{name}` | `{report.bundled_hashes[name]}` | `{remote}` |")
+    for name in report.changed:
+        before = f"[view]({UPSTREAM_URL}/blob/{report.bundled_revision}/{name})"
+        after = (
+            f"[view]({UPSTREAM_URL}/blob/{report.production_revision}/{name})"
+            if report.production_files[name] is not None
+            else "Missing (HTTP 404)"
+        )
+        lines.append(f"| `{name}` | {before} | {after} |")
     lines.extend(
         [
             "",
-            "This issue body is maintained automatically; record review notes in comments. "
-            "Repeated identical results make no issue changes. The same issue is reopened while "
-            "differences remain and closed when the monitored files match.",
+            "Follow [the review and update procedure](https://github.com/"
+            "reponomics/best-practices-mcp/blob/main/docs/"
+            "upstream-compatibility.md#checking-for-upstream-changes).",
         ]
     )
     return "\n".join(lines) + "\n"
 
 
-def find_tracking_issue(client: GitHub, repository: str) -> dict | None:
-    matches = []
-    page = 1
-    while True:
-        issues = client.api(f"/repos/{repository}/issues?state=all&per_page=100&page={page}")
-        if not isinstance(issues, list):
-            raise ValueError("Expected a GitHub issues list")
-        matches.extend(
-            item
-            for item in issues
-            if "pull_request" not in item and (item.get("body") or "").startswith(ISSUE_MARKER)
-        )
-        if len(issues) < 100:
-            break
-        page += 1
-    if len(matches) > 1:
-        raise ValueError("Multiple upstream tracking issues found; reconcile them before retrying")
-    return matches[0] if matches else None
-
-
-def sync_issue(client: GitHub, repository: str, report: Report) -> None:
-    issue = find_tracking_issue(client, repository)
-    if issue is None:
-        if report.changed:
-            client.api(
-                f"/repos/{repository}/issues",
-                data={"title": ISSUE_TITLE, "body": report_body(report)},
-                method="POST",
-            )
-        return
-    if not report.changed and issue["state"] == "closed":
-        return
-    state = "open" if report.changed else "closed"
-    body = report_body(report)
-    if issue["state"] == state and issue["body"] == body and issue["title"] == ISSUE_TITLE:
-        return
-    client.api(
-        f"/repos/{repository}/issues/{issue['number']}",
-        data={"title": ISSUE_TITLE, "body": body, "state": state},
-        method="PATCH",
-    )
-
-
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--update-issue", action="store_true", help="Sync the tracker using GITHUB_TOKEN/REPOSITORY"
+        "--prepare-update", action="store_true", help="Refresh local sources, catalog and doc pins"
     )
+    parser.add_argument("--output-dir", type=Path, default=ROOT / "build/upstream")
     args = parser.parse_args(argv)
     try:
-        token = os.environ.get("GITHUB_TOKEN", "")
-        repository = os.environ.get("GITHUB_REPOSITORY", "")
-        if args.update_issue and (
-            not token or not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository)
-        ):
-            raise ValueError("Issue updates require GITHUB_TOKEN and GITHUB_REPOSITORY=owner/repo")
-        client = GitHub(token)
+        client = GitHub(os.environ.get("GITHUB_TOKEN", ""))
         report = check_upstream(client, ROOT / "vendor/badgeapp")
-        print(report_body(report))
-        if args.update_issue:
-            sync_issue(client, repository, report)
+        body = report_body(report)
+        if args.prepare_update:
+            from prepare_upstream import prepare_update
+
+            body += prepare_update(client, report, ROOT, args.output_dir)
+        print(body)
+        if args.prepare_update:
+            (args.output_dir / "pr.md").write_text(body, encoding="utf-8")
+            result = json.loads((args.output_dir / "result.json").read_text(encoding="utf-8"))
+            if output := os.environ.get("GITHUB_OUTPUT"):
+                with open(output, "a", encoding="utf-8") as stream:
+                    failed = str(result["generation_error"] is not None).lower()
+                    stream.write(f"generation-failed={failed}\n")
     except (OSError, ValueError, KeyError, TypeError, RuntimeError) as exc:
         print(f"Upstream check failed: {exc}", file=sys.stderr)
         return 1

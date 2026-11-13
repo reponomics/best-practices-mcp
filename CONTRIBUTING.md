@@ -51,7 +51,7 @@ For live-form QA, follow the brief [PolicyChecks browser runbook](docs/live-brow
 
 `make catalog-check` verifies byte-for-byte regeneration from vendored inputs. `make test-package` checks the distribution contents and an isolated installed wheel using the current environment's dependencies. Fresh-install qualification separately installs wheel and sdist into new environments.
 
-`make upstream-check` separately compares the bundled criteria and English locale against BadgeApp's `production` branch using public network reads. It does not update source files or GitHub issues. The weekly/manual workflow maintains one tracking issue for differences; follow the [upstream review and update procedure](docs/upstream-compatibility.md#checking-for-upstream-changes) before refreshing the catalog.
+`make upstream-check` compares all retained BadgeApp sources against `production` using public network reads, without editing files or GitHub. `make upstream-prepare` prepares source, catalog and documentation-reference changes locally. The weekly/manual workflow maintains one regular update PR; labels are advisory and every update requires review and passing CI. Follow the [upstream update procedure](docs/upstream-compatibility.md#checking-for-upstream-changes), including pausing automation before making manual fixes on its reserved branch.
 
 ## Source installation and native Windows commands
 

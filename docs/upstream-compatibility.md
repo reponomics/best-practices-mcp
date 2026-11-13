@@ -35,25 +35,41 @@ The form-fill script is a guarded project feature, not an upstream-supported API
 
 ## Checking for upstream changes
 
-The [Upstream criteria check workflow](../.github/workflows/upstream-criteria.yml) runs every Monday at 09:23 UTC and supports **Run workflow** from GitHub Actions on `main`. It resolves `ossf/best-practices-badge`'s `production` branch once, then compares these files at that exact commit against the verified bundled copies:
-
-- `criteria/criteria.yml`
-- `criteria/baseline_criteria.yml`
-- `config/locales/en.yml`
+The [Upstream criteria update workflow](../.github/workflows/upstream-criteria.yml) runs every Monday at 09:23 UTC and supports **Run workflow** from GitHub Actions on `main`. It resolves `ossf/best-practices-badge`'s `production` branch once and compares the complete retained source snapshot at that commit: both criteria YAML files, the full English locale, the automation approach and proposals documents, and the upstream license. All six paths are recorded in `vendor/badgeapp/source.json`.
 
 BadgeApp promotes `main` through `staging` to `production`; its [release policy](https://github.com/ossf/tac/blob/main/process/project-lifecycle-documents/best_practices_badge_graduation_stage.md#release-cadence) identifies releases by commit rather than semantic version. Monitoring `production` follows that release boundary. It does not independently verify which revision the website currently serves, and deployment can fail after a branch update.
 
-Comparison is byte-for-byte: minor wording, whitespace and any English locale text count, including UI strings outside the criteria. Different commit IDs alone do not count. A missing upstream file counts as a change. A failed fetch, invalid response or invalid local source hash fails the check and leaves the tracking issue untouched; it cannot produce an “unchanged” result. This check covers catalog inputs, not every upstream automation document or application change.
+Comparison is byte-for-byte, including minor wording, whitespace and English UI strings outside the criteria. A different commit alone does not trigger an update. When retained files differ, the automation refreshes the complete snapshot, source revision and hashes; regenerates the packaged catalog, provenance and upstream license; and updates the source references in maintained compatibility, transfer, design, specification and third-party-notice documents. Historical records and fixture derivation references retain their original revisions. Source snapshots use the upstream commit timestamp for deterministic metadata, so identical reruns do not manufacture new changes.
 
-When differences exist, the workflow creates or updates one issue titled **Review upstream production criteria and locale changes**. Its stable hidden marker identifies the issue even if renamed. The report lists changed files, links to both source revisions and all compared hashes. Repeated identical results make no issue writes or comments. A closed tracker reopens if differences remain or return; the tracker closes when all three files match. The workflow owns the issue body, so keep review decisions in comments and retain its marker. Closing the issue manually does not acknowledge an outstanding difference. Concurrent manual and scheduled runs are serialized to avoid duplicate creation.
+Every update follows the same regular PR path on the reserved `automation/upstream-criteria` branch, with title **fix(catalog): refresh upstream BadgeApp sources**. The `upstream` label identifies the update; `upstream: criterion-ids` is an advisory label when the set of level-qualified criterion IDs changes. The report lists added and removed IDs. These labels do not classify wording, interpret requirements, claim compatibility, choose a draft state or bypass review. Conditions and text flow through catalog generation. Maintainers inspect the diff and ordinary CI determines whether the existing code and tests accept it.
 
-Run the same comparison locally without creating or updating issues:
+A catalog generation failure still produces a PR containing the refreshed source inputs and documentation pins. Previous generated files remain unchanged, the PR explains the failure, and the update workflow fails after publishing the patch. Catalog reproducibility and regression checks must pass before merging. An unavailable ID comparison is reported without blocking preparation. Missing upstream files appear as deletions; network/authentication/rate-limit errors and invalid local hashes abort preparation without updating the branch. The workflow never executes downloaded upstream code or automatically changes runtime code, tests, supported levels or tools.
+
+## Branch ownership and credentials
+
+The workflow uses the existing `RELEASE_APP_CLIENT_ID` and `RELEASE_APP_PRIVATE_KEY` to create a short-lived repository-scoped App token after preparing the patch. The App signs commits and supplies its own bot identity for sign-off; no PAT or personal signing key is used. App-created PRs run normal CI. Additional repository variables are unnecessary for normal operation.
+
+The [Create Pull Request action](https://github.com/peter-evans/create-pull-request) maintains one open PR on the fixed branch. It fetches the existing branch and regenerates/rebases it from current `main`, updating it only when necessary; this may rewrite the generated branch history. It also recovers a branch whose PR creation was interrupted. Scheduled/manual runs and merge cleanup share one concurrency group. A separate merge handler deletes only this reserved branch, and only if it still points to the merged PR's head; other branches are unaffected. The action also removes an obsolete branch on a later run when there is no remaining diff.
+
+**Before making manual fixes on the generated branch, set the repository Actions variable `UPSTREAM_UPDATES_PAUSED=true`.** Otherwise a subsequent run can overwrite those fixes. Pause first, push the fixes to the existing PR, run the required checks, and merge after review. Unset the variable or set it to `false` afterward. Closing an unmerged PR alone does not reject an update permanently: without a pause, the next run can create another PR while the sources differ. Use the same pause mechanism when deferring or declining an update. A maintainer can mark a PR as draft manually; automation does not use draft state to classify changes.
+
+## Local checks and manual runs
+
+Read-only comparison, with no repository edits or GitHub writes:
 
 ```sh
 make upstream-check
 ```
 
-The script uses the Python standard library and public GitHub reads. It exits zero after a successful comparison, including detected changes, and nonzero on errors. The workflow explicitly enables issue synchronization with its job-scoped `GITHUB_TOKEN`; no PAT, release App credential or additional repository variable is required. It runs only on `main` in `reponomics/best-practices-mcp` and writes its report to the Actions job summary. After the workflow reaches `main`, a maintainer can trigger it from the CLI:
+Prepare the same patch locally on a clean working branch after `make setup`, without creating or updating a remote branch or PR:
+
+```sh
+make upstream-prepare
+```
+
+Preparation writes the retained sources, generated files and maintained documentation pins. Its review body and machine-readable result are under ignored `build/upstream/`. A successful preparation command exits zero even if catalog generation failed, allowing the workflow to publish the reviewable patch; inspect the reported result and run `make catalog-check` before treating preparation as complete. The read-only comparison uses the Python standard library; preparation additionally uses the project's pinned PyYAML dependency.
+
+After the workflow reaches `main`, run it through GitHub Actions or the CLI:
 
 ```sh
 gh workflow run upstream-criteria.yml --ref main
@@ -61,14 +77,12 @@ gh workflow run upstream-criteria.yml --ref main
 
 Scheduled runs can be delayed, and GitHub can disable schedules in public repositories after 60 days without repository activity. Check the workflow's last successful run when reviewing catalog freshness, and re-enable it or use the manual trigger when needed. See [GitHub's schedule behavior](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule). This workflow is maintenance automation, not a required PR check or a runtime freshness guarantee.
 
-## Updating the baseline
+## Reviewing and merging an update
 
-For a tracking issue, review and update through a pull request:
-
-1. Inspect the file changes between the report's bundled and production commits, including wording-only clarifications. Identify changes to criterion IDs, levels, requirements, aliases and flags; distinguish unrelated locale text from criteria text. Record the assessment in the tracking issue or PR.
-2. Refresh retained source inputs from the reviewed commit and update `vendor/badgeapp/source.json` with the revision, timestamp and file hashes. Keep each manifest's revision and hashes consistent with its contents. Even a locale-only change can be incorporated after review so the bundled snapshot matches the reviewed source.
-3. Run `make catalog`, review the generated catalog and provenance diff, and adjust relevant contract tests or compatibility documentation if behavior changes. A wording-only change normally needs no runtime code change. Do not silently expand supported levels or tools to match new upstream features.
-4. Run `make check catalog-check` and the relevant protocol, artifact and package checks. Merge the reviewed update and manually rerun the upstream workflow; it closes the tracker when the bundled files match production. Publish the refreshed catalog through the ordinary release process so installed users receive it.
+1. Inspect the retained upstream files, generated catalog and documentation-reference changes. Review wording and conditions as well as added or removed IDs, including the compatibility and release implications of removing accepted fields. A stable set of IDs does not prove that requirements are unchanged. The API and repository-JSON documents are linked rather than vendored, so inspect those documents at the proposed revision when reviewing their updated references.
+2. Inspect CI. If generation or tests fail, pause automation and fix the code or tests in the PR as appropriate. Preserve meaningful assertions; do not weaken tests merely to accept an update. Refresh compatibility prose or notices manually if the upstream changes require it.
+3. Run `make check catalog-check` and any relevant protocol, artifact, package or live-browser checks. The automation updates references and copied documents, not interpretations of changed procedures or licensing terms.
+4. Merge after maintainer review and passing checks. The merge handler removes the reserved branch; the next update starts a fresh branch and PR. Publish the refreshed catalog through the ordinary release process so installed users receive it.
 
 Review changes to the upstream documentation and criteria before changing a compatibility rule. Regenerate the catalog from identified inputs, review semantic differences and retained notices, update provenance and required regression examples, then run the relevant protocol, artifact and package checks. Investigate discrepancies against the documented contract rather than copying internal behavior automatically. Live read/form checks complement deterministic tests; production saves are not required acceptance checks. The first live browser check follows beta publication and gates stable promotion; subsequent release candidates repeat that check.
 
