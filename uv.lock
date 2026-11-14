@@ -50,7 +50,7 @@ wheels = [
 
 [[package]]
 name = "best-practices-mcp"
-version = "0.1.1-beta.1"
+version = "0.2.0-beta.1"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },

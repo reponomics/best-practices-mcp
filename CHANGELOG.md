@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0-beta.1](https://github.com/reponomics/best-practices-mcp/compare/v0.1.1-beta.1...v0.2.0-beta.1) (2026-11-14)
+
+
+### Features
+
+* add tools for API badge endpoint ([#8](https://github.com/reponomics/best-practices-mcp/issues/8)) ([86f20b0](https://github.com/reponomics/best-practices-mcp/commit/86f20b0b3f959d8859bd7486b740032f6d3af43a))
+
 ## [0.1.1-beta.1](https://github.com/reponomics/best-practices-mcp/compare/v0.1.0-beta.1...v0.1.1-beta.1) (2026-11-14)
 
 
