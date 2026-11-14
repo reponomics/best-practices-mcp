@@ -34,9 +34,9 @@ The shared transport supports explicit SVG routes and media-type handling. It re
 
 Both JSON variants supply `id`, `name`, `updated_at` and `badge_level`. Best Practices adds `tiered_percentage`. Baseline instead adds `badge_percentage`, which measures Baseline level 1; its `badge_level` can be an achieved level or a display value such as `baseline-pct-65`.
 
-Keep those distinctions explicit rather than invent a universal percentage. Preserve upstream values and identify unrecognized badge values without treating them as an earned badge or zero progress. Do not populate unavailable detailed level percentages. Distinguish the upstream record's update time from the MCP fetch time; neither is proof that a cached response reflects every recent edit. Missing or malformed timestamps must be explicit, not replaced by the fetch time.
+Keep those distinctions explicit rather than invent a universal percentage. Preserve upstream values and identify unrecognized badge values without treating them as an earned badge or zero progress. Do not populate unavailable detailed level percentages. Distinguish the upstream record's update time from the time the MCP retrieved the response. Missing or malformed timestamps must be explicit, not replaced by the fetch time.
 
-Neither badge JSON response supplies the full record's project-entry attribution/license fields. Provide source URL, fetch time and documented service-level credit separately; mark per-record attribution as unavailable from this endpoint rather than inventing pass-through values or fetching the full record to obtain them. Both families expose the underlying project's `updated_at`, not a family-specific change timestamp. Their independently cached responses need not show the same observed value at a given moment.
+Neither badge JSON response supplies the full record's project-entry attribution/license fields. Provide source URL, fetch time and documented service-level credit separately; mark per-record attribution as unavailable from this endpoint rather than inventing pass-through values or fetching the full record to obtain them. Both families expose the underlying project's `updated_at`, not a family-specific change timestamp. No relative freshness ordering between the compact badge endpoints and full project JSON has been established. The choice of tool depends on the fields needed.
 
 Progress and update time belong together because they answer one question about the same project/family observation: what badge status does BadgeApp report, and when was its project record updated? Their shared small upstream response supports that boundary but does not by itself justify combining operations. Field-specific tools would repeat requests, consume the shared rate limit and could observe different versions of the record. They would add tool-selection complexity without a distinct user task or upstream efficiency benefit. Returning the complete compact response also lets an agent interpret update time in the context of the observed badge state.
 
@@ -46,7 +46,7 @@ Here, “combined” means badge state, progress and update time in one status o
 
 **Name:** `get_project_badge_status`. **Title:** Get project badge status.
 
-> Return a compact public badge-status observation for one selected BadgeApp project from the OpenSSF Best Practices Badge API (https://www.bestpractices.dev). Includes project identity, effective badge family, reported badge level, family-specific progress, project-record update time and source/fetch metadata. The family defaults to Best Practices, which reports tiered progress; Baseline reports level-1 completion. Responses may be cached, and update time does not establish whether proposed answers were saved. All-level summaries, individual-level progress and saved criterion answers are available through get_project_progress; SVG badges and README embedding are available through get_project_badge_svg.
+> Return a compact public badge-status observation for one selected BadgeApp project from the OpenSSF Best Practices Badge API (https://www.bestpractices.dev). Includes project identity, effective badge family, reported badge level, family-specific progress, project-record update time and source/fetch metadata. The family defaults to Best Practices, which reports tiered progress; Baseline reports level-1 completion. All-level summaries, individual-level progress and saved criterion answers are available through get_project_progress; SVG badges and README embedding are available through get_project_badge_svg.
 
 | Argument | Constraint | Description |
 | --- | --- | --- |
@@ -61,7 +61,7 @@ Reciprocal discovery text for existing `get_project_progress`:
 
 | Review prompt | Expected routing |
 | --- | --- |
-| “When was project 123 last updated?” | `get_project_badge_status(project_id=123)`; project-record update time, with explicit default family and cache caveat. |
+| “When was project 123 last updated?” | `get_project_badge_status(project_id=123)`; project-record update time, with the explicit default family. |
 | “What Best Practices badge does it report?” | Compact status with `best_practices`. |
 | “What Baseline badge does it report?” | Compact status with `baseline`; the accompanying percentage refers only to level 1. |
 | “How close is it to silver?” or “What is its Baseline level-2/3 percentage?” | `get_project_progress` with the named level. |
@@ -81,9 +81,9 @@ An independent second source-and-contract review on 2026-11-13 found no architec
 
 ### Following up after a save
 
-Update time is a useful hint for deciding to inspect saved answers, not an acceptance receipt. A newer timestamp does not identify the actor or changed fields. An unchanged timestamp or percentage does not prove failure: responses may be cached, justification edits need not change progress, and upstream criteria recalculation can change percentages without updating `updated_at`.
+Update time and progress provide useful context when following up on changes. They summarize the record without identifying the specific saved values: a timestamp does not identify which fields changed, and a justification edit need not change a percentage. Checking a particular proposal therefore requires comparing its values with the saved answer fields.
 
-For a specific proposal, the host should read the relevant level and criteria through `get_project_progress` after the user/host saves, and compare the observed saved values with the proposal. It can report matching values, differing values or an inconclusive observation. Even matching values do not prove that a particular save caused them. A quick-status call is optional context, never a required gate for this readback, and a mismatch must not trigger an automatic save retry.
+For a specific proposal, the host should read the relevant level and criteria through `get_project_progress` after the user/host saves, and compare the observed saved values with the proposal. This tool supplies the required fields; its response has not been established as fresher than the compact status response. It can report matching values, differing values or an inconclusive observation. Even matching values do not prove that a particular save caused them. A quick-status call is optional context, never a required gate for this readback, and a mismatch must not trigger an automatic save retry.
 
 Do not add a timestamp-derived `accepted` boolean, a separate acceptance-checking tool or hidden polling. Comparing explicit observations in the host preserves the existing boundary: the server exposes saved data without predicting BadgeApp's save-time processing or claiming causal knowledge of a submission.
 

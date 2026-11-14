@@ -139,7 +139,7 @@ Both badge tools accept `family` as `best_practices` or `baseline`. `get_project
 
 `get_project_badge_svg` returns the original decoded SVG text as a bounded artifact with media type and UTF-8 byte count, together with the dynamic image URL, project-page URL and Markdown embed snippet. The server validates the content type, UTF-8 encoding and SVG XML root, rejects DTD/entity declarations, and neither renders nor sanitizes the image. The artifact is data in the structured response and JSON text fallback. The host decides whether to insert the snippet or save the SVG; downloaded SVG is a snapshot, while a dynamic URL can follow later badge changes. Neither badge tool touches drafts or repository files.
 
-Use `get_project_progress` for all-six-level percentages, individual-level progress such as silver or Baseline level 2/3, and saved criterion answers. `updated_at` can prompt a later readback but cannot establish acceptance of proposed fields. Public responses may be cached; timestamp changes do not identify which fields changed, and unchanged timestamps do not prove a save failed. The host can compare relevant observed saved answers with proposed values directly, without waiting for a changed badge timestamp or automatically retrying a save.
+Use `get_project_progress` for all-six-level percentages, individual-level progress such as silver or Baseline level 2/3, and saved criterion answers. `updated_at` reports the project-record update time and can help an agent decide when to inspect changes. Comparing specific proposed values requires the saved answers supplied by `get_project_progress`. This is a difference in available detail; no relative freshness ordering between the endpoints has been established.
 
 ### Document mutation details
 
@@ -198,7 +198,7 @@ If a response is lost after replacement, the outcome is uncertain to the caller;
 
 ## 6. Artifact generation
 
-Both generators validate the target, load the selected draft, fetch a fresh public record to verify the registered project and available identity, and encode eligible supplied fields relevant to the requested level. A missing document field means no proposed change. Include the four supported metadata fields where the target form supports them. Public answer values do not determine artifact inclusion: preserve eligible supplied values even when they match the public record.
+Both generators validate the target, load the selected draft, retrieve the public record to verify the registered project and available identity, and encode eligible supplied fields relevant to the requested level. A missing document field means no proposed change. Include the four supported metadata fields where the target form supports them. Public answer values do not determine artifact inclusion: preserve eligible supplied values even when they match the public record.
 
 Do not add generator field selectors or a staged-submission state model. Normal host guidance is to update answers as work proceeds. If a user wants only a subset of locally stored answers transferred, the host may read the draft, construct the desired subset, and supply it as the explicit document. That accepted host responsibility does not change the stored draft and does not require a special MCP interface. The host remains responsible for opening artifacts and saving the website form.
 

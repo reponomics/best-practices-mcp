@@ -114,10 +114,8 @@ async def get_project_badge_status(
         "updated_at_status": _timestamp_status(updated_at),
         "observation": _observation(result),
         "caveats": [
-            "BadgeApp responses may be cached; fetch time does not establish immediate freshness.",
-            "updated_at describes the project record, not this badge family or a submission. "
-            "Neither a timestamp nor a percentage change establishes whether proposed answers "
-            "were saved; relevant saved fields require a detailed project read.",
+            "updated_at is the reported project-record update time; fetched_at is when this "
+            "response was retrieved. To compare specific saved answers, use get_project_progress.",
             ATTRIBUTION_CAVEAT,
         ],
     }

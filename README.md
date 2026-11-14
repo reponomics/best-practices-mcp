@@ -65,7 +65,7 @@ See the [tool specification](docs/specification.md) and [payload contracts](docs
 
 ### Badge status and README images
 
-After selecting a project, `get_project_badge_status(project_id=123)` reads its compact Best Practices status; set `family="baseline"` for Baseline. Best Practices reports tiered progress, while the Baseline percentage refers only to level 1. Use `get_project_progress` for individual-level percentages, all-six-level summaries or saved criterion answers. The project's `updated_at` and the MCP fetch time are separate observations; cached data or an unchanged timestamp cannot establish whether proposed fields were saved.
+After selecting a project, `get_project_badge_status(project_id=123)` reads its compact Best Practices status; set `family="baseline"` for Baseline. Best Practices reports tiered progress, while the Baseline percentage refers only to level 1. Use `get_project_progress` for individual-level percentages, all-six-level summaries or saved criterion answers. The project's `updated_at` reports its record update time; `fetched_at` records when the response was retrieved.
 
 `get_project_badge_svg(project_id=123, family="best_practices")` returns SVG text, a dynamic image URL and a Markdown snippet. The host can insert the snippet in a README or save the SVG. Prefer the dynamic URL for a badge that follows future project changes; downloaded SVG is a snapshot. The server does not render SVG or modify repository files. Both tools support `best_practices` and `baseline`, and neither creates drafts.
 
