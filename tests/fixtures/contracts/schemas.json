@@ -3487,5 +3487,619 @@
       ],
       "type": "object"
     }
+  },
+  "get_project_badge_status": {
+    "input": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "project_id": {
+          "exclusiveMinimum": 0,
+          "title": "Project Id",
+          "type": "integer"
+        },
+        "family": {
+          "default": "best_practices",
+          "description": "Badge family to observe; returned as effective family.",
+          "enum": [
+            "best_practices",
+            "baseline"
+          ],
+          "title": "Family",
+          "type": "string"
+        }
+      },
+      "required": [
+        "project_id"
+      ],
+      "title": "BadgeStatusInput",
+      "type": "object"
+    },
+    "output": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$defs": {
+        "BadgeObservation": {
+          "additionalProperties": false,
+          "properties": {
+            "source_url": {
+              "title": "Source Url",
+              "type": "string"
+            },
+            "fetched_at": {
+              "title": "Fetched At",
+              "type": "string"
+            },
+            "service_attribution": {
+              "title": "Service Attribution",
+              "type": "string"
+            },
+            "project_entry_attribution": {
+              "title": "Project Entry Attribution",
+              "type": "null"
+            },
+            "project_entry_license": {
+              "title": "Project Entry License",
+              "type": "null"
+            }
+          },
+          "required": [
+            "source_url",
+            "fetched_at",
+            "service_attribution",
+            "project_entry_attribution",
+            "project_entry_license"
+          ],
+          "title": "BadgeObservation",
+          "type": "object"
+        },
+        "BadgeProgress": {
+          "additionalProperties": false,
+          "properties": {
+            "field": {
+              "enum": [
+                "tiered_percentage",
+                "badge_percentage"
+              ],
+              "title": "Field",
+              "type": "string"
+            },
+            "value": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Value"
+            },
+            "level": {
+              "anyOf": [
+                {
+                  "const": "baseline-1",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Level"
+            }
+          },
+          "required": [
+            "field",
+            "value",
+            "level"
+          ],
+          "title": "BadgeProgress",
+          "type": "object"
+        },
+        "BadgeProject": {
+          "additionalProperties": false,
+          "properties": {
+            "project_id": {
+              "exclusiveMinimum": 0,
+              "title": "Project Id",
+              "type": "integer"
+            },
+            "name": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Name"
+            }
+          },
+          "required": [
+            "project_id",
+            "name"
+          ],
+          "title": "BadgeProject",
+          "type": "object"
+        },
+        "Error": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "enum": [
+                "invalid_document",
+                "invalid_field",
+                "invalid_level",
+                "invalid_criterion",
+                "invalid_query",
+                "invalid_override",
+                "draft_not_found",
+                "draft_read_failed",
+                "draft_write_failed",
+                "document_too_large",
+                "response_too_large",
+                "project_not_found",
+                "project_mismatch",
+                "project_identity_unresolved",
+                "upstream_unavailable",
+                "upstream_invalid_response",
+                "rate_limited",
+                "internal_error"
+              ],
+              "title": "Code",
+              "type": "string"
+            },
+            "message": {
+              "title": "Message",
+              "type": "string"
+            },
+            "details": {
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array"
+                  },
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  }
+                ]
+              },
+              "title": "Details",
+              "type": "object"
+            },
+            "recovery": {
+              "title": "Recovery",
+              "type": "string"
+            },
+            "retry_after_seconds": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Retry After Seconds"
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "details",
+            "recovery",
+            "retry_after_seconds"
+          ],
+          "title": "Error",
+          "type": "object"
+        },
+        "ErrorResult": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": 1,
+              "title": "Schema Version",
+              "type": "integer"
+            },
+            "error": {
+              "$ref": "#/$defs/Error"
+            }
+          },
+          "required": [
+            "schema_version",
+            "error"
+          ],
+          "title": "ErrorResult",
+          "type": "object"
+        },
+        "GetProjectBadgeStatusResult": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": 1,
+              "title": "Schema Version",
+              "type": "integer"
+            },
+            "project": {
+              "$ref": "#/$defs/BadgeProject"
+            },
+            "family": {
+              "enum": [
+                "best_practices",
+                "baseline"
+              ],
+              "title": "Family",
+              "type": "string"
+            },
+            "badge_level": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Badge Level"
+            },
+            "badge_state": {
+              "enum": [
+                "earned",
+                "in_progress",
+                "unrecognized",
+                "unknown"
+              ],
+              "title": "Badge State",
+              "type": "string"
+            },
+            "progress": {
+              "$ref": "#/$defs/BadgeProgress"
+            },
+            "updated_at": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Updated At"
+            },
+            "updated_at_status": {
+              "enum": [
+                "valid",
+                "missing",
+                "invalid"
+              ],
+              "title": "Updated At Status",
+              "type": "string"
+            },
+            "observation": {
+              "$ref": "#/$defs/BadgeObservation"
+            },
+            "caveats": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Caveats",
+              "type": "array"
+            }
+          },
+          "required": [
+            "schema_version",
+            "project",
+            "family",
+            "badge_level",
+            "badge_state",
+            "progress",
+            "updated_at",
+            "updated_at_status",
+            "observation",
+            "caveats"
+          ],
+          "title": "GetProjectBadgeStatusResult",
+          "type": "object"
+        }
+      },
+      "anyOf": [
+        {
+          "$ref": "#/$defs/GetProjectBadgeStatusResult"
+        },
+        {
+          "$ref": "#/$defs/ErrorResult"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  "get_project_badge_svg": {
+    "input": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "project_id": {
+          "exclusiveMinimum": 0,
+          "title": "Project Id",
+          "type": "integer"
+        },
+        "family": {
+          "description": "Badge family whose SVG and README snippet to retrieve.",
+          "enum": [
+            "best_practices",
+            "baseline"
+          ],
+          "title": "Family",
+          "type": "string"
+        }
+      },
+      "required": [
+        "project_id",
+        "family"
+      ],
+      "title": "BadgeSVGInput",
+      "type": "object"
+    },
+    "output": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$defs": {
+        "BadgeObservation": {
+          "additionalProperties": false,
+          "properties": {
+            "source_url": {
+              "title": "Source Url",
+              "type": "string"
+            },
+            "fetched_at": {
+              "title": "Fetched At",
+              "type": "string"
+            },
+            "service_attribution": {
+              "title": "Service Attribution",
+              "type": "string"
+            },
+            "project_entry_attribution": {
+              "title": "Project Entry Attribution",
+              "type": "null"
+            },
+            "project_entry_license": {
+              "title": "Project Entry License",
+              "type": "null"
+            }
+          },
+          "required": [
+            "source_url",
+            "fetched_at",
+            "service_attribution",
+            "project_entry_attribution",
+            "project_entry_license"
+          ],
+          "title": "BadgeObservation",
+          "type": "object"
+        },
+        "Error": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "enum": [
+                "invalid_document",
+                "invalid_field",
+                "invalid_level",
+                "invalid_criterion",
+                "invalid_query",
+                "invalid_override",
+                "draft_not_found",
+                "draft_read_failed",
+                "draft_write_failed",
+                "document_too_large",
+                "response_too_large",
+                "project_not_found",
+                "project_mismatch",
+                "project_identity_unresolved",
+                "upstream_unavailable",
+                "upstream_invalid_response",
+                "rate_limited",
+                "internal_error"
+              ],
+              "title": "Code",
+              "type": "string"
+            },
+            "message": {
+              "title": "Message",
+              "type": "string"
+            },
+            "details": {
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array"
+                  },
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  }
+                ]
+              },
+              "title": "Details",
+              "type": "object"
+            },
+            "recovery": {
+              "title": "Recovery",
+              "type": "string"
+            },
+            "retry_after_seconds": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Retry After Seconds"
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "details",
+            "recovery",
+            "retry_after_seconds"
+          ],
+          "title": "Error",
+          "type": "object"
+        },
+        "ErrorResult": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": 1,
+              "title": "Schema Version",
+              "type": "integer"
+            },
+            "error": {
+              "$ref": "#/$defs/Error"
+            }
+          },
+          "required": [
+            "schema_version",
+            "error"
+          ],
+          "title": "ErrorResult",
+          "type": "object"
+        },
+        "GetProjectBadgeSVGResult": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": 1,
+              "title": "Schema Version",
+              "type": "integer"
+            },
+            "project_id": {
+              "exclusiveMinimum": 0,
+              "title": "Project Id",
+              "type": "integer"
+            },
+            "family": {
+              "enum": [
+                "best_practices",
+                "baseline"
+              ],
+              "title": "Family",
+              "type": "string"
+            },
+            "image_url": {
+              "title": "Image Url",
+              "type": "string"
+            },
+            "project_url": {
+              "title": "Project Url",
+              "type": "string"
+            },
+            "markdown": {
+              "title": "Markdown",
+              "type": "string"
+            },
+            "artifact": {
+              "$ref": "#/$defs/SVGArtifact"
+            },
+            "observation": {
+              "$ref": "#/$defs/BadgeObservation"
+            },
+            "caveats": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Caveats",
+              "type": "array"
+            }
+          },
+          "required": [
+            "schema_version",
+            "project_id",
+            "family",
+            "image_url",
+            "project_url",
+            "markdown",
+            "artifact",
+            "observation",
+            "caveats"
+          ],
+          "title": "GetProjectBadgeSVGResult",
+          "type": "object"
+        },
+        "SVGArtifact": {
+          "additionalProperties": false,
+          "properties": {
+            "svg": {
+              "title": "Svg",
+              "type": "string"
+            },
+            "media_type": {
+              "const": "image/svg+xml",
+              "title": "Media Type",
+              "type": "string"
+            },
+            "suggested_filename": {
+              "title": "Suggested Filename",
+              "type": "string"
+            },
+            "encoded_size_bytes": {
+              "minimum": 0,
+              "title": "Encoded Size Bytes",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "svg",
+            "media_type",
+            "suggested_filename",
+            "encoded_size_bytes"
+          ],
+          "title": "SVGArtifact",
+          "type": "object"
+        }
+      },
+      "anyOf": [
+        {
+          "$ref": "#/$defs/GetProjectBadgeSVGResult"
+        },
+        {
+          "$ref": "#/$defs/ErrorResult"
+        }
+      ],
+      "type": "object"
+    }
   }
 }

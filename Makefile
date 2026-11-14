@@ -44,7 +44,7 @@ run: ## Run the stdio server (waits for an MCP client)
 example: ## Discover implemented tools through the reference host (offline)
 	$(PYTHON) examples/host.py --discover
 
-test-contract: ## Verify nine-tool schemas and document normalization
+test-contract: ## Verify eleven-tool schemas and document normalization
 	$(PYTHON) -m pytest tests/test_contracts.py tests/test_json_value_schema.py tests/test_documents.py tests/test_sdk_adapter.py
 
 test-catalog: catalog-check ## Verify six-level source compatibility and catalog data
@@ -76,6 +76,11 @@ test-network: ## Verify bounded HTTP retries, pacing and cancellation (offline)
 test-api: ## Verify BadgeApp mapping and real MCP read-tool calls (offline)
 	$(PYTHON) -m pytest tests/test_badgeapp.py tests/test_read_tools.py
 
+.PHONY: test-badges
+
+test-badges: ## Verify badge transport, observations, SVG artifacts and MCP calls (offline)
+	$(PYTHON) -m pytest tests/test_http.py tests/test_badges.py tests/test_badge_tools.py
+
 test-host: ## Verify interactive host lookup and selection through MCP (offline)
 	$(PYTHON) -m pytest tests/test_host.py
 
@@ -85,6 +90,11 @@ host: ## Start the interactive document host (queries contact BadgeApp)
 PROJECT_ID ?= 1
 smoke-live: ## Opt-in paced public GET compatibility check (PROJECT_ID=1)
 	$(PYTHON) scripts/smoke_live.py --project-id "$(PROJECT_ID)"
+
+.PHONY: smoke-badges
+
+smoke-badges: ## Opt-in paced JSON/SVG badge compatibility check (PROJECT_ID=1, read-only)
+	$(PYTHON) scripts/smoke_badges.py --project-id "$(PROJECT_ID)"
 
 .PHONY: setup-dom test-upstream test-documents
 

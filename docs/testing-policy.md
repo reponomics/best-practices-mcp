@@ -11,7 +11,8 @@ Required tests establish conformance to the documented upstream automation proce
 | Specification §4 advisory validation, including minimum length, exact comment prefix and URL-pattern rules | `tests/test_validation.py` checks explicit agreed examples and operational boundaries; successful validation does not establish website acceptance |
 | [Specification §6, Form-fill scripts](specification.md#form-fill-scripts): guarded console fallback, an approved project feature rather than an upstream-supported API | `tests/test_scripts.py` executes generated JavaScript against controlled synthetic forms, checking routes, control preflight, assignments, event dispatch, value preservation and partial-failure reporting |
 | Pinned source provenance and controlled-form derivation | Catalog integrity and `tests/test_upstream_sources.py` verify retained input hashes. The form derivation record preserves source references as explanatory context; it is not a checked copy of those sources or evidence of the deployed site |
-| Nine-tool MCP contract, bounded reads, local documents/storage and reference host | Protocol, network, document, storage, host and package tests remain required |
+| [ADR 0001](adr/0001-badge-image-and-status-tools.md) compact status and SVG contracts | `tests/test_badges.py` checks family mappings, timestamps, unavailable record attribution and one-endpoint calls; `tests/test_badge_tools.py` checks MCP wire schemas and effect boundaries; `tests/test_http.py` checks format allowlists, shared JSON/SVG pacing/retries and bounded SVG validation |
+| Eleven-tool MCP contract, bounded reads, local documents/storage and reference host | Protocol, network, document, storage, host and package tests remain required |
 | Actual BadgeApp edit-form integration | The [local browser runbook](live-browser-qa.md) exercises generated URLs and a script against an authenticated live form, with the exact server version and observations recorded |
 
 The retained upstream documents are under `vendor/badgeapp/docs/`. The [transfer rules](transfer-rules.md) record approved compatibility details and the documented disagreement about unknown-status URL resets. Deterministic artifact tests verify included/excluded fields and exact supplied values. They do not compare saved answers or simulate BadgeApp's decision matrix. Live browser checks observe the actual edit-form effects. Save/Submit acceptance, persisted-value transformations, importer behavior and automated assessment remain outside this contract.
@@ -37,6 +38,8 @@ make test-package
 ```
 
 Required GitHub Actions jobs retain the six Python 3.11/3.12 combinations across Linux, macOS and Windows, coverage and fresh wheel/sdist installation. The [release procedure](releasing.md) identifies the remaining package, remote CI and publication gates.
+
+For opt-in, read-only production badge compatibility, run `make smoke-badges PROJECT_ID=1`. This makes four paced requests: compact JSON and SVG for each badge family, validates their result schemas and serialized budgets, and prints observation metadata without writing files. A successful run establishes compatibility for that project at the reported fetch times; it does not establish acceptance of proposed edits. On 2026-11-14, project 1 returned `gold` for Best Practices and `baseline-3` for Baseline, valid update timestamps, and valid SVG bodies of 1,200 and 1,214 bytes respectively.
 
 The [November 2026 coverage gap review](coverage-review.md) records the measured baseline, added regression cases, and the remaining defensive paths that are unreachable under current invariants.
 

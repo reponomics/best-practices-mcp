@@ -68,6 +68,8 @@ def test_modern_discovery_without_initialize_and_stable_lists(tmp_path: Path) ->
         "build_draft",
         "find_project",
         "get_criteria",
+        "get_project_badge_status",
+        "get_project_badge_svg",
         "get_project_progress",
         "prepare_update_script",
         "prepare_update_url",
@@ -128,7 +130,7 @@ def test_legacy_discovery_and_object_results_remain_usable(tmp_path: Path) -> No
     assert [reply["id"] for reply in replies] == [1, 2, 3, 4]
     assert replies[0]["result"]["protocolVersion"] == "2025-11-25"
     tools = {tool["name"]: tool for tool in replies[1]["result"]["tools"]}
-    assert len(tools) == 9
+    assert len(tools) == 11
     for tool in tools.values():
         assert tool["outputSchema"]["type"] == "object"
         assert len(tool["outputSchema"]["anyOf"]) == 2

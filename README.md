@@ -2,7 +2,7 @@
 
 ## Description
 
-Best Practices MCP lets an MCP-compatible assistant look up projects on the OpenSSF Best Practices Badge website (BadgeApp), inspect badge criteria and progress, prepare draft answers, and generate proposed updates for review in the browser.
+Best Practices MCP lets an MCP-compatible assistant look up projects on the OpenSSF Best Practices Badge website (BadgeApp), inspect badge criteria and progress, retrieve badge images and README snippets, prepare draft answers, and generate proposed updates for review in the browser.
 
 The server provides the tools; your assistant decides how to assess the project and organize the work. It can prepare an edit-page URL or a guarded form-fill script, but does not authenticate to BadgeApp or save changes. You review the actual form before deciding to save.
 
@@ -35,7 +35,7 @@ Reload the host's MCP connections, then try a request such as:
 
 > Find the BadgeApp project for https://github.com/reponomics/PolicyChecks and show its silver-level progress. Do not prepare any changes yet.
 
-The host should discover nine tools. Starting the executable directly in a terminal waits for MCP messages; it is not an interactive CLI. For a source checkout or connection debugging with Inspector, see [Contributing](CONTRIBUTING.md).
+The pinned beta release above exposes nine tools. The two badge tools below are currently unreleased and available from a source checkout, which exposes eleven tools. Starting the executable directly in a terminal waits for MCP messages; it is not an interactive CLI. For a source checkout or connection debugging with Inspector, see [Contributing](CONTRIBUTING.md).
 
 ## Tools
 
@@ -43,7 +43,9 @@ The host should discover nine tools. Starting the executable directly in a termi
 | --- | --- | --- |
 | `find_project` | Find public project candidates by ID, repository/homepage URL, or text; the host selects the intended project. | Public BadgeApp GETs |
 | `get_criteria` | Read the bundled criteria by badge level and criterion. | Offline |
-| `get_project_progress` | Read a project's saved answers and progress, with source and fetch time. | Public BadgeApp GETs |
+| `get_project_progress` | Read all-level percentages or selected saved answers and progress, with source and fetch time. | Public BadgeApp GETs |
+| `get_project_badge_status` | Quickly read one badge family's status, progress and project-record update time. | Public BadgeApp JSON GET |
+| `get_project_badge_svg` | Retrieve a badge SVG and dynamic README embed snippet for one badge family. | Public BadgeApp SVG GET |
 | `build_draft` | Create or patch a document supplied by the host. | Offline; no stored files changed |
 | `read_draft` | Read the complete locally stored draft for a project. | Local read |
 | `update_draft` | Create or patch a locally stored project draft. | Local write; no BadgeApp update |
@@ -60,6 +62,12 @@ See the [tool specification](docs/specification.md) and [payload contracts](docs
 - **Validation is advisory:** it checks mechanical requirements, not whether claims are true or evidence is sufficient. Validation is optional and does not gate artifact generation.
 - **Review in the browser:** artifacts include eligible supplied fields even when they match saved values. Reports describe what was included or excluded, not what BadgeApp will retain or save. BadgeApp documents trimming leading/trailing whitespace from URL-proposed justifications. See [transfer rules](docs/transfer-rules.md) for overrides and script behavior.
 - **Authentication stays in your browser:** public reads need no BadgeApp credentials. Applying proposals requires your own authenticated session and appropriate project permissions. The console script is a project-provided fallback, not an upstream-supported API.
+
+### Badge status and README images
+
+After selecting a project, `get_project_badge_status(project_id=123)` reads its compact Best Practices status; set `family="baseline"` for Baseline. Best Practices reports tiered progress, while the Baseline percentage refers only to level 1. Use `get_project_progress` for individual-level percentages, all-six-level summaries or saved criterion answers. The project's `updated_at` and the MCP fetch time are separate observations; cached data or an unchanged timestamp cannot establish whether proposed fields were saved.
+
+`get_project_badge_svg(project_id=123, family="best_practices")` returns SVG text, a dynamic image URL and a Markdown snippet. The host can insert the snippet in a README or save the SVG. Prefer the dynamic URL for a badge that follows future project changes; downloaded SVG is a snapshot. The server does not render SVG or modify repository files. Both tools support `best_practices` and `baseline`, and neither creates drafts.
 
 ### Optional draft storage
 

@@ -39,7 +39,7 @@ def test_stored_workflow_restart_explicit_precedence_and_stable_discovery(tmp_pa
         async with asyncio.timeout(30):
             async with Client(params) as client:
                 listed = (await client.list_tools()).tools
-                assert len(listed) == 9
+                assert len(listed) == 11
                 assert [t.name for t in listed] == sorted(IMPLEMENTED_TOOLS)
                 mutation = next(t for t in listed if t.name == "update_draft")
                 assert not mutation.annotations.read_only_hint

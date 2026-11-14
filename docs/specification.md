@@ -1,6 +1,6 @@
 # Server specification
 
-The server exposes nine tools for public BadgeApp reads, portable documents, optional local drafts, advisory validation, and reviewable update artifacts. The [implementation contracts](contracts.md) define exact payloads, errors and limits; [design decisions](design.md) explain the boundaries; [upstream compatibility](upstream-compatibility.md) identifies the source baseline and [transfer rules](transfer-rules.md) describe proposal semantics.
+The server exposes eleven tools for public BadgeApp reads, portable documents, optional local drafts, advisory validation, and reviewable update artifacts. The [implementation contracts](contracts.md) define exact payloads, errors and limits; [design decisions](design.md) explain the boundaries; [upstream compatibility](upstream-compatibility.md) identifies the source baseline and [transfer rules](transfer-rules.md) describe proposal semantics.
 
 ## 1. Purpose and boundary
 
@@ -12,6 +12,7 @@ V1 provides:
 
 - Criteria lookup for every supported badge level.
 - Project discovery and public application progress, independent of a local checkout or repository hosting provider.
+- Compact badge-family status observations and SVG artifacts with dynamic README embed snippets.
 - Proposal URLs and browser form-fill scripts for a project and level.
 - Creation and modification of portable `.bestpractices.json` documents.
 - Mechanical validation of supplied draft answers against the selected level's criterion flags, without fetching evidence or gating artifact generation.
@@ -111,6 +112,8 @@ The signatures below describe domain inputs and outputs, not raw MCP wire envelo
 | `get_criteria`          | `level?`, `criterion_ids?`                            | Supported-level index when no level is supplied; otherwise selected definitions, requirements, canonical fields, and catalog provenance. Local catalog read.           |
 | `find_project`          | `query`, `page=1`                                     | Candidate IDs, names, repository/homepage URLs, match basis, and pagination. Public network read.                                                                      |
 | `get_project_progress`  | `project_id`, `level?`, `criterion_ids?`              | Saved answers and explanations, summaries, public metadata, and observation provenance. Public network read.                                                           |
+| `get_project_badge_status` | `project_id`, `family="best_practices"` | Compact badge-family state/progress, project-record update time and observation metadata. One public JSON read. |
+| `get_project_badge_svg` | `project_id`, `family` | SVG text artifact, dynamic image URL, project-page link and Markdown snippet. One public SVG read; no repository edit. |
 | `build_draft`           | `draft`, `changes={}`                                 | Updated document, structural validation issues, and serialized byte count. Pure transformation. Use `{}` to create a document.                                         |
 | `read_draft`            | `project_id`                                          | Complete project document, location, and structural validation issues. Local read.                                                                                     |
 | `update_draft`          | `project_id`, `changes`                               | Applied patch, whether a draft was created, structural validation issues, and location. Writes only that project's draft.                                              |
@@ -127,6 +130,16 @@ The tool list does not depend on which projects have local files. Separate resou
 `find_project` treats an HTTP(S) URL as an exact repository/homepage URL query, a positive numeric identifier as an ID lookup, and other text as a textual search. Return candidates rather than selecting the first match. URL queries do not fetch the supplied URL itself. Do not restrict discovery to GitHub or claim that arbitrary URL spellings are equivalent. Preserve upstream pagination; return `next_page` when known and explicitly mark uncertainty instead of inventing a total or completeness claim. Zero matches is a normal empty result. The [BadgeApp API](https://github.com/ossf/best-practices-badge/blob/main/docs/api.md) documents `.json` resources, exact URL queries, textual search, and paginated results.
 
 `get_project_progress` without a level returns available level summaries and project metadata. With a level, it returns saved criterion status/justification pairs and a flat `answers` object suitable for document operations; an optional criterion filter narrows those answers and requires a level. Include project identity separately so hosts need not parse prose. Read-only operations never initialize or modify a draft.
+
+### Badge status and image retrieval
+
+Both badge tools accept `family` as `best_practices` or `baseline`. `get_project_badge_status` defaults an omitted family to `best_practices` and returns the effective family; `get_project_badge_svg` requires a family. Each retrieves one representation from one allowlisted endpoint with no full-record lookup or automatic call to the other tool. [ADR 0001](adr/0001-badge-image-and-status-tools.md) records the action boundaries and reviewed discovery descriptions.
+
+`get_project_badge_status` returns compact project identity, the raw upstream badge value, a recognized/unknown state, the family-specific progress measure and the upstream project-record update time. Best Practices reports tiered progress; Baseline reports level-1 completion, even if a higher badge is earned. Missing values remain unknown and unrecognized badge strings remain visible. The result explicitly distinguishes a valid, missing or malformed timestamp string from the MCP fetch time. Badge endpoints do not supply project-entry attribution/license, so the observation identifies service credit separately and leaves those record fields null.
+
+`get_project_badge_svg` returns the original decoded SVG text as a bounded artifact with media type and UTF-8 byte count, together with the dynamic image URL, project-page URL and Markdown embed snippet. The server validates the content type, UTF-8 encoding and SVG XML root, rejects DTD/entity declarations, and neither renders nor sanitizes the image. The artifact is data in the structured response and JSON text fallback. The host decides whether to insert the snippet or save the SVG; downloaded SVG is a snapshot, while a dynamic URL can follow later badge changes. Neither badge tool touches drafts or repository files.
+
+Use `get_project_progress` for all-six-level percentages, individual-level progress such as silver or Baseline level 2/3, and saved criterion answers. `updated_at` can prompt a later readback but cannot establish acceptance of proposed fields. Public responses may be cached; timestamp changes do not identify which fields changed, and unchanged timestamps do not prove a save failed. The host can compare relevant observed saved answers with proposed values directly, without waiting for a changed badge timestamp or automatically retrying a save.
 
 ### Document mutation details
 
@@ -231,9 +244,9 @@ Use SDK-supported structured results with brief readable summaries. Domain failu
 
 Mark public/catalog/file reads and artifact generators read-only. Mark `update_draft` as a local mutation; do not mark it read-only just because it never contacts BadgeApp. Reapplying a patch without intervening edits is a content no-op, but that does not authorize automatic retries after an uncertain outcome. Describe effects accurately in tool metadata. Supply the protocol's discovery/list caching hints through the SDK. Internal reuse of the loaded catalog is an application implementation detail; MCP's specified cache hints do not cover `tools/call` results. Do not add resources solely to obtain caching. See [MCP caching](https://modelcontextprotocol.io/specification/2026-07-28/server/utilities/caching).
 
-Use `.json` URLs for API reads, finite timeouts, bounded GET retries, and shared request pacing of at most one request per second per server process. Respect upstream rate-limit responses and `Retry-After`; concurrent tool calls must share the limiter. Several independent processes can still aggregate traffic. Never retry writes to the local draft automatically after an ambiguous outcome.
+Use `.json` URLs for structured API reads and explicit `.svg` badge URLs for image artifacts, finite timeouts, bounded GET retries, and shared request pacing of at most one request per second per server process. Respect upstream rate-limit responses and `Retry-After`; concurrent tool calls must share the limiter. Several independent processes can still aggregate traffic. Never retry writes to the local draft automatically after an ambiguous outcome.
 
-Publish bounded document/response sizes as implementation limits. Oversized documents or artifacts fail explicitly rather than being truncated. Criteria and progress filters reduce response size; discovery uses upstream pagination. Do not add output-format knobs merely to duplicate structured data. Do not log draft bodies, generated scripts, or full proposal query strings by default.
+Publish bounded document/response sizes as implementation limits. Decoded SVG responses have a 1 MiB limit, separate from the 8 MiB JSON body limit and 16 MiB complete serialized MCP-result limit. Oversized documents or artifacts fail explicitly rather than being truncated. Criteria and progress filters reduce response size; discovery uses upstream pagination. Do not add output-format knobs merely to duplicate structured data. Do not log draft bodies, generated scripts, or full proposal query strings by default.
 
 Check the resulting draft size before committing an update. Every document successfully written by `update_draft` must remain returnable by `read_draft` under the server's own response policy, accounting for its result envelope and any compatibility representation. If the update would violate that invariant, return an error without changing the file. This is a server storage/response guarantee, not enforcement of upstream BadgeApp field/import limits.
 

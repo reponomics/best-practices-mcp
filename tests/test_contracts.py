@@ -44,6 +44,8 @@ def test_schemas_and_examples(tool: str) -> None:
     [
         "read_draft",
         "get_project_progress",
+        "get_project_badge_status",
+        "get_project_badge_svg",
         "update_draft",
         "validate_draft",
         "prepare_update_url",
@@ -136,3 +138,17 @@ def test_boolean_is_not_a_schema_version() -> None:
 def test_filter_dependency_is_in_the_published_schema() -> None:
     with pytest.raises(SchemaValidationError):
         Draft202012Validator(input_schema("get_criteria")).validate({"criterion_ids": []})
+
+
+def test_badge_status_default_and_svg_explicit_family() -> None:
+    assert (
+        validate_input("get_project_badge_status", {"project_id": 123}).family == "best_practices"
+    )
+    for family in (None, "passing", "baseline-2", "", 1):
+        for tool in ("get_project_badge_status", "get_project_badge_svg"):
+            with pytest.raises(ValidationError):
+                validate_input(tool, {"project_id": 123, "family": family})
+    with pytest.raises(ValidationError):
+        validate_input("get_project_badge_svg", {"project_id": 123})
+    with pytest.raises(SchemaValidationError):
+        Draft202012Validator(input_schema("get_project_badge_svg")).validate({"project_id": 123})

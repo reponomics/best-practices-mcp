@@ -238,7 +238,9 @@ def test_real_server_discovery_is_noninteractive_and_creates_no_storage(tmp_path
     completed = run_host(tmp_path, "", "--discover", fixture=False)
     assert completed.returncode == 0, completed.stderr
     data = json.loads(completed.stdout)
-    assert data["tools"] == sorted(host.READ_TOOLS | host.DOCUMENT_TOOLS | host.STORAGE_TOOLS)
+    assert data["tools"] == sorted(
+        host.READ_TOOLS | host.BADGE_TOOLS | host.DOCUMENT_TOOLS | host.STORAGE_TOOLS
+    )
     assert data["protocol_version"] == "2026-07-28"
     assert not (tmp_path / "untouched").exists()
 
