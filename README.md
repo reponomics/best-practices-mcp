@@ -20,13 +20,13 @@ Install [uv](https://docs.astral.sh/uv/getting-started/installation/) if needed,
   "mcpServers": {
     "bestpractices": {
       "command": "uvx",
-      "args": ["--from", "best-practices-mcp==0.1.1-beta.1", "bestpractices-mcp"]
+      "args": ["--from", "best-practices-mcp==0.2.0-beta.1", "bestpractices-mcp"]
     }
   }
 }
 ```
 
-This lets the host launch an isolated installation from PyPI. Alternatively, install persistently with `pipx install 'best-practices-mcp==0.1.1-beta.1'` and configure the host to launch the installed `bestpractices-mcp` executable with no arguments.
+This lets the host launch an isolated installation from PyPI. Alternatively, install persistently with `pipx install 'best-practices-mcp==0.2.0-beta.1'` and configure the host to launch the installed `bestpractices-mcp` executable with no arguments.
 <!-- x-release-please-end -->
 
 Use an absolute executable path if the host cannot find `uvx` or `bestpractices-mcp` on its PATH. On Windows, JSON paths need escaped backslashes, for example `C:\Users\you` must be written as `"C:\\Users\\you"`. The package name is **`best-practices-mcp`**; the executable name is **`bestpractices-mcp`**.
