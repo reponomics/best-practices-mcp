@@ -26,4 +26,4 @@ npx -y @modelcontextprotocol/inspector@2.14.0 --cli \
   --method tools/list --strict --format json
 ```
 
-Expected discovery is nine tools with no schema errors or warnings. Inspector may download its npm package; server discovery itself is offline. A successful check does not guarantee acceptance by every provider-specific schema subset. Inspector's [smoke-testing guidance](https://github.com/modelcontextprotocol/inspector/blob/main/docs/cli-smoke-testing.md) distinguishes portability lint from full conformance testing.
+Expected discovery is eleven tools with no schema errors or warnings. Inspector may download its npm package; server discovery itself is offline. A successful check does not guarantee acceptance by every provider-specific schema subset. Inspector's [smoke-testing guidance](https://github.com/modelcontextprotocol/inspector/blob/main/docs/cli-smoke-testing.md) distinguishes portability lint from full conformance testing.

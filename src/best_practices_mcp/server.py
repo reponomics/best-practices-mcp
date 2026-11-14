@@ -15,6 +15,7 @@ from pydantic import ValidationError
 from best_practices_mcp import __version__
 from best_practices_mcp.artifacts import prepare_update_script, prepare_update_url
 from best_practices_mcp.badgeapp import BadgeAppClient
+from best_practices_mcp.badges import get_project_badge_status, get_project_badge_svg
 from best_practices_mcp.contracts import validate_input
 from best_practices_mcp.criteria import get_criteria
 from best_practices_mcp.drafts import build_draft, check_identity, normalize_draft
@@ -33,8 +34,32 @@ READ_TOOLS = {
         "Choose an entry explicitly; registration is outside this server."
     ),
     "get_project_progress": (
-        "Read a registered project's public saved progress, answers and observation provenance. "
-        "Does not create or modify a draft."
+        "Read a selected BadgeApp project's saved progress and answers from its public project "
+        "record. With no level, returns percentage summaries across all six supported levels. "
+        "With a level, includes that level's progress and criterion answers; criterion_ids narrows "
+        "the returned criteria. Includes source and observation provenance. Compact badge-family "
+        "status and project-record update time are available through get_project_badge_status; "
+        "SVG badges and README embedding are available through get_project_badge_svg."
+    ),
+    "get_project_badge_status": (
+        "Return a compact public badge-status observation for one selected BadgeApp project "
+        "from the OpenSSF Best Practices Badge API (https://www.bestpractices.dev). Includes "
+        "project identity, effective badge family, reported badge level, family-specific progress, "
+        "project-record update time and source/fetch metadata. The family defaults to Best "
+        "Practices, which reports tiered progress; Baseline reports level-1 completion. "
+        "All-level summaries, individual-level progress and saved criterion answers are available "
+        "through get_project_progress; SVG badges and README embedding are available through "
+        "get_project_badge_svg."
+    ),
+    "get_project_badge_svg": (
+        "Retrieve an SVG badge and Markdown embed snippet for one selected BadgeApp project "
+        "and explicit badge family from the OpenSSF Best Practices Badge API "
+        "(https://www.bestpractices.dev). Returns the SVG text as a snapshot, its media type, "
+        "dynamic image and project-page URLs, and source/fetch metadata. The dynamic URL lets "
+        "README images reflect later badge changes. Does not render the SVG or edit files. "
+        "Compact badge state, progress and update time are available through "
+        "get_project_badge_status; detailed saved answers are available through "
+        "get_project_progress."
     ),
 }
 
@@ -129,9 +154,16 @@ class BestPracticesServer(MCPServer):
             return await self.storage.update(**values)
         if name in DOCUMENT_TOOLS:
             return await self._document_payload(name, values, context)
+        return await self._read_payload(name, values, context)
+
+    async def _read_payload(self, name: str, values: dict, context: Context | None) -> dict:
         if context is None:
             raise RuntimeError("Network tools require the running server lifespan.")
         client = context.request_context.lifespan_context
+        if name == "get_project_badge_status":
+            return await get_project_badge_status(client.http, **values)
+        if name == "get_project_badge_svg":
+            return await get_project_badge_svg(client.http, **values)
         if name == "find_project":
             return await client.find_project(**values)
         return await client.get_project_progress(**values)
@@ -165,7 +197,7 @@ class BestPracticesServer(MCPServer):
 def create_server(
     *, http_factory: Callable[[], BadgeAppHTTP] = BadgeAppHTTP, data_root: Path | None = None
 ) -> MCPServer:
-    """Build all nine tools; factory/root injection supports isolated offline tests."""
+    """Build all eleven tools; factory/root injection supports isolated offline tests."""
     storage = DraftStore(resolve_data_root() if data_root is None else data_root)
 
     @asynccontextmanager

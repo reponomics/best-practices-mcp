@@ -1,6 +1,6 @@
 # Continuous integration and repository setup
 
-The workflows maintain the bounded nine-tool MCP; they do not add runtime services or automate BadgeApp submission. Development and security tools are not required to run an installed server. Release management and publication are described in [the release procedure](releasing.md).
+The workflows maintain the bounded eleven-tool MCP; they do not add runtime services or automate BadgeApp submission. Development and security tools are not required to run an installed server. Release management and publication are described in [the release procedure](releasing.md).
 
 ## Checks and scope
 

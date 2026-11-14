@@ -14,6 +14,7 @@ from email.utils import parsedate_to_datetime
 from http.cookiejar import CookieJar, DefaultCookiePolicy
 from typing import Any
 from urllib.parse import quote, urlencode
+from xml.etree import ElementTree
 
 import httpx2
 
@@ -34,6 +35,10 @@ TRANSIENT_ERRORS = (
     httpx2.ReadTimeout,
 )
 PROJECT_PATH = re.compile(r"/projects/[1-9][0-9]*\.json\Z")
+BADGE_JSON_PATH = re.compile(r"/projects/[1-9][0-9]*/(?:badge|baseline)\.json\Z")
+BADGE_SVG_PATH = re.compile(r"/projects/[1-9][0-9]*/(?:badge|baseline)\.svg\Z")
+SVG_LIMIT_BYTES = 1_048_576
+SVG_ROOT = "{http://www.w3.org/2000/svg}svg"
 
 
 @dataclass(frozen=True)
@@ -66,7 +71,7 @@ def _unavailable() -> DomainError:
     )
 
 
-def _invalid_response(message: str = "BadgeApp returned an invalid public JSON response."):
+def _invalid_response(message: str = "BadgeApp returned an invalid public response."):
     return DomainError(
         "upstream_invalid_response", message, recovery="Retry later or report drift."
     )
@@ -97,7 +102,11 @@ def _validate_parameters(params: dict) -> None:
 
 
 def _validate_target(path: str, params: dict | None) -> None:
-    if path != "/projects.json" and PROJECT_PATH.fullmatch(path) is None:
+    if (
+        path != "/projects.json"
+        and PROJECT_PATH.fullmatch(path) is None
+        and BADGE_JSON_PATH.fullmatch(path) is None
+    ):
         raise DomainError("invalid_query", "Only documented public project JSON paths are allowed.")
     if params:
         if path != "/projects.json":
@@ -149,6 +158,21 @@ def _decode_json(body: bytes) -> Any:
         return data
     except (ValueError, UnicodeError, RecursionError) as error:
         raise _invalid_response() from error
+
+
+def _decode_svg(body: bytes) -> str:
+    """Validate an inert SVG artifact without expanding declarations or altering bytes."""
+    try:
+        text = body.decode("utf-8")
+        # Reject declarations before XML parsing, including internal/external entities.
+        # This deliberately also rejects declaration-looking text inside comments.
+        if re.search(r"<!\s*(?:DOCTYPE|ENTITY)\b", text, re.IGNORECASE):
+            raise ValueError("SVG declarations are unsupported")
+        if ElementTree.fromstring(text).tag != SVG_ROOT:
+            raise ValueError("Expected an SVG root in the SVG namespace")
+        return text
+    except (ValueError, UnicodeError, ElementTree.ParseError) as error:
+        raise _invalid_response("BadgeApp did not return a valid UTF-8 SVG document.") from error
 
 
 class BadgeAppHTTP:
@@ -236,21 +260,25 @@ class BadgeAppHTTP:
             raise _unavailable()
         await self._sleep(backoff)
 
-    async def _read_body(self, response: httpx2.Response) -> bytes:
+    async def _read_body(self, response: httpx2.Response, limit: int | None = None) -> bytes:
+        limit = UPSTREAM_LIMIT_BYTES if limit is None else limit
         body = bytearray()
         async for chunk in response.aiter_bytes(chunk_size=65_536):
-            if len(body) + len(chunk) > UPSTREAM_LIMIT_BYTES:
+            if len(body) + len(chunk) > limit:
                 raise _invalid_response(
                     "BadgeApp's decoded response exceeds the server byte limit."
                 )
             body.extend(chunk)
         return bytes(body)
 
-    def _check_response(self, response: httpx2.Response) -> None:
+    def _check_response(self, response: httpx2.Response, *, svg: bool = False) -> None:
         status = response.status_code
         if status in RETRY_STATUSES:
             raise _Retryable(status, response.headers.get("retry-after"))
-        if status == 404 and PROJECT_PATH.fullmatch(response.url.path):
+        if status == 404 and any(
+            pattern.fullmatch(response.url.path)
+            for pattern in (PROJECT_PATH, BADGE_JSON_PATH, BADGE_SVG_PATH)
+        ):
             raise DomainError(
                 "project_not_found",
                 "BadgeApp did not find the requested public project.",
@@ -260,21 +288,28 @@ class BadgeAppHTTP:
         if status != 200:
             raise _invalid_response("BadgeApp returned an unexpected HTTP status.")
         media_type = response.headers.get("content-type", "").split(";", 1)[0].strip().lower()
-        if media_type != "application/json" and not media_type.endswith("+json"):
+        if svg:
+            if media_type != "image/svg+xml":
+                raise _invalid_response("BadgeApp did not return SVG content.")
+        elif media_type != "application/json" and not media_type.endswith("+json"):
             raise _invalid_response("BadgeApp did not return JSON content.")
 
-    async def _attempt(self, path: str, params: dict | None, deadline: float) -> FetchResult:
+    async def _attempt(
+        self, path: str, params: dict | None, deadline: float, *, svg: bool = False
+    ) -> FetchResult:
         remaining = deadline - self._clock()
         if remaining <= 0:
             raise _unavailable()
         url = ORIGIN + path
         if params:
             url += "?" + urlencode(sorted(params.items()), quote_via=quote)
+        headers = {"Accept": "image/svg+xml"} if svg else None
         try:
             async with asyncio.timeout(min(ATTEMPT_TIMEOUT_SECONDS, remaining)):
-                async with self._client.stream("GET", url) as response:
-                    self._check_response(response)
-                    data = _decode_json(await self._read_body(response))
+                async with self._client.stream("GET", url, headers=headers) as response:
+                    self._check_response(response, svg=svg)
+                    body = await self._read_body(response, SVG_LIMIT_BYTES if svg else None)
+                    data = _decode_svg(body) if svg else _decode_json(body)
                     if self._clock() >= deadline:
                         raise _unavailable()
                     return FetchResult(
@@ -290,6 +325,17 @@ class BadgeAppHTTP:
     async def get_json(self, path: str, params: dict | None = None) -> FetchResult:
         """Read only fixed-origin project resources; returned failures contain no body text."""
         _validate_target(path, params)
+        return await self._get(path, params)
+
+    async def get_svg(self, path: str) -> FetchResult:
+        """Read a bounded SVG badge as inert UTF-8 text, never rendering or executing it."""
+        if BADGE_SVG_PATH.fullmatch(path) is None:
+            raise DomainError(
+                "invalid_query", "Only documented public badge SVG paths are allowed."
+            )
+        return await self._get(path, None, svg=True)
+
+    async def _get(self, path: str, params: dict | None, *, svg: bool = False) -> FetchResult:
         deadline = self._clock() + OVERALL_TIMEOUT_SECONDS
         try:
             async with asyncio.timeout(OVERALL_TIMEOUT_SECONDS):
@@ -297,7 +343,7 @@ class BadgeAppHTTP:
                 while True:
                     await self._wait_for_start(deadline)
                     try:
-                        return await self._attempt(path, params, deadline)
+                        return await self._attempt(path, params, deadline, svg=svg)
                     except _Retryable as failure:
                         attempts += 1
                         # Retain Retry-After even when this call cannot retry again.

@@ -11,8 +11,19 @@ from best_practices_mcp.errors import DomainError
 from best_practices_mcp.models import ErrorResult
 
 NETWORK_TOOLS = frozenset(
-    {"find_project", "get_project_progress", "prepare_update_url", "prepare_update_script"}
+    {
+        "find_project",
+        "get_project_progress",
+        "get_project_badge_status",
+        "get_project_badge_svg",
+        "prepare_update_url",
+        "prepare_update_script",
+    }
 )
+BADGE_TITLES = {
+    "get_project_badge_status": "Get project badge status",
+    "get_project_badge_svg": "Get project badge SVG",
+}
 
 
 def tool_definition(name: str, description: str) -> Tool:
@@ -20,13 +31,16 @@ def tool_definition(name: str, description: str) -> Tool:
     mutation = name == "update_draft"
     return Tool(
         name=name,
+        title=BADGE_TITLES.get(name),
         description=description,
         input_schema=input_schema(name),
         output_schema=output_schema(name),
         annotations=ToolAnnotations(
             read_only_hint=not mutation,
             destructive_hint=mutation,
-            idempotent_hint=name not in NETWORK_TOOLS,
+            # Badge reads have no additional side effects; their observations may change.
+            # Preserve existing annotations on the previously published tools.
+            idempotent_hint=name not in NETWORK_TOOLS or name in BADGE_TITLES,
             open_world_hint=name in NETWORK_TOOLS,
         ),
     )
@@ -58,6 +72,10 @@ def tool_result(name: str, payload: dict) -> CallToolResult:
             "response_too_large",
             "The complete tool result exceeds the server response budget.",
             details={"limit_bytes": RESPONSE_LIMIT_BYTES},
-            recovery="Request fewer criteria or reduce the document size.",
+            recovery=(
+                "View the badge on BadgeApp's project page or report the oversized badge response."
+                if name in BADGE_TITLES
+                else "Request fewer criteria or reduce the document size."
+            ),
         )
     return result

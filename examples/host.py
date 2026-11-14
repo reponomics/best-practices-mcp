@@ -18,6 +18,7 @@ from pathlib import Path
 from mcp import Client, MCPError, StdioServerParameters
 
 READ_TOOLS = frozenset({"get_criteria", "find_project", "get_project_progress"})
+BADGE_TOOLS = frozenset({"get_project_badge_status", "get_project_badge_svg"})
 STORAGE_TOOLS = frozenset({"read_draft", "update_draft"})
 KNOWN_UPDATE_REJECTIONS = frozenset(
     {
@@ -68,7 +69,7 @@ async def discover(client: Client) -> dict:
     missing = READ_TOOLS - tools.keys()
     if missing:
         raise HostError("Missing required read tools: " + ", ".join(sorted(missing)))
-    for name in READ_TOOLS | ((DOCUMENT_TOOLS | STORAGE_TOOLS) & tools.keys()):
+    for name in READ_TOOLS | ((BADGE_TOOLS | DOCUMENT_TOOLS | STORAGE_TOOLS) & tools.keys()):
         tool = tools[name]
         if not tool.input_schema or not tool.output_schema:
             raise HostError(f"Tool {name} does not advertise input and output schemas.")

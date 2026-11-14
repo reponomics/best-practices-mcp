@@ -1,4 +1,4 @@
-"""Strict domain contracts for the bounded nine-tool v1 surface.
+"""Strict domain contracts for the bounded MCP tool surface.
 
 Models do not register tools or implement their future application behavior.
 Optional inputs use the public Pydantic omission sentinel: null is not omission.
@@ -24,6 +24,7 @@ from best_practices_mcp.documents import validate_document
 from best_practices_mcp.errors import DomainError
 
 Level = Literal["passing", "silver", "gold", "baseline-1", "baseline-2", "baseline-3"]
+BadgeFamily = Literal["best_practices", "baseline"]
 LEVELS: tuple[Level, ...] = ("passing", "silver", "gold", "baseline-1", "baseline-2", "baseline-3")
 PositiveInt = Annotated[int, Field(strict=True, gt=0)]
 NonNegativeInt = Annotated[int, Field(strict=True, ge=0)]
@@ -95,6 +96,19 @@ class ProjectInput(Model):
 
 class ProgressInput(CriteriaInput, ProjectInput):
     pass
+
+
+class BadgeStatusInput(ProjectInput):
+    family: BadgeFamily = Field(
+        default="best_practices",
+        description="Badge family to observe; returned as effective family.",
+    )
+
+
+class BadgeSVGInput(ProjectInput):
+    family: BadgeFamily = Field(
+        description="Badge family whose SVG and README snippet to retrieve."
+    )
 
 
 class BuildDraftInput(Model):
@@ -285,6 +299,55 @@ class GetProjectProgressResult(Result):
     observation: Observation
     catalog: CatalogRef
     summary_metadata: SummaryMetadata
+
+
+class BadgeProject(Model):
+    project_id: PositiveInt
+    name: str | None
+
+
+class BadgeObservation(Model):
+    source_url: str
+    fetched_at: str
+    service_attribution: str
+    project_entry_attribution: None
+    project_entry_license: None
+
+
+class BadgeProgress(Model):
+    field: Literal["tiered_percentage", "badge_percentage"]
+    value: float | int | None
+    level: Literal["baseline-1"] | None
+
+
+class GetProjectBadgeStatusResult(Result):
+    project: BadgeProject
+    family: BadgeFamily
+    badge_level: str | None
+    badge_state: Literal["earned", "in_progress", "unrecognized", "unknown"]
+    progress: BadgeProgress
+    updated_at: str | None
+    updated_at_status: Literal["valid", "missing", "invalid"]
+    observation: BadgeObservation
+    caveats: list[str]
+
+
+class SVGArtifact(Model):
+    svg: str
+    media_type: Literal["image/svg+xml"]
+    suggested_filename: str
+    encoded_size_bytes: NonNegativeInt
+
+
+class GetProjectBadgeSVGResult(Result):
+    project_id: PositiveInt
+    family: BadgeFamily
+    image_url: str
+    project_url: str
+    markdown: str
+    artifact: SVGArtifact
+    observation: BadgeObservation
+    caveats: list[str]
 
 
 class BuildDraftResult(Result):

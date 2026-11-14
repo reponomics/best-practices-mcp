@@ -45,7 +45,9 @@ async def main():
     assert field_aliases()
     server = create_server()
     tool_names = [tool.name for tool in await server.list_tools()]
-    assert tool_names == ["build_draft", "find_project", "get_criteria", "get_project_progress",
+    assert tool_names == ["build_draft", "find_project", "get_criteria",
+                          "get_project_badge_status", "get_project_badge_svg",
+                          "get_project_progress",
                           "prepare_update_script", "prepare_update_url", "read_draft",
                           "update_draft", "validate_draft"]
     result = await server.call_tool("get_criteria", {"level": "passing"})

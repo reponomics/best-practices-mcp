@@ -8,8 +8,9 @@ This is an independent Reponomics project, not affiliated with, sponsored by, en
 | --- | --- |
 | [Roadmap](roadmap.md) | Planned work and proposals under consideration |
 | [Contributing](../CONTRIBUTING.md) | Development setup, validation commands and MCP client tooling |
-| [Server specification](specification.md) | Supported behavior, nine tools and host/server responsibilities |
+| [Server specification](specification.md) | Supported behavior, eleven tools and host/server responsibilities |
 | [Design decisions](design.md) | Human-review boundary, deliberate exclusion of direct saves and documented-procedure authority |
+| [ADR 0001: Badge image and status tools](adr/0001-badge-image-and-status-tools.md) | Accepted separation of SVG retrieval, compact status observations and detailed progress; reasons to keep update time and progress together |
 | [Architecture](architecture.md) | Modules, data flow, protocol adaptation and persistence boundaries |
 | [Implementation contracts](contracts.md) | Exact payloads, errors, size/network policies and edge cases |
 | [Upstream compatibility](upstream-compatibility.md) | Source baseline, routes, catalog conventions and update procedure |

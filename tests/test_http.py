@@ -13,6 +13,8 @@ from best_practices_mcp import http
 from best_practices_mcp.errors import DomainError
 from best_practices_mcp.http import ORIGIN, BadgeAppHTTP
 
+SVG = '<svg xmlns="http://www.w3.org/2000/svg"><text>Badge &amp; 雪</text></svg>\n'
+
 
 class Clock:
     def __init__(self):
@@ -666,6 +668,243 @@ def test_non_retryable_transport_errors_are_safe_and_not_retried(exception) -> N
                 await api.get_json("/projects.json")
             assert error.value.code == "upstream_unavailable"
             assert "secret" not in json.dumps(error.value.to_payload())
+
+    asyncio.run(run())
+    assert len(calls) == 1
+
+
+@pytest.mark.parametrize("family", ["badge", "baseline"])
+@pytest.mark.parametrize("format", ["json", "svg"])
+def test_badge_routes_return_exact_content_and_observation(family, format) -> None:
+    requests = []
+    path = f"/projects/123/{family}.{format}"
+
+    def handler(request):
+        requests.append(request)
+        if format == "svg":
+            return httpx2.Response(
+                200, content=SVG.encode(), headers={"Content-Type": "image/svg+xml; charset=utf-8"}
+            )
+        return httpx2.Response(200, json={"id": 123, "badge_level": "passing"})
+
+    async def run():
+        async with client(handler) as api:
+            return await getattr(api, f"get_{format}")(path)
+
+    result = asyncio.run(run())
+    assert result.data == (SVG if format == "svg" else {"id": 123, "badge_level": "passing"})
+    assert result.source_url == ORIGIN + path
+    assert result.fetched_at == "2026-11-09T00:00:00+00:00"
+    assert "content-type" in result.headers
+    assert len(requests) == 1
+    assert requests[0].method == "GET"
+    assert requests[0].url.query == b""
+    assert requests[0].headers["accept"] == (
+        "image/svg+xml" if format == "svg" else "application/json"
+    )
+
+
+@pytest.mark.parametrize("family", ["badge", "baseline"])
+@pytest.mark.parametrize("format", ["json", "svg"])
+def test_badge_not_found_preserves_project_error(family, format) -> None:
+    path = f"/projects/123/{family}.{format}"
+
+    async def run():
+        async with client(lambda _: httpx2.Response(404, text="secret")) as api:
+            with pytest.raises(DomainError) as error:
+                await getattr(api, f"get_{format}")(path)
+            assert error.value.code == "project_not_found"
+            assert error.value.details["source_url"] == ORIGIN + path
+            assert "secret" not in json.dumps(error.value.to_payload())
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "https://evil.invalid/projects/123/badge.svg",
+        "//evil.invalid/projects/123/badge.svg",
+        "/en/projects/123/badge.svg",
+        "/projects/0/badge.svg",
+        "/projects/01/badge.svg",
+        "/projects/123/../badge.svg",
+        "/projects/123/badge.svg?token=secret",
+        "/projects/123/badge.svg#fragment",
+        "/projects/123/badge",
+        "/projects/123/badge.json",
+        "/projects/123.json",
+        "/projects/123.svg",
+        "/badge_static/gold.svg",
+    ],
+)
+def test_svg_rejects_noncanonical_or_wrong_format_target_without_dispatch(path) -> None:
+    async def run():
+        async with client(lambda _: pytest.fail("Request dispatched")) as api:
+            with pytest.raises(DomainError) as error:
+                await api.get_svg(path)
+            assert error.value.code == "invalid_query"
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("family", ["badge", "baseline"])
+def test_badge_json_rejects_parameters_and_svg_paths_without_dispatch(family) -> None:
+    async def run():
+        async with client(lambda _: pytest.fail("Request dispatched")) as api:
+            for path, params in [
+                (f"/projects/123/{family}.json", {"page": 1}),
+                (f"/projects/123/{family}.svg", None),
+            ]:
+                with pytest.raises(DomainError) as error:
+                    await api.get_json(path, params)
+                assert error.value.code == "invalid_query"
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    "body, content_type",
+    [
+        (SVG.encode(), "application/json"),
+        (SVG.encode(), "application/xml"),
+        (SVG.encode(), "text/html"),
+        (b'{"id":123}', "image/svg+xml"),
+        (b'<html xmlns="http://www.w3.org/2000/svg">secret</html>', "image/svg+xml"),
+        (b"<svg>secret</svg>", "image/svg+xml"),
+        (b'<svg xmlns="https://evil.invalid">secret</svg>', "image/svg+xml"),
+        (b'<svg xmlns="http://www.w3.org/2000/svg">', "image/svg+xml"),
+        (b'<svg xmlns="http://www.w3.org/2000/svg">\xff</svg>', "image/svg+xml"),
+        (SVG.encode("utf-16"), "image/svg+xml"),
+        (
+            b'<!DOCTYPE svg SYSTEM "https://evil.invalid/secret">' + SVG.encode(),
+            "image/svg+xml",
+        ),
+        (
+            b'<!DOCTYPE svg [<!ENTITY secret "expanded">]>' + SVG.encode(),
+            "image/svg+xml",
+        ),
+        (b'<!ENTITY secret "expanded">' + SVG.encode(), "image/svg+xml"),
+        (
+            b'<svg xmlns="http://www.w3.org/2000/svg">&secret;</svg>',
+            "image/svg+xml",
+        ),
+    ],
+)
+def test_invalid_svg_is_safe_not_retried_and_stream_is_closed(body, content_type) -> None:
+    calls = []
+    stream = Stream([body])
+
+    def handler(request):
+        calls.append(request)
+        return httpx2.Response(200, stream=stream, headers={"content-type": content_type})
+
+    async def run():
+        async with client(handler) as api:
+            with pytest.raises(DomainError) as error:
+                await api.get_svg("/projects/123/badge.svg")
+            assert error.value.code == "upstream_invalid_response"
+            assert "secret" not in json.dumps(error.value.to_payload())
+
+    asyncio.run(run())
+    assert stream.closed
+    assert len(calls) == 1
+
+
+@pytest.mark.parametrize("compressed", [False, True])
+@pytest.mark.parametrize("within_limit", [False, True])
+def test_svg_limit_counts_decoded_bytes_and_preserves_exact_boundary(
+    monkeypatch, compressed, within_limit
+) -> None:
+    body = SVG.encode()
+    monkeypatch.setattr(http, "SVG_LIMIT_BYTES", len(body) if within_limit else len(body) - 1)
+    stream = Stream([gzip.compress(body) if compressed else body])
+    headers = {"content-type": "image/svg+xml"}
+    if compressed:
+        headers["content-encoding"] = "gzip"
+
+    async def run():
+        async with client(lambda _: httpx2.Response(200, stream=stream, headers=headers)) as api:
+            if within_limit:
+                assert (await api.get_svg("/projects/123/baseline.svg")).data == SVG
+            else:
+                with pytest.raises(DomainError) as error:
+                    await api.get_svg("/projects/123/baseline.svg")
+                assert error.value.code == "upstream_invalid_response"
+
+    asyncio.run(run())
+    assert stream.closed
+
+
+def test_mixed_svg_json_calls_share_pacing_retries_and_block_cookies() -> None:
+    clock = Clock()
+    starts = []
+    requests = []
+
+    def handler(request):
+        starts.append(clock())
+        requests.append(request)
+        if len(starts) == 1:
+            return httpx2.Response(503, headers={"set-cookie": "session=secret"})
+        if request.url.path.endswith(".svg"):
+            return httpx2.Response(200, text=SVG, headers={"content-type": "image/svg+xml"})
+        return httpx2.Response(200, json={"id": 123})
+
+    async def run():
+        async with client(handler, clock) as api:
+            results = await asyncio.gather(
+                api.get_svg("/projects/123/badge.svg"),
+                api.get_json("/projects/123/baseline.json"),
+                api.get_json("/projects/123.json"),
+            )
+            assert results[0].data == SVG
+            assert results[1].data == results[2].data == {"id": 123}
+
+    asyncio.run(run())
+    assert len(starts) == 4
+    assert all(after - before >= 1 for before, after in zip(starts, starts[1:]))
+    assert all("cookie" not in request.headers for request in requests)
+    for request in requests:
+        assert request.headers["accept"] == (
+            "image/svg+xml" if request.url.path.endswith(".svg") else "application/json"
+        )
+
+
+def test_svg_retry_after_cooldown_applies_to_later_json_reads() -> None:
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        return httpx2.Response(429, headers={"retry-after": "90"})
+
+    async def run():
+        async with client(handler) as api:
+            for method, path in [
+                (api.get_svg, "/projects/123/badge.svg"),
+                (api.get_json, "/projects/123/badge.json"),
+            ]:
+                with pytest.raises(DomainError) as error:
+                    await method(path)
+                assert error.value.code == "rate_limited"
+                assert error.value.retry_after_seconds == 90
+
+    asyncio.run(run())
+    assert len(calls) == 1
+
+
+@pytest.mark.parametrize("status", [301, 302, 307])
+def test_svg_redirects_are_not_followed_or_retried(status) -> None:
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        return httpx2.Response(status, headers={"location": "https://evil.invalid/secret"})
+
+    async def run():
+        async with client(handler) as api:
+            with pytest.raises(DomainError) as error:
+                await api.get_svg("/projects/123/badge.svg")
+            assert error.value.code == "upstream_invalid_response"
 
     asyncio.run(run())
     assert len(calls) == 1

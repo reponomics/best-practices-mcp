@@ -1,12 +1,14 @@
 # Upstream compatibility
 
-Compatibility is based on BadgeApp revision **868e1677339a3fdb48851b0c2ae8862c553115eb**. A source pin identifies the documented and tested baseline; it does not establish which revision the live website currently runs. The server follows documented automation procedures and prepares artifacts without predicting edit-form or save-time outcomes.
+Criteria, full-record reads and transfer compatibility are based on BadgeApp revision **868e1677339a3fdb48851b0c2ae8862c553115eb**. The added compact badge JSON and SVG routes use the separately scoped reference below. A source pin identifies the documented and tested baseline; it does not establish which revision the live website currently runs. The server follows documented automation procedures and prepares artifacts without predicting edit-form or save-time outcomes.
 
 ## Sources and authority
 
 The primary references are the pinned [API documentation](https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/docs/api.md), [automation proposals](https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/docs/automation-proposals.md), [automation approach](https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/docs/automation-approach.md), and [repository JSON guidance](https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/docs/bestpractices-json.md). Catalog generation uses the pinned criteria YAML and English locale; packaged provenance records source hashes and generator details.
 
 Vendored criteria, locale, documentation and license notices support reproducibility. Required tests derive expectations from documented procedures, criteria definitions and the agreed contract. Synthetic form fixtures retain a concise derivation record with pinned upstream references, without claiming those forms reproduce the live application. See the [testing policy](testing-policy.md) and [design boundary](design.md#follow-documented-procedures-not-internal-save-behavior).
+
+Badge-specific compatibility follows [ADR 0001](adr/0001-badge-image-and-status-tools.md), accepted for implementation on 2026-11-14, using revision **31325acd7963e0c9203da0ff798802a766237517**: [routes](https://github.com/ossf/best-practices-badge/blob/31325acd7963e0c9203da0ff798802a766237517/config/routes.rb), [badge controller](https://github.com/ossf/best-practices-badge/blob/31325acd7963e0c9203da0ff798802a766237517/app/controllers/projects_controller.rb), [Best Practices JSON view](https://github.com/ossf/best-practices-badge/blob/31325acd7963e0c9203da0ff798802a766237517/app/views/projects/badge.json.jbuilder) and [Baseline JSON view](https://github.com/ossf/best-practices-badge/blob/31325acd7963e0c9203da0ff798802a766237517/app/views/projects/baseline_badge.json.jbuilder). This additional reference covers only the four badge endpoints and their fields; it does not update the bundled catalog or transfer semantics. Synthetic fixtures exercise the agreed adapters rather than executing upstream Ruby or proving the deployed revision.
 
 ## Routes and public observations
 
@@ -17,11 +19,15 @@ All network requests use GET against `https://www.bestpractices.dev`, without au
 | Project lookup/progress | `/projects/{project_id}.json`; a missing ID is empty discovery or `project_not_found` for progress/generation |
 | URL discovery | `/projects.json?url={query}&page={page}`; the URL is a query value, never fetched; preserve upstream candidates and their own search semantics |
 | Text discovery | `/projects.json?q={query}&page={page}`; preserve returned candidate order and explicit pagination uncertainty |
+| Compact badge status | `/projects/{project_id}/badge.json` or `/projects/{project_id}/baseline.json`; one family, no query parameters, and `project_not_found` for a missing ID |
+| SVG badge | `/projects/{project_id}/badge.svg` or `/projects/{project_id}/baseline.svg`; UTF-8 SVG text, no query parameters, and `project_not_found` for a missing ID |
 | Proposal/edit link | `/en/projects/{project_id}/{level}/edit`; all six level names map directly to section names |
 
 Query keys are sorted and spaces percent-encoded as `%20` to use the site's canonical request representation without following redirects. Discovery matching is intentionally more permissive than generator identity checks: an upstream search candidate is not discarded merely because strict repository-URL identity comparison cannot establish equality.
 
 Omitted public fields remain absent: neither a missing status nor a missing justification is synthesized. Unexpected supplied JSON values remain visible for diagnostics. Artifact generators use the public record to verify the registered target and supplied identity, not to classify supplied answers or infer the edit form's current state.
+
+The compact badge observations use a distinct result contract. They preserve unknown badge strings and distinguish missing/malformed timestamp text, but reject unexpected field types. Best Practices exposes `tiered_percentage`; Baseline exposes `badge_percentage` for level 1 and may use `baseline-pct-N` as the badge display value. `updated_at` is the project-record update time, not a submission receipt. Neither endpoint supplies project-entry attribution/license; those fields remain null and service attribution is separately named. SVG bodies are returned as data without rendering or sanitization after content-type, UTF-8 and XML-root checks; DTD/entity declarations are rejected. Both representations share the existing pacing and retry policy.
 
 ## Catalog and transfer semantics
 

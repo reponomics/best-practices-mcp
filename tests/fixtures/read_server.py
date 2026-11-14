@@ -4,6 +4,7 @@ This file is never imported by the installed CLI and accepts no origin override.
 """
 
 import asyncio
+import re
 
 import httpx2
 
@@ -67,10 +68,33 @@ def respond(request):
     assert request.url.host == "www.bestpractices.dev"
     if request.url.path == "/projects.json":
         return search_response(request)
+    badge = re.fullmatch(r"/projects/([1-9][0-9]*)/(badge|baseline)\.(json|svg)", request.url.path)
+    if badge:
+        return badge_response(*badge.groups())
     project_id = int(request.url.path.rsplit("/", 1)[-1].removesuffix(".json"))
     if project_id in PROJECTS:
         return httpx2.Response(200, json=PROJECTS[project_id])
     return httpx2.Response(404, json={"error": "not found"})
+
+
+def badge_response(identifier, family, format):
+    """Synthetic compact views; only the five fields upstream's badge views emit."""
+    project_id = int(identifier)
+    if project_id not in PROJECTS:
+        return httpx2.Response(404)
+    if format == "svg":
+        svg = f'<svg xmlns="http://www.w3.org/2000/svg"><text>{family} 雪</text></svg>\n'
+        return httpx2.Response(200, text=svg, headers={"Content-Type": "image/svg+xml"})
+    result = {
+        "id": project_id,
+        "name": PROJECTS[project_id]["name"],
+        "updated_at": "2026-11-13T12:34:56Z",
+    }
+    if family == "badge":
+        result.update(badge_level="silver", tiered_percentage=220)
+    else:
+        result.update(badge_level="baseline-pct-37", badge_percentage=37)
+    return httpx2.Response(200, json=result)
 
 
 def factory():

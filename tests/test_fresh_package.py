@@ -1,5 +1,6 @@
 """Fresh qualification must be opt-in, isolated and honest about failures."""
 
+import asyncio
 import importlib.util
 import json
 import os
@@ -8,8 +9,28 @@ import sys
 from pathlib import Path
 
 import pytest
+from mcp import StdioServerParameters
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_package_probe_catalog_and_storage_against_real_server(tmp_path):
+    spec = importlib.util.spec_from_file_location(
+        "package_probe", ROOT / "scripts/package_probe.py"
+    )
+    probe = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(probe)
+    params = StdioServerParameters(
+        command=str(probe.executable()),
+        cwd=str(tmp_path),
+        env={"BESTPRACTICES_DATA_DIR": str(tmp_path / "drafts")},
+    )
+
+    async def exercise():
+        async with asyncio.timeout(30):
+            await probe.catalog_and_storage(params)
+
+    asyncio.run(exercise())
 
 
 @pytest.fixture
