@@ -15,6 +15,8 @@ TOOLS = [
     "build_draft",
     "find_project",
     "get_criteria",
+    "get_project_badge_status",
+    "get_project_badge_svg",
     "get_project_progress",
     "prepare_update_script",
     "prepare_update_url",
