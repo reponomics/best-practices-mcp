@@ -9,3 +9,4 @@ Planned items are accepted directions for future work, without a committed relea
 ## Proposed
 
 - **Support translations.** Explore localized criteria and language selection for BadgeApp interactions. Define language coverage, fallback behavior and translation maintenance before adding this capability; the current catalog and generated edit links use English.
+- **BadgeApp API coverage.** Expand tools to cover more of the BadgeApp public API - see https://github.com/ossf/best-practices-badge/blob/main/best_practices.openapi.yaml.

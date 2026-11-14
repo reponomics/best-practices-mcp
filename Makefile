@@ -62,6 +62,14 @@ catalog: ## Regenerate packaged catalog from pinned vendored inputs (offline)
 catalog-check: ## Check catalog and provenance reproducibility without rewriting
 	$(PYTHON) scripts/generate_catalog.py --check
 
+.PHONY: upstream-check upstream-prepare
+
+upstream-check: ## Compare retained BadgeApp sources with production (network, read-only)
+	$(PYTHON) scripts/check_upstream.py
+
+upstream-prepare: ## Prepare local source/catalog/doc updates for review (network, writes files)
+	$(PYTHON) scripts/check_upstream.py --prepare-update
+
 test-network: ## Verify bounded HTTP retries, pacing and cancellation (offline)
 	$(PYTHON) -m pytest tests/test_http.py
 

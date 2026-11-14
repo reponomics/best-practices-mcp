@@ -1,0 +1,125 @@
+name: Upstream criteria update
+
+on:
+  schedule:
+    - cron: '23 9 * * 1'
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    types: [closed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: upstream-criteria-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    if: >-
+      github.repository == 'reponomics/best-practices-mcp' &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
+      vars.UPSTREAM_UPDATES_PAUSED != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out trusted generator and current base
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Install catalog generation dependency
+        run: |
+          python3 -m venv venv
+          venv/bin/python -m pip install 'PyYAML==6.0.3'
+      - name: Prepare upstream sources, catalog and documentation pins
+        id: prepare
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: venv/bin/python scripts/check_upstream.py --prepare-update | tee "$GITHUB_STEP_SUMMARY"
+      - name: Create repository-scoped maintenance App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-issues: write
+          permission-pull-requests: write
+      - name: Resolve the App bot identity for commit sign-off
+        id: bot
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: venv/bin/python scripts/upstream_pr.py --app-slug "$APP_SLUG"
+      - name: Create or update the source refresh PR
+        id: pr
+        uses: peter-evans/create-pull-request@3ffccacd46053766916f087ce41d627c0b8cf2d1 # v8.1.3
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          branch: automation/upstream-criteria
+          base: main
+          delete-branch: true
+          sign-commits: true
+          signoff: true
+          committer: ${{ steps.bot.outputs.identity }}
+          author: ${{ steps.bot.outputs.identity }}
+          commit-message: 'fix(catalog): refresh upstream BadgeApp sources'
+          title: 'fix(catalog): refresh upstream BadgeApp sources'
+          body-path: build/upstream/pr.md
+          draft: false
+          add-paths: |
+            vendor/badgeapp/criteria/criteria.yml
+            vendor/badgeapp/criteria/baseline_criteria.yml
+            vendor/badgeapp/config/locales/en.yml
+            vendor/badgeapp/docs/automation-approach.md
+            vendor/badgeapp/docs/automation-proposals.md
+            vendor/badgeapp/LICENSE
+            vendor/badgeapp/source.json
+            src/best_practices_mcp/data/catalog.json
+            src/best_practices_mcp/data/provenance.json
+            src/best_practices_mcp/data/BADGEAPP-LICENSE.txt
+            docs/upstream-compatibility.md
+            docs/transfer-rules.md
+            docs/design.md
+            docs/specification.md
+            THIRD_PARTY_NOTICES.md
+      - name: Synchronize advisory labels
+        if: steps.pr.outputs.pull-request-number != ''
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR_NUMBER: ${{ steps.pr.outputs.pull-request-number }}
+        run: venv/bin/python scripts/upstream_pr.py --pr-number "$PR_NUMBER"
+      - name: Report generation failure after publishing the reviewable patch
+        if: steps.prepare.outputs.generation-failed == 'true'
+        run: |
+          echo 'Catalog generation failed. Review the source update PR and repair generation before merging.' >&2
+          exit 1
+
+  delete-merged-branch:
+    if: >-
+      github.repository == 'reponomics/best-practices-mcp' &&
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'automation/upstream-criteria'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Check out trusted branch cleanup helper
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Delete the merged automation branch if it has not advanced
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          MERGED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: python3 scripts/upstream_pr.py --merged-head "$MERGED_HEAD"

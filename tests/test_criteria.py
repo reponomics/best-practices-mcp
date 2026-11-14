@@ -25,7 +25,11 @@ COUNTS = {
     "baseline-2": 19,
     "baseline-3": 21,
 }
-REVISION = "868e1677339a3fdb48851b0c2ae8862c553115eb"
+
+
+@pytest.fixture(scope="module")
+def source_manifest():
+    return json.loads((ROOT / "vendor/badgeapp/source.json").read_text(encoding="utf-8"))
 
 
 def _mapping_items(value):
@@ -71,12 +75,17 @@ def yaml_criteria():
         ("baseline-3", ("baseline-3", "baseline-2", "baseline-1")),
     ],
 )
-def test_all_catalog_records_match_yaml_and_english_locale(yaml_criteria, level, source_levels):
+def test_all_catalog_records_match_yaml_and_english_locale(
+    yaml_criteria, source_manifest, level, source_levels
+):
     # The agreed catalog contract uses locale wording, level-bounded inherited
     # details, original_id aliases, and YAML flags with their documented entailments.
     definitions, locale = yaml_criteria
     source_level = source_levels[0]
     expected = definitions[source_level]
+    source_url = (
+        f"{source_manifest['repository']}/blob/{source_manifest['revision']}/config/locales/en.yml"
+    )
     result = get_criteria(level)
     validate_output("get_criteria", result)
     assert len(result["criteria"]) == COUNTS[level]
@@ -109,7 +118,7 @@ def test_all_catalog_records_match_yaml_and_english_locale(yaml_criteria, level,
             "met_justification_required": raw.get("met_justification_required", False)
             or raw.get("met_url_required", False),
             "met_url_required": raw.get("met_url_required", False),
-            "source_url": f"https://github.com/ossf/best-practices-badge/blob/{REVISION}/config/locales/en.yml",
+            "source_url": source_url,
         }
 
 
@@ -236,10 +245,18 @@ def test_baseline_aliases_cover_both_fields_without_guessing() -> None:
     assert field_aliases()
 
 
-def test_provenance_identifies_all_inputs_and_retains_source_metadata() -> None:
-    source = json.loads((ROOT / "vendor/badgeapp/source.json").read_text(encoding="utf-8"))
+def test_provenance_identifies_all_inputs_and_retains_source_metadata(source_manifest) -> None:
+    source = source_manifest
     data = provenance()
-    assert data["revision"] == source["revision"] == REVISION
+    assert data["revision"] == source["revision"]
+    assert data["repository"] == source["repository"]
+    assert data["generated_at"] == source["generated_at"]
+    assert get_criteria()["catalog"] == {
+        "revision": source["revision"],
+        "source_url": f"{source['repository']}/blob/{source['revision']}/criteria/criteria.yml",
+        "generated_at": source["generated_at"],
+        "format_version": 1,
+    }
     assert data["counts"] == COUNTS
     assert data["files"] == source["files"]
     assert (
