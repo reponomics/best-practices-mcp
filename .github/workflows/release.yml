@@ -34,6 +34,7 @@ jobs:
       contents: write
     outputs:
       prerelease: ${{ steps.draft.outputs.prerelease }}
+      release_id: ${{ steps.draft.outputs.release_id }}
     steps:
       - name: Verify draft and tag
         id: draft
@@ -47,16 +48,25 @@ jobs:
           import subprocess
           from pathlib import Path
 
-          def api(path):
+          def api(path, *options):
               return json.loads(subprocess.check_output(
-                  ['gh', 'api', 'repos/' + os.environ['GITHUB_REPOSITORY'] + '/' + path],
+                  ['gh', 'api', *options, 'repos/' + os.environ['GITHUB_REPOSITORY'] + '/' + path],
                   text=True, timeout=60,
               ))
 
           tag = os.environ['RELEASE_TAG']
           if re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+(?:-beta\.[0-9]+)?', tag) is None:
               raise SystemExit('Invalid release tag')
-          release = api('releases/tags/' + tag)
+          # The tag endpoint only returns published releases. List drafts with
+          # push access, match the exact tag across all pages, then read by ID.
+          pages = api('releases?per_page=100', '--paginate', '--slurp')
+          matches = [release for page in pages for release in page if release['tag_name'] == tag]
+          if len(matches) != 1:
+              raise SystemExit('Expected exactly one release for the candidate tag')
+          release_id = str(matches[0]['id'])
+          if os.environ.get('RELEASE_ID', release_id) != release_id:
+              raise SystemExit('Draft release identity changed during publication')
+          release = api('releases/' + release_id)
           ref = api('git/ref/tags/' + tag)['object']
           if ref['type'] != 'commit' or ref['sha'] != os.environ['GITHUB_SHA']:
               raise SystemExit('Release tag no longer identifies this workflow revision')
@@ -66,6 +76,7 @@ jobs:
               raise SystemExit('Draft prerelease flag does not match the tag')
           with Path(os.environ['GITHUB_OUTPUT']).open('a', encoding='utf-8') as output:
               output.write('prerelease=' + str(release['prerelease']).lower() + '\n')
+              output.write('release_id=' + release_id + '\n')
           PY
 
   build:
@@ -75,6 +86,7 @@ jobs:
     timeout-minutes: 30
     outputs:
       candidate: ${{ steps.candidate.outputs.artifact-id }}
+      release_id: ${{ needs.preflight.outputs.release_id }}
     steps:
       - name: Check out the candidate commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -310,6 +322,8 @@ jobs:
   github-release:
     name: Attach evidence and publish the immutable GitHub release
     needs: [build, publish]
+    env:
+      RELEASE_ID: ${{ needs.build.outputs.release_id }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -367,7 +381,7 @@ jobs:
               return subprocess.check_output(['gh', *args], text=True, timeout=120)
 
           def draft(repository, tag):
-              release = json.loads(gh('api', 'repos/' + repository + '/releases/tags/' + tag))
+              release = json.loads(gh('api', 'repos/' + repository + '/releases/' + os.environ['RELEASE_ID']))
               if not release['draft'] or release['immutable'] or release['tag_name'] != tag:
                   raise SystemExit('Release is no longer a mutable draft')
               if release['prerelease'] != ('-beta.' in tag):

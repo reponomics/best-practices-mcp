@@ -127,10 +127,11 @@ def test_checksum_manifest_is_checked(candidate):
         verification_namespace()["verify"](candidate)
 
 
-def run_draft_preflight(monkeypatch, tmp_path, **changes):
+def run_draft_preflight(monkeypatch, tmp_path, *, listed=None, expected_id=None, **changes):
     import subprocess
 
     release = {
+        "id": 123,
         "tag_name": "v0.2.0-beta.1",
         "draft": True,
         "immutable": False,
@@ -141,10 +142,23 @@ def run_draft_preflight(monkeypatch, tmp_path, **changes):
     monkeypatch.setenv("GITHUB_SHA", "a" * 40)
     monkeypatch.setenv("GITHUB_REPOSITORY", "reponomics/best-practices-mcp")
     monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "output"))
+    monkeypatch.delenv("RELEASE_ID", raising=False)
+    if expected_id is not None:
+        monkeypatch.setenv("RELEASE_ID", expected_id)
 
     def query(command, **kwargs):
-        if "/git/ref/" in command[-1]:
+        endpoint = command[-1]
+        base = "repos/reponomics/best-practices-mcp/"
+        if endpoint == base + "releases?per_page=100":
+            assert command[2:4] == ["--paginate", "--slurp"]
+            pages = [
+                [{"id": 99, "tag_name": "v0.2.0-beta.10", "draft": False}],
+                [{"id": 123, "tag_name": "v0.2.0-beta.1", "draft": True}],
+            ]
+            return json.dumps(pages if listed is None else listed)
+        if endpoint == base + "git/ref/tags/v0.2.0-beta.1":
             return json.dumps({"object": {"type": "commit", "sha": "a" * 40}})
+        assert endpoint == base + "releases/123", f"Unexpected API endpoint: {endpoint}"
         return json.dumps(release)
 
     monkeypatch.setattr(subprocess, "check_output", query)
@@ -154,7 +168,23 @@ def run_draft_preflight(monkeypatch, tmp_path, **changes):
 
 def test_draft_preflight_preserves_prerelease_flag(monkeypatch, tmp_path):
     run_draft_preflight(monkeypatch, tmp_path)
-    assert (tmp_path / "output").read_text() == "prerelease=true\n"
+    assert (tmp_path / "output").read_text() == "prerelease=true\nrelease_id=123\n"
+
+
+@pytest.mark.parametrize("count", [0, 2])
+def test_draft_lookup_rejects_missing_or_ambiguous_tag(monkeypatch, tmp_path, count):
+    listed = [[{"id": 123, "tag_name": "v0.2.0-beta.1"}] for _ in range(count)]
+    with pytest.raises(SystemExit, match="exactly one"):
+        run_draft_preflight(monkeypatch, tmp_path, listed=listed)
+
+
+def test_finalization_rejects_replacement_draft(monkeypatch, tmp_path):
+    with pytest.raises(SystemExit, match="identity changed"):
+        run_draft_preflight(monkeypatch, tmp_path, expected_id="456")
+
+
+def test_finalization_accepts_original_draft(monkeypatch, tmp_path):
+    run_draft_preflight(monkeypatch, tmp_path, expected_id="123")
 
 
 @pytest.mark.parametrize("changes", [{"draft": False}, {"immutable": True}, {"prerelease": False}])
@@ -176,6 +206,8 @@ def test_read_only_build_and_project_free_privileged_jobs():
         assert not any("make " in item.get("run", "") for item in JOBS[name]["steps"])
     assert JOBS["publish"]["environment"]["name"] == "pypi"
     assert JOBS["github-release"]["needs"] == ["build", "publish"]
+    assert JOBS["build"]["outputs"]["release_id"] == "${{ needs.preflight.outputs.release_id }}"
+    assert JOBS["github-release"]["env"]["RELEASE_ID"] == "${{ needs.build.outputs.release_id }}"
 
 
 def test_scan_failure_blocks_bundle_and_pypi_gets_only_archives():
@@ -209,6 +241,7 @@ def test_final_publisher_checks_uploaded_assets_before_sealing(candidate, monkey
     import subprocess
 
     monkeypatch.chdir(candidate.parent)
+    monkeypatch.setenv("RELEASE_ID", "123")
     monkeypatch.setenv("GITHUB_REPOSITORY", "reponomics/best-practices-mcp")
     signatures = candidate.parent / "attestations"
     signatures.mkdir()
@@ -237,8 +270,10 @@ def test_final_publisher_checks_uploaded_assets_before_sealing(candidate, monkey
         if "/git/ref/" in command[-1]:
             sha = "b" * 40 if state["uploaded"] and mutation == "moved_tag" else "a" * 40
             return json.dumps({"object": {"type": "commit", "sha": sha}})
+        assert command[-1] == "repos/reponomics/best-practices-mcp/releases/123"
         return json.dumps(
             {
+                "id": 123,
                 "tag_name": "v0.2.0-beta.1",
                 "draft": True,
                 "immutable": False,
