@@ -11,6 +11,10 @@ on:
         description: Published immutable release tag to verify (v0.2.0-beta.3 or newer)
         required: true
         type: string
+      commit:
+        description: Expected full source commit SHA from the release/tag history
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -21,10 +25,7 @@ concurrency:
 
 jobs:
   verify:
-    name: Verify public assets and publisher identities
-    permissions:
-      contents: read
-      actions: read
+    name: Follow the release verification guide
     if: >-
       github.repository == 'reponomics/best-practices-mcp' &&
       ((github.event_name == 'workflow_run' &&
@@ -35,17 +36,31 @@ jobs:
        (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'))
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
     env:
       RELEASE_TAG: ${{ github.event.workflow_run.head_branch || inputs.tag }}
-      EXPECTED_SHA: ${{ github.event.workflow_run.head_sha }}
+      EXPECTED_SHA: ${{ github.event.workflow_run.head_sha || inputs.commit }}
+      REPOSITORY: reponomics/best-practices-mcp
+      GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Initialize failure evidence
+      - name: Select the release used in the guide's commands
         run: |
           mkdir -p "$RUNNER_TEMP/release-verification"
-          printf '{"status":"not_started","reason":"Verifier setup has not completed"}\n' > "$RUNNER_TEMP/release-verification/report.json"
-          printf 'UV_PROJECT_ENVIRONMENT=%s/release-verification-tools\nREPORT_DIRECTORY=%s/release-verification\n' \
-            "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
-      - name: Check out trusted verifier and lockfile
+          exec > >(tee "$RUNNER_TEMP/release-verification/setup.log") 2>&1
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?$ ]]
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          printf 'Release: %s\nExpected commit: %s\n' "$RELEASE_TAG" "$EXPECTED_SHA"
+          version="${RELEASE_TAG#v}"
+          version="${version/-beta./b}"
+          {
+            echo "WHEEL=best_practices_mcp-$version-py3-none-any.whl"
+            echo "SDIST=best_practices_mcp-$version.tar.gz"
+            echo "UV_PROJECT_ENVIRONMENT=$RUNNER_TEMP/release-verification-tools"
+          } >> "$GITHUB_ENV"
+          gh --version
+      - name: Check out only the locked verification tools
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # workflow_run uses the default branch SHA, never the release's code.
@@ -54,34 +69,72 @@ jobs:
           persist-credentials: false
           sparse-checkout-cone-mode: false
           sparse-checkout: |
-            /scripts/verify_published_release.py
             /pyproject.toml
             /uv.lock
-      - name: Set up verifier Python
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version: '3.11'
-      - name: Set up pinned environment manager
+      - name: Set up uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           version-file: pyproject.toml
           enable-cache: false
-      - name: Install only locked verification tools
-        run: uv sync --locked --only-group verification-tools --no-install-project --python 3.11
-      - name: Verify downloaded public release
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Install the locked PyPI attestation verifier
         run: |
-          args=(--tag "$RELEASE_TAG" --output-dir "$REPORT_DIRECTORY")
-          if [[ -n "$EXPECTED_SHA" ]]; then
-            args+=(--expected-sha "$EXPECTED_SHA")
-          fi
-          "$UV_PROJECT_ENVIRONMENT/bin/python" scripts/verify_published_release.py "${args[@]}"
-      - name: Retain verification report and evidence
+          uv sync --locked --only-group verification-tools --no-install-project --python 3.11 \
+            2>&1 | tee -a "$RUNNER_TEMP/release-verification/setup.log"
+      # Keep these commands aligned with docs/verification.md, sections 1–4.
+      # Human inspection of publisher metadata and scan reports remains manual.
+      - name: 1. Download and authenticate release assets
+        run: |
+          exec > >(tee "$RUNNER_TEMP/release-verification/1-assets.log") 2>&1
+          gh release verify "$RELEASE_TAG" --repo "$REPOSITORY"
+          gh release download "$RELEASE_TAG" --repo "$REPOSITORY" --dir "$RUNNER_TEMP/release-verification/assets"
+          cd "$RUNNER_TEMP/release-verification/assets"
+          for asset in *; do
+            gh release verify-asset "$RELEASE_TAG" "$asset" --repo "$REPOSITORY"
+            sleep 0.6
+          done
+          sha256sum -c SHA256SUMS
+      - name: 2. Verify the distributions' workflow provenance
+        run: |
+          exec > >(tee "$RUNNER_TEMP/release-verification/2-provenance.log") 2>&1
+          cd "$RUNNER_TEMP/release-verification/assets"
+          for distribution in "$WHEEL" "$SDIST"; do
+            gh attestation verify "$distribution" --repo "$REPOSITORY" \
+              --signer-workflow "$REPOSITORY/.github/workflows/release.yml" \
+              --cert-oidc-issuer https://token.actions.githubusercontent.com \
+              --source-ref "refs/tags/$RELEASE_TAG" --source-digest "$EXPECTED_SHA" --deny-self-hosted-runners
+            gh attestation verify "$distribution" --repo "$REPOSITORY" \
+              --signer-workflow "$REPOSITORY/.github/workflows/release.yml" \
+              --cert-oidc-issuer https://token.actions.githubusercontent.com \
+              --source-ref "refs/tags/$RELEASE_TAG" --source-digest "$EXPECTED_SHA" --deny-self-hosted-runners \
+              --bundle provenance.sigstore.json
+          done
+      - name: 3. Verify PyPI's publisher attestations
+        run: |
+          exec > >(tee "$RUNNER_TEMP/release-verification/3-pypi.log") 2>&1
+          cd "$RUNNER_TEMP/release-verification/assets"
+          for distribution in "$WHEEL" "$SDIST"; do
+            "$UV_PROJECT_ENVIRONMENT/bin/pypi-attestations" verify pypi \
+              --repository "https://github.com/$REPOSITORY" "$distribution"
+          done
+      - name: 4. Verify the runtime SBOM signatures
+        run: |
+          exec > >(tee "$RUNNER_TEMP/release-verification/4-sboms.log") 2>&1
+          cd "$RUNNER_TEMP/release-verification/assets"
+          gh attestation verify "$WHEEL" --repo "$REPOSITORY" \
+            --signer-workflow "$REPOSITORY/.github/workflows/release.yml" \
+            --cert-oidc-issuer https://token.actions.githubusercontent.com \
+            --source-ref "refs/tags/$RELEASE_TAG" --source-digest "$EXPECTED_SHA" --deny-self-hosted-runners \
+            --predicate-type https://cyclonedx.org/bom --bundle runtime-wheel.sigstore.json
+          gh attestation verify "$SDIST" --repo "$REPOSITORY" \
+            --signer-workflow "$REPOSITORY/.github/workflows/release.yml" \
+            --cert-oidc-issuer https://token.actions.githubusercontent.com \
+            --source-ref "refs/tags/$RELEASE_TAG" --source-digest "$EXPECTED_SHA" --deny-self-hosted-runners \
+            --predicate-type https://cyclonedx.org/bom --bundle runtime-sdist.sigstore.json
+      - name: Retain command output for troubleshooting
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-verification-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/release-verification/
-          if-no-files-found: error
+          path: ${{ runner.temp }}/release-verification/*.log
+          if-no-files-found: warn
           retention-days: 30

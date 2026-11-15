@@ -2,7 +2,7 @@
 
 This guide explains how to verify the integrity and authenticity of Best Practices MCP release assets before installing or relying on them. It covers the evidence published starting with **0.2.0-beta.3**; do not assume earlier releases have the same evidence. Maintainer operations belong in the [release procedure](releasing.md).
 
-The `Verify published release` workflow automates these public-consumer checks after publication and retains a report for 30 days. Its scope and manual rerun instructions are in the [maintainer runbook](releasing.md#verify-the-published-beta-and-advance-to-stable). A green workflow is a record of that check, not a replacement for verifying the files you download.
+The [Verify published release workflow](../.github/workflows/verify-release.yml) is a convenience for running the commands in sections 1–4 after publication. It retains command output for troubleshooting for 30 days. Instructions to inspect publisher metadata, workflow jobs, SBOM contents and scan reports remain manual. A green run means the automated commands succeeded; it adds no independent provenance or security assurance and does not replace verifying your own downloads. Its scope and manual rerun instructions are in the [maintainer runbook](releasing.md#verify-the-published-beta-and-advance-to-stable).
 
 ## Claims and evidence
 

@@ -28,15 +28,10 @@ RELEASE_DIST ?= build/release/dist
 RELEASE_EVIDENCE ?= build/release/evidence.json
 RELEASE_ARGS ?=
 RELEASE_TOOLS_VENV ?= build/release-tools
-VERIFY_TOOLS_VENV ?= build/verification-tools
-VERIFY_TAG ?=
-VERIFY_OUTPUT ?= build/published-release-verification
 ifeq ($(OS),Windows_NT)
 RELEASE_SBOM_PYTHON ?= $(RELEASE_TOOLS_VENV)/Scripts/python.exe
-VERIFY_PYTHON ?= $(VERIFY_TOOLS_VENV)/Scripts/python.exe
 else
 RELEASE_SBOM_PYTHON ?= $(RELEASE_TOOLS_VENV)/bin/python
-VERIFY_PYTHON ?= $(VERIFY_TOOLS_VENV)/bin/python
 endif
 RELEASE_SBOM ?= 0
 RELEASE_SBOM_ARG = $(if $(filter 1,$(RELEASE_SBOM)),--sbom-python "$(RELEASE_SBOM_PYTHON)")
@@ -222,12 +217,3 @@ release-qualify: release-artifacts ## Install/probe the exact candidates in fres
 
 release-bundle: ## Bind qualified archives and release reports into a checksummed publication bundle
 	"$(PYTHON)" scripts/release_bundle.py --dist "$(RELEASE_DIST)" --evidence "$(RELEASE_EVIDENCE)" --reports build/release/reports --output build/release/bundle
-
-.PHONY: release-verification-setup verify-release
-
-release-verification-setup: export UV_PROJECT_ENVIRONMENT := $(VERIFY_TOOLS_VENV)
-release-verification-setup: ## Install isolated locked tools for optional published-release verification
-	"$(UV)" sync --locked --only-group verification-tools --no-install-project $(UV_PYTHON_ARG)
-
-verify-release: ## Verify public release assets without executing them (set VERIFY_TAG; requires gh and network)
-	"$(VERIFY_PYTHON)" scripts/verify_published_release.py --tag "$(VERIFY_TAG)" --output-dir "$(VERIFY_OUTPUT)"
