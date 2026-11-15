@@ -1,14 +1,29 @@
 # Changelog
 
-## [0.2.0-beta.3](https://github.com/reponomics/best-practices-mcp/compare/v0.2.0-beta.2...v0.2.0-beta.3) (2026-11-15)
+## [0.2.0-beta.3](https://github.com/reponomics/best-practices-mcp/compare/v0.2.0-beta.1...v0.2.0-beta.3) (2026-11-15)
 
+This release includes the changes prepared for 0.2.0-beta.2, which was tagged but remained unpublished after release preflight failed. The notes below cover the cumulative changes since 0.2.0-beta.1.
 
 ### Bug Fixes
 
 * **ci:** resolve draft releases by numeric ID ([#14](https://github.com/reponomics/best-practices-mcp/issues/14)) ([575f721](https://github.com/reponomics/best-practices-mcp/commit/575f721280c06ad9bf1c0371f7590614f9a2ec7b))
+* **ci:** use the project's declared MIT license when scanning unpublished package versions ([#13](https://github.com/reponomics/best-practices-mcp/pull/13)).
+
+### Development and CI
+
+* Adopt a locked uv development environment, default to `.venv` while retaining custom environment overrides, and document Windows setup and validation ([#10](https://github.com/reponomics/best-practices-mcp/pull/10), [#13](https://github.com/reponomics/best-practices-mcp/pull/13)).
+* Consolidate contributor checks in `make validate`, expand optional pre-commit checks, and run offline tests for documentation changes ([#10](https://github.com/reponomics/best-practices-mcp/pull/10)).
+* Enforce dependency license policy alongside OSV vulnerability scanning, retain separate reports, and isolate workflow linting in a read-only CI workflow ([#10](https://github.com/reponomics/best-practices-mcp/pull/10)).
+* Add release evidence validation, SBOMs, checksums, attestations, and retained scan reports to the publication workflow ([#10](https://github.com/reponomics/best-practices-mcp/pull/10)).
+
+### Dependencies
+
+* Update uv to 0.13.8, coverage to 7.17.3, and Ruff to 0.17.5 ([#12](https://github.com/reponomics/best-practices-mcp/pull/12), [#13](https://github.com/reponomics/best-practices-mcp/pull/13)).
+* Raise the Node.js minimum to 24.22.3 ([#10](https://github.com/reponomics/best-practices-mcp/pull/10)).
 
 ## [0.2.0-beta.2](https://github.com/reponomics/best-practices-mcp/compare/v0.2.0-beta.1...v0.2.0-beta.2) (2026-11-15)
 
+**Not published.** Release preflight failed; these changes are included in 0.2.0-beta.3.
 
 ### Dependencies
 
