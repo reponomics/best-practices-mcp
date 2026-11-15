@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0-beta.2](https://github.com/reponomics/best-practices-mcp/compare/v0.2.0-beta.1...v0.2.0-beta.2) (2026-11-15)
+
+
+### Dependencies
+
+* Bump the python-minor-patch group with 3 updates ([#12](https://github.com/reponomics/best-practices-mcp/issues/12)) ([64c738d](https://github.com/reponomics/best-practices-mcp/commit/64c738dbd9ab43dd20b85aefb43149b5a28bcf6a))
+
+
+### Continuous Integration
+
+* use uv for development and ci ([#10](https://github.com/reponomics/best-practices-mcp/issues/10)) ([7a8ba3f](https://github.com/reponomics/best-practices-mcp/commit/7a8ba3fe12147468c8da9ea03a6bd972d9a1d4eb))
+
 ## [0.2.0-beta.1](https://github.com/reponomics/best-practices-mcp/compare/v0.1.1-beta.1...v0.2.0-beta.1) (2026-11-14)
 
 
