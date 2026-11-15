@@ -21,19 +21,19 @@ Documentation = "https://github.com/reponomics/best-practices-mcp/blob/main/READ
 [dependency-groups]
 dev = [
     "build==1.6.1",
-    "coverage==7.17.2",
+    "coverage==7.17.3",
     "jsonschema==4.26.0",
     "packaging==26.3",
     "pip==26.3",
     "pre-commit==4.7.0",
     "PyYAML==6.0.3",
     "pytest==9.2.0",
-    "ruff==0.17.4",
+    "ruff==0.17.5",
     "setuptools==84.2.1",
     "twine==7.0.0",
 ]
 
-audit-tools = ["uv==0.13.7"]
+audit-tools = ["uv==0.13.8"]
 inventory-tools = ["PyYAML==6.0.3"]
 release-tools = ["cyclonedx-bom==8.0.1"]
 
