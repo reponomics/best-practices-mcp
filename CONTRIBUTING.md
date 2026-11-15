@@ -41,13 +41,15 @@ make example
 make build
 ```
 
-`make help` reads the Makefile's annotated targets through a small Python helper and works before project setup. uv can supply Python if necessary. `make setup` uses `uv sync --locked --group dev --no-group audit-tools` to create or synchronize `venv`, installing this package in editable mode and the development dependencies from [`uv.lock`](uv.lock). `.python-version` supplies the interpreter preference; `--locked` fails if metadata and the lock disagree. Synchronization removes unselected packages, so keep unrelated tools in separate environments. pip is an explicit development dependency for offline package installation checks.
+`make help` reads the Makefile's annotated targets through a small Python helper and works before project setup. uv can supply Python if necessary. `make setup` uses `uv sync --locked --group dev --no-group audit-tools` to create or synchronize `.venv`, installing this package in editable mode and the development dependencies from [`uv.lock`](uv.lock). `.python-version` supplies the interpreter preference; `--locked` fails if metadata and the lock disagree. Synchronization removes unselected packages, so keep unrelated tools in separate environments. pip is an explicit development dependency for offline package installation checks.
 
-The Makefile exports `UV_PROJECT_ENVIRONMENT=venv` and selects `venv/bin/python` or `venv/Scripts/python.exe`. Activation is unnecessary. Direct uv project commands must select the same environment: run `export UV_PROJECT_ENVIRONMENT=venv` in a Unix shell or `$env:UV_PROJECT_ENVIRONMENT = "venv"` in PowerShell before using `uv sync` or `uv run`, otherwise uv defaults to `.venv`. Prefer the Make targets for repeated operations.
+The default environment is `.venv`, matching uv’s project default. Make selects `.venv/bin/python` or `.venv/Scripts/python.exe`; activation is unnecessary. Direct `uv sync` and `uv run` use the same environment without an extra environment variable. Prefer the Make targets for repeated operations. Make exports `UV_PROJECT_ENVIRONMENT` from `VENV`, so custom environments remain supported: pass the same `VENV` override to each Make command, and set `UV_PROJECT_ENVIRONMENT` to that path when using uv directly.
 
 Override `BOOTSTRAP_PYTHON` to test another interpreter, preferably in a separate environment: `make setup VENV=venv-3.12 BOOTSTRAP_PYTHON=3.12`, followed by `make check VENV=venv-3.12 BOOTSTRAP_PYTHON=3.12`. Add custom environment directories to your local Git excludes. Paths containing spaces can be passed as one quoted argument, for example `make setup "VENV=build/dev venv"`. Overrides do not edit `.python-version` or narrow the universal lock.
 
-For an existing checkout, stop processes using the development environment and deactivate it before migration. `make setup` synchronizes the selected environment and may replace it when the requested interpreter differs; it does not preserve manually installed packages. To recreate it explicitly, remove only the disposable `venv` directory and run `make setup` again. Do not edit `pyvenv.cfg` to switch interpreters.
+For an existing checkout, stop processes using the development environment and deactivate it before migration. `make setup` synchronizes the selected environment and may replace it when the requested interpreter differs; it does not preserve manually installed packages. To recreate it explicitly, remove only the selected disposable environment directory and run `make setup` again. Do not edit `pyvenv.cfg` to switch interpreters.
+
+If migrating from the previous `venv` default, recreate the environment with `make setup` instead of renaming it. Clear any old `VENV` or `UV_PROJECT_ENVIRONMENT` shell overrides first (`unset VENV UV_PROJECT_ENVIRONMENT` on Unix; `Remove-Item Env:VENV, Env:UV_PROJECT_ENVIRONMENT -ErrorAction SilentlyContinue` in PowerShell). Update editor interpreter selections, MCP host paths and any installed Git hooks (`make setup-hooks`) to use `.venv`. Remove the old `venv` only after its users have switched; Make does not remove it automatically.
 
 `pyproject.toml` declares runtime dependencies and the installed `dev` dependency group. The non-default `audit-tools` group records uv for OSV scanning without installing uv inside its own managed environment. A separate non-default `inventory-tools` group supplies CI’s YAML parser for actionlint inventory generation. The non-default `release-tools` group pins CycloneDX Python for release-reference SBOMs in its own environment; normal setup selects neither group. `make tooling-check` rejects drift between this inventory, the lock and uv's required version. There is no `.tool-versions` or asdf prerequisite. See [ADR 0002](docs/adr/0002-development-toolchain.md) for the decision and alternatives.
 
@@ -62,15 +64,15 @@ The interactive reference host remains available; its deprecation is [planned](d
 The installed CLI supports these commands on macOS/Linux:
 
 ```sh
-venv/bin/bestpractices-mcp --help
-venv/bin/bestpractices-mcp --version
+.venv/bin/bestpractices-mcp --help
+.venv/bin/bestpractices-mcp --version
 ```
 
 On Windows PowerShell:
 
 ```powershell
-.\venv\Scripts\bestpractices-mcp.exe --help
-.\venv\Scripts\bestpractices-mcp.exe --version
+.\.venv\Scripts\bestpractices-mcp.exe --help
+.\.venv\Scripts\bestpractices-mcp.exe --version
 ```
 
 Running it without arguments starts the stdio server and waits for an MCP host. Protocol traffic uses stdout; diagnostics must use stderr.
@@ -88,7 +90,7 @@ make check-fresh-package
 
 `make validate` checks lock consistency, runs quality checks and the offline test suite, verifies the catalog, and lints workflows. It continues with independent checks after a failure and exits nonzero if any check fails. It does not run OSV or require OSV-Scanner to be installed; dependency scans run in CI. Individual targets remain available for focused work, including `make check` for quality checks and tests. Coverage reports are written under `build/coverage/`; fresh-package results and sanitized logs are written under `build/verification/`. The [release procedure](docs/releasing.md) covers exact candidate qualification, publication controls and published-package QA.
 
-Workflow lint tentatively uses the [kjanat/actionlint fork](https://github.com/kjanat/actionlint), pinned to v1.17.1 by full commit SHA in `.pre-commit-config.yaml`, built with Go 1.27.4. The separate [Actionlint workflow](.github/workflows/actionlint.yml) uses the same source and toolchain pins. `make setup` installs pre-commit in `venv`; `make workflow-check` (also included in `make validate`) checks all tracked workflows without a separate actionlint installation. Stage new workflow files with `git add` before checking them. The first run needs network access to download the pinned Go toolchain and build and cache actionlint; contributors do not need to install Go separately, including on Windows. Later runs reuse the cached environment.
+Workflow lint tentatively uses the [kjanat/actionlint fork](https://github.com/kjanat/actionlint), pinned to v1.17.1 by full commit SHA in `.pre-commit-config.yaml`, built with Go 1.27.4. The separate [Actionlint workflow](.github/workflows/actionlint.yml) uses the same source and toolchain pins. `make setup` installs pre-commit in `.venv`; `make workflow-check` (also included in `make validate`) checks all tracked workflows without a separate actionlint installation. Stage new workflow files with `git add` before checking them. The first run needs network access to download the pinned Go toolchain and build and cache actionlint; contributors do not need to install Go separately, including on Windows. Later runs reuse the cached environment.
 
 To optionally run checks automatically when committing, run `make setup-hooks` once per clone after `make setup` and `make setup-dom`. Hooks use the existing locked environment and Make targets; run setup again after dependency changes. The offline test suite runs on every commit, including documentation-only changes, because tests may assert documentation content. Other hooks select relevant staged filenames:
 
@@ -133,17 +135,17 @@ These optional local checks contact OSV and deps.dev and use the committed Pytho
 Python 3.11 is the supported minimum targeted by the compatibility matrix. Use an isolated environment; the assessed project does not need to use Python. From this checkout, a runtime-only installation on macOS/Linux is:
 
 ```sh
-python3.11 -m venv venv
-venv/bin/python -m pip install .
-venv/bin/python -m best_practices_mcp --version
+python3.11 -m venv .venv
+.venv/bin/python -m pip install .
+.venv/bin/python -m best_practices_mcp --version
 ```
 
 The native PowerShell equivalents for a runtime-only installation are:
 
 ```powershell
-py -3.11 -m venv venv
-.\venv\Scripts\python.exe -m pip install .
-.\venv\Scripts\python.exe -m best_practices_mcp --version
+py -3.11 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install .
+.\.venv\Scripts\python.exe -m best_practices_mcp --version
 ```
 
 For development and QA on Windows, use the same Make targets documented above from PowerShell. CI exercises native Make with `cmd.exe` recipes, including an environment path containing spaces.
@@ -160,13 +162,13 @@ After `make setup`, use the absolute executable path in the host's MCP configura
 {
   "mcpServers": {
     "bestpractices": {
-      "command": "/absolute/path/to/best-practices-mcp/venv/bin/bestpractices-mcp"
+      "command": "/absolute/path/to/best-practices-mcp/.venv/bin/bestpractices-mcp"
     }
   }
 }
 ```
 
-On Windows, use an absolute `venv\Scripts\bestpractices-mcp.exe` path (escape backslashes in JSON), or configure `venv\Scripts\python.exe` with arguments `["-m", "best_practices_mcp"]`.
+On Windows, use an absolute `.venv\Scripts\bestpractices-mcp.exe` path (escape backslashes in JSON), or configure `.venv\Scripts\python.exe` with arguments `["-m", "best_practices_mcp"]`.
 
 The baseline is MCP `2026-07-28` with official Python SDK `2.3.0`. `BESTPRACTICES_DATA_DIR` optionally supplies an absolute server-local data root. Unset selects `~/Library/Application Support/bestpractices-mcp` on macOS, `$XDG_DATA_HOME/bestpractices-mcp` (absolute XDG only) or `~/.local/share/bestpractices-mcp` on Linux, and `%LOCALAPPDATA%/bestpractices-mcp` on Windows. Empty/relative overrides and existing nondirectory roots fail at startup; `~` is not expanded in overrides. Startup and read-only/document-only workflows create no storage.
 
@@ -177,13 +179,13 @@ Updates within one server process use per-project guards. Separate servers and e
 For an independent stored workflow, pass a dedicated absolute root:
 
 ```sh
-venv/bin/python examples/host.py --mode stored --data-dir /absolute/path/to/drafts
+.venv/bin/python examples/host.py --mode stored --data-dir /absolute/path/to/drafts
 ```
 
 On Windows PowerShell, use a dedicated absolute Windows path:
 
 ```powershell
-.\venv\Scripts\python.exe examples/host.py --mode stored --data-dir "C:\mcp-work\drafts"
+.\.venv\Scripts\python.exe examples/host.py --mode stored --data-dir "C:\mcp-work\drafts"
 ```
 
 Automated tests and package probes use temporary storage, never the normal draft directory.
@@ -193,13 +195,13 @@ Automated tests and package probes use temporary storage, never the normal draft
 MCP Inspector 2.14.0 can connect to this stdio server in modern protocol mode:
 
 ```sh
-npx -y @modelcontextprotocol/inspector@2.14.0 --protocol-era modern ./venv/bin/bestpractices-mcp
+npx -y @modelcontextprotocol/inspector@2.14.0 --protocol-era modern ./.venv/bin/bestpractices-mcp
 ```
 
 On Windows PowerShell, use `npx.cmd` and the Windows server executable:
 
 ```powershell
-npx.cmd -y @modelcontextprotocol/inspector@2.14.0 --protocol-era modern .\venv\Scripts\bestpractices-mcp.exe
+npx.cmd -y @modelcontextprotocol/inspector@2.14.0 --protocol-era modern .\.venv\Scripts\bestpractices-mcp.exe
 ```
 
 Use the project’s Node 24.22.3 baseline or a newer 24.x version supported by that Inspector release. Discovery, get_criteria, build_draft, read_draft, update_draft and validate_draft are offline. update_draft mutates local storage; use a disposable absolute BESTPRACTICES_DATA_DIR for Inspector tests. find_project, get_project_progress and artifact generation make public BadgeApp GETs. No tool authenticates or submits changes. For a reproducible CLI schema check, add `--cli --method tools/list --strict --format json`. See [schema compatibility](docs/schema-compatibility.md) for official guidance and the distinction between portability lint and MCP conformance.

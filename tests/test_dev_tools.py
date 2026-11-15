@@ -1,7 +1,11 @@
 """Check bootstrap inventory consistency and shell-independent Make helpers."""
 
 import importlib.util
+import json
+import os
+import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -12,6 +16,59 @@ SPEC = importlib.util.spec_from_file_location(
 assert SPEC and SPEC.loader
 TOOLS = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(TOOLS)
+
+
+@pytest.mark.parametrize("override", [None, "command-line", "environment"])
+def test_make_selects_one_project_environment_for_uv_and_python(tmp_path, override):
+    make = os.environ.get("VERIFICATION_MAKE") or shutil.which("make")
+    assert make, "GNU Make is required for development tooling checks"
+    probe = tmp_path / "environment probe.py"
+    probe.write_text(
+        "import json, os, sys\n"
+        "print(json.dumps([os.environ['UV_PROJECT_ENVIRONMENT'], *sys.argv[1:]]))\n",
+        encoding="utf-8",
+    )
+    makefile = tmp_path / "probe.mk"
+    makefile.write_text(
+        ".PHONY: inspect-project-environment\n"
+        "inspect-project-environment:\n"
+        '\t@"$(PROBE_PYTHON)" "$(PROBE_SCRIPT)" "$(VENV)" "$(PYTHON)"\n',
+        encoding="utf-8",
+    )
+    env = os.environ.copy()
+    for name in ("VENV", "PYTHON", "MAKEFLAGS", "MFLAGS", "MAKELEVEL", "GNUMAKEFLAGS"):
+        env.pop(name, None)
+    # Make must export its selected directory even when a shell has an old override.
+    env["UV_PROJECT_ENVIRONMENT"] = "stale-environment"
+    selected = ".venv" if override is None else "build/custom venv"
+    arguments = []
+    if override == "command-line":
+        arguments.append(f"VENV={selected}")
+    elif override == "environment":
+        env["VENV"] = selected
+    result = subprocess.run(
+        [
+            make,
+            "--no-print-directory",
+            "-f",
+            "Makefile",
+            "-f",
+            str(makefile),
+            "inspect-project-environment",
+            f"PROBE_PYTHON={sys.executable}",
+            f"PROBE_SCRIPT={probe}",
+            *arguments,
+        ],
+        cwd=Path(__file__).resolve().parents[1],
+        env=env,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=15,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    interpreter = "Scripts/python.exe" if os.name == "nt" else "bin/python"
+    assert json.loads(result.stdout) == [selected, selected, f"{selected}/{interpreter}"]
 
 
 @pytest.fixture

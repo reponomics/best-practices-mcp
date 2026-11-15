@@ -3,7 +3,7 @@
 # Empty lets uv read .python-version; CI overrides this with its matrix version.
 BOOTSTRAP_PYTHON ?=
 UV_PYTHON_ARG = $(if $(BOOTSTRAP_PYTHON),--python "$(BOOTSTRAP_PYTHON)")
-VENV ?= venv
+VENV ?= .venv
 ifeq ($(OS),Windows_NT)
 # Native GNU Make launched from PowerShell/cmd; do not depend on Git Bash.
 SHELL := cmd.exe
@@ -46,7 +46,7 @@ export VERIFICATION_MAKE := $(MAKE)
 help: ## Show available development commands (no project environment required)
 	@"$(UV)" run --no-project $(UV_PYTHON_ARG) python scripts/dev_tools.py help
 
-setup: ## Sync the locked development group into venv (Python 3.11 by default)
+setup: ## Sync the locked development group into .venv (Python 3.11 by default)
 	"$(UV)" sync --locked --group dev --no-group audit-tools $(UV_PYTHON_ARG)
 
 quality: tooling-check ## Check formatting, lint and installed dependency consistency
