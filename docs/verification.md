@@ -41,12 +41,36 @@ After authenticating `SHA256SUMS`, you can check all its entries on Linux with `
 Run this against the downloaded wheel, then repeat it with the source archive filename:
 
 ```sh
-gh attestation verify best_practices_mcp-0.2.0b3-py3-none-any.whl --repo reponomics/best-practices-mcp --signer-workflow reponomics/best-practices-mcp/.github/workflows/release.yml --source-ref refs/tags/v0.2.0-beta.3 --source-digest b222cabb63cbd5d44475b965e44ee349eee161ef --deny-self-hosted-runners
+gh attestation verify best_practices_mcp-0.2.0b3-py3-none-any.whl --repo reponomics/best-practices-mcp --signer-workflow reponomics/best-practices-mcp/.github/workflows/release.yml --cert-oidc-issuer https://token.actions.githubusercontent.com --source-ref refs/tags/v0.2.0-beta.3 --source-digest b222cabb63cbd5d44475b965e44ee349eee161ef --deny-self-hosted-runners
 ```
 
 The default predicate is `https://slsa.dev/provenance/v1`. Success verifies the artifact digest, signature and expected workflow/source identity. Inspect the reported workflow invocation and its successful build, publication and finalization jobs. For beta.3 this is [run 43759677395, attempt 1](https://github.com/reponomics/best-practices-mcp/actions/runs/43759677395). Add `--format json` to retain the verified statement and certificate details.
 
 To use the attached provenance bundle, append `--bundle provenance.sigstore.json` to the same command, retaining all identity constraints. Bundle verification may still need trust-root network access; fully offline verification requires the preparation described in [GitHub's offline instructions](https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/verify-attestations-offline). Online lookup also checks association with the repository currently using that name; a saved bundle records identity at signing time.
+
+### Signing keys and trust roots
+
+Our workflow and PyPI attestations use Sigstore keyless signing. Each signing operation creates an ephemeral keypair: the private key signs the statement containing the artifact digest, and a short-lived X.509 certificate binds the public key to the workflow's OIDC identity. These release-signing private keys exist in the signing process, are discarded afterward, and are not uploaded to GitHub Releases or PyPI. There is no persistent project release-signing key for users to import. This separates transient signing from public artifact serving; it does not make the signing workflow independent of GitHub. See [Sigstore's key lifecycle](https://docs.sigstore.dev/about/overview/#how-sigstore-works).
+
+Users obtain the public signing certificate and signature in the downloaded `provenance.sigstore.json` and `runtime-*.sigstore.json` bundles, or through PyPI's provenance retrieved by its verifier. The certificate's public key verifies the signature; its identity and trust chain must also be checked. Accepting an arbitrary certificate shipped beside a file is insufficient.
+
+| Expected identity | Required value |
+| --- | --- |
+| OIDC issuer | `https://token.actions.githubusercontent.com` |
+| Source repository | `https://github.com/reponomics/best-practices-mcp` |
+| Signing workflow | `reponomics/best-practices-mcp/.github/workflows/release.yml` |
+| Source ref and digest | The selected `refs/tags/...` release tag and its full commit SHA |
+| PyPI publisher environment | `pypi` |
+
+The workflow verifier commands enforce the issuer, repository, workflow, tag and commit. The PyPI verifier below enforces the expected repository; also inspect its publisher metadata for the workflow and environment. The signer is the release process, not a claim that a particular human authored or reviewed every source change. GitHub's immutable-release attestation has a separate GitHub service identity and is checked by `gh release verify`, not by applying these workflow identity constraints to it.
+
+Verification tools authenticate the certificate-authority and transparency-log trust material using their trusted configuration, including Sigstore's TUF distribution. Online `gh attestation verify` obtains this material automatically. To obtain the public trust material explicitly, use:
+
+```sh
+gh attestation trusted-root
+```
+
+This prints trusted-root JSON for the supported Sigstore instances; it is not a project private key or a substitute for checking the expected signer. Follow the [CLI reference](https://cli.github.com/manual/gh_attestation_trusted-root) and the offline guide linked above to save and use it. Do not replace trust roots with an unauthenticated file from the release. Verifiers check that signing occurred during the certificate's validity using authenticated timestamp/transparency evidence, so expiry of a short-lived certificate does not by itself invalidate an old release signature.
 
 ## 3. Verify PyPI's publisher attestation
 
@@ -68,7 +92,7 @@ Verification applies to the bytes checked. A later unpinned `uvx` or `pip` insta
 For the wheel's signed runtime SBOM, verify the **wheel** as the subject, using the CycloneDX predicate and attached bundle:
 
 ```sh
-gh attestation verify best_practices_mcp-0.2.0b3-py3-none-any.whl --repo reponomics/best-practices-mcp --signer-workflow reponomics/best-practices-mcp/.github/workflows/release.yml --source-ref refs/tags/v0.2.0-beta.3 --source-digest b222cabb63cbd5d44475b965e44ee349eee161ef --deny-self-hosted-runners --predicate-type https://cyclonedx.org/bom --bundle runtime-wheel.sigstore.json
+gh attestation verify best_practices_mcp-0.2.0b3-py3-none-any.whl --repo reponomics/best-practices-mcp --signer-workflow reponomics/best-practices-mcp/.github/workflows/release.yml --cert-oidc-issuer https://token.actions.githubusercontent.com --source-ref refs/tags/v0.2.0-beta.3 --source-digest b222cabb63cbd5d44475b965e44ee349eee161ef --deny-self-hosted-runners --predicate-type https://cyclonedx.org/bom --bundle runtime-wheel.sigstore.json
 ```
 
 For the source archive, substitute its filename and `runtime-sdist.sigstore.json`. Add `--format json` to inspect the verified statement's `predicate`, which contains the SBOM. The readable copies are `runtime-wheel.cdx.json` and `runtime-sdist.cdx.json`; authenticate those files with `gh release verify-asset` before using them. Their metadata records the distribution digest, source commit, Python version, platform and generation time, including environment bootstrap tools in their stated scope.
@@ -92,4 +116,4 @@ GitHub's release attestation covers attached reports, while the workflow's build
 
 If a required verification fails, stop before installing or relying on the asset. Confirm the repository, tag, filename and tool version, then report an unexplained mismatch through the project's [security reporting instructions](../SECURITY.md). Do not bypass a failed check by removing identity constraints. Absence of evidence for an older release is not a successful verification under this guide.
 
-These instructions provide the consumer verification documentation addressed by [OSPS_DO_03_01](https://www.bestpractices.dev/en/criteria#baseline-3.osps_do_03_01); broader baseline assessment is separate.
+These instructions address release integrity/authenticity verification under [OSPS_DO_03_01](https://www.bestpractices.dev/en/criteria#baseline-3.osps_do_03_01) and expected release-author identity under [OSPS_DO_03_02](https://www.bestpractices.dev/en/criteria#baseline-3.osps_do_03_02). The signed distribution attestations and GitHub release record provide evidence for [OSPS-BR-06.01](https://baseline.openssf.org/versions/2026-08-28#osps-br-0601), which explicitly allows attestations; `SHA256SUMS` alone is not a signature. These controls do not require a signed Git tag, and broader baseline assessment is separate.
