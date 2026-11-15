@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0-beta.3](https://github.com/reponomics/best-practices-mcp/compare/v0.2.0-beta.2...v0.2.0-beta.3) (2026-11-15)
+
+
+### Bug Fixes
+
+* **ci:** resolve draft releases by numeric ID ([#14](https://github.com/reponomics/best-practices-mcp/issues/14)) ([575f721](https://github.com/reponomics/best-practices-mcp/commit/575f721280c06ad9bf1c0371f7590614f9a2ec7b))
+
 ## [0.2.0-beta.2](https://github.com/reponomics/best-practices-mcp/compare/v0.2.0-beta.1...v0.2.0-beta.2) (2026-11-15)
 
 
