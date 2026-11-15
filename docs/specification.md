@@ -62,7 +62,7 @@ Paths are derived directly from the canonical decimal project ID:
 
 The storage key is the production BadgeApp `project_id`, not a repository URL, local directory, project name, or badge level. Each project has one multi-level draft. No registry or separate mapping database is required.
 
-Public network requests target the production BadgeApp service. Tests inject a transport; v1 does not need a user-configurable arbitrary API origin. Diagnostics go to stderr, never into the stdio protocol stream. Development uses `venv`, pip, and a Makefile with toolchain variables and annotated help targets.
+Public network requests target the production BadgeApp service. Tests inject a transport; v1 does not need a user-configurable arbitrary API origin. Diagnostics go to stderr, never into the stdio protocol stream. Development uses uv with a locked `.venv` environment and a Makefile with toolchain variables and annotated help targets.
 
 ## 3. Data model
 

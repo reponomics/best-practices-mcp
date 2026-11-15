@@ -38,7 +38,7 @@ inventory-tools = ["PyYAML==6.0.3"]
 release-tools = ["cyclonedx-bom==8.0.1"]
 
 [tool.uv]
-required-version = "==0.13.7"
+required-version = "==0.13.8"
 default-groups = ["dev"]
 
 [project.scripts]

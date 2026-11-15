@@ -196,7 +196,7 @@ def test_distribution_version_must_match_source(project):
 
 
 @pytest.mark.parametrize(
-    "name", ["INTERNAL/draft.json", "venv/bin/python", "../secret", "/absolute"]
+    "name", ["INTERNAL/draft.json", "venv/bin/python", ".venv/bin/python", "../secret", "/absolute"]
 )
 def test_private_or_unsafe_archive_members_fail(project, name):
     wheel, sdist = archive_files(project)

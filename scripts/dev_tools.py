@@ -20,7 +20,7 @@ def show_help(makefile: Path) -> None:
 
 
 def check_tooling(root: Path) -> None:
-    """Keep the externally executed uv and its OSV inventory at the same version."""
+    """Check uv inventory and the checkout's first-party OSV license evidence."""
     project = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
     uv = project["tool"]["uv"]
     requirement = uv["required-version"]
@@ -37,7 +37,30 @@ def check_tooling(root: Path) -> None:
     versions = {package["version"] for package in lock["package"] if package["name"] == "uv"}
     if versions != {requirement.removeprefix("==")}:
         raise ValueError("uv.lock must contain the required uv release for OSV")
+    check_first_party_license(root, project["project"], lock)
     print("uv bootstrap requirement and audit inventory agree")
+
+
+def check_first_party_license(root: Path, project: dict, lock: dict) -> None:
+    """Bind the version-independent correction to this MIT-licensed local project."""
+    if project.get("license") != "MIT":
+        raise ValueError("Reassess the first-party OSV override when the project license changes")
+    packages = [package for package in lock["package"] if package["name"] == project["name"]]
+    if len(packages) != 1 or packages[0].get("source") != {"editable": "."}:
+        raise ValueError("The first-party OSV override requires a unique local editable root")
+    policy = tomllib.loads((root / "osv-scanner.toml").read_text(encoding="utf-8"))
+    overrides = [
+        {key: value for key, value in entry.items() if key != "reason"}
+        for entry in policy.get("PackageOverrides", [])
+        if entry.get("name") == project["name"]
+    ]
+    expected = {
+        "name": project["name"],
+        "ecosystem": "PyPI",
+        "license": {"override": [project["license"]]},
+    }
+    if overrides != [expected]:
+        raise ValueError("Require one first-party MIT license override without filters or ignores")
 
 
 def check_distributions(dist: Path) -> None:

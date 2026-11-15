@@ -1,6 +1,13 @@
 # License metadata corrections and the approved development-tool exception.
-# Every entry is version-specific: review it again when the package is updated.
+# Third-party entries are version-specific: review them when the package is updated.
+# The first-party license follows this checkout, including unpublished release candidates.
 # These entries never suppress vulnerability findings.
+
+[[PackageOverrides]]
+name = "best-practices-mcp"
+ecosystem = "PyPI"
+license.override = ["MIT"]
+reason = "First-party local editable package: LICENSE and pyproject.toml declare MIT. Unpublished release candidates have no registry license metadata. make tooling-check verifies this override against the checkout; it does not suppress vulnerability checks."
 
 [[PackageOverrides]]
 name = "arrow"

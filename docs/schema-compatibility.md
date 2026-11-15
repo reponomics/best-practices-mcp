@@ -22,7 +22,7 @@ For an optional Inspector check after setup, run:
 
 ```sh
 npx -y @modelcontextprotocol/inspector@2.14.0 --cli \
-  ./venv/bin/bestpractices-mcp --protocol-era modern \
+  ./.venv/bin/bestpractices-mcp --protocol-era modern \
   --method tools/list --strict --format json
 ```
 
