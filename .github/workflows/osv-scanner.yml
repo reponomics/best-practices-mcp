@@ -75,7 +75,7 @@ jobs:
             --lockfile=package-lock.json
             --lockfile=osv-scanner:build/actionlint-inventory/inventory.json
             --no-resolve
-            --licenses=MIT,MIT-0,BSD-2-Clause,BSD-3-Clause,Apache-2.0,ISC,PSF-2.0,MPL-2.0,BlueOak-1.0.0,0BSD
+            --licenses=MIT,MIT-0,BSD-2-Clause,BSD-3-Clause,Apache-2.0,ISC,PSF-2.0,MPL-2.0,BlueOak-1.0.0,0BSD,Unlicense
             --all-packages
             --format=json
             --output-file=osv-licenses.json

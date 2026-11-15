@@ -52,6 +52,27 @@ license.override = ["PSF-2.0"]
 reason = "deps.dev reports UNKNOWN; use the PSF license classification published at https://pypi.org/project/pywin32/312/"
 
 [[PackageOverrides]]
+name = "rfc3161-client"
+version = "1.0.9"
+ecosystem = "PyPI"
+license.override = ["Apache-2.0"]
+reason = "Optional release-verification tooling: deps.dev reports non-standard; verified Apache License 2.0 in the published wheel and https://github.com/trailofbits/rfc3161-client/blob/v1.0.9/LICENSE"
+
+[[PackageOverrides]]
+name = "rfc8785"
+version = "0.1.4"
+ecosystem = "PyPI"
+license.override = ["Apache-2.0"]
+reason = "Optional release-verification tooling: deps.dev reports non-standard; verified Apache License 2.0 in the published wheel and https://github.com/trailofbits/rfc8785.py/blob/v0.1.4/LICENSE"
+
+[[PackageOverrides]]
+name = "sigstore-models"
+version = "0.0.6"
+ecosystem = "PyPI"
+license.override = ["MIT"]
+reason = "Optional release-verification tooling: deps.dev reports UNKNOWN; verified MIT in the published wheel and https://github.com/astral-sh/sigstore-models/blob/v0.0.6/LICENSE"
+
+[[PackageOverrides]]
 name = "docutils"
 version = "0.23"
 ecosystem = "PyPI"

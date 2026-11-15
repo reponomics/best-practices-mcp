@@ -1,0 +1,87 @@
+name: Verify published release
+
+on:
+  # Publication uses GITHUB_TOKEN, so do not rely on its release event.
+  workflow_run:
+    workflows: [Publish to PyPI]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published immutable release tag to verify (v0.2.0-beta.3 or newer)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-release-${{ github.event.workflow_run.head_branch || inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify public assets and publisher identities
+    permissions:
+      contents: read
+      actions: read
+    if: >-
+      github.repository == 'reponomics/best-practices-mcp' &&
+      ((github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'workflow_dispatch' &&
+        github.event.workflow_run.path == '.github/workflows/release.yml' &&
+        github.event.workflow_run.head_repository.full_name == github.repository) ||
+       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      RELEASE_TAG: ${{ github.event.workflow_run.head_branch || inputs.tag }}
+      EXPECTED_SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - name: Initialize failure evidence
+        run: |
+          mkdir -p "$RUNNER_TEMP/release-verification"
+          printf '{"status":"not_started","reason":"Verifier setup has not completed"}\n' > "$RUNNER_TEMP/release-verification/report.json"
+          printf 'UV_PROJECT_ENVIRONMENT=%s/release-verification-tools\nREPORT_DIRECTORY=%s/release-verification\n' \
+            "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Check out trusted verifier and lockfile
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # workflow_run uses the default branch SHA, never the release's code.
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /scripts/verify_published_release.py
+            /pyproject.toml
+            /uv.lock
+      - name: Set up verifier Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.11'
+      - name: Set up pinned environment manager
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version-file: pyproject.toml
+          enable-cache: false
+      - name: Install only locked verification tools
+        run: uv sync --locked --only-group verification-tools --no-install-project --python 3.11
+      - name: Verify downloaded public release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          args=(--tag "$RELEASE_TAG" --output-dir "$REPORT_DIRECTORY")
+          if [[ -n "$EXPECTED_SHA" ]]; then
+            args+=(--expected-sha "$EXPECTED_SHA")
+          fi
+          "$UV_PROJECT_ENVIRONMENT/bin/python" scripts/verify_published_release.py "${args[@]}"
+      - name: Retain verification report and evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-verification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/release-verification/
+          if-no-files-found: error
+          retention-days: 30
