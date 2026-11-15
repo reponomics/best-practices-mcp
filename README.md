@@ -35,7 +35,7 @@ Reload the host's MCP connections, then try a request such as:
 
 > Find the BadgeApp project for https://github.com/reponomics/PolicyChecks and show its silver-level progress. Do not prepare any changes yet.
 
-The pinned beta release above exposes nine tools. The two badge tools below are currently unreleased and available from a source checkout, which exposes eleven tools. Starting the executable directly in a terminal waits for MCP messages; it is not an interactive CLI. For a source checkout or connection debugging with Inspector, see [Contributing](CONTRIBUTING.md).
+The pinned beta release above exposes all eleven tools listed below, including the two badge tools. Starting the executable directly in a terminal waits for MCP messages; it is not an interactive CLI. For a source checkout or connection debugging with Inspector, see [Contributing](CONTRIBUTING.md).
 
 ## Tools
 
@@ -92,6 +92,7 @@ To choose another location, set `BESTPRACTICES_DATA_DIR` in the server's environ
 - [Contributing](CONTRIBUTING.md): development setup, tests, Inspector, native Windows commands and package verification.
 - [Live browser QA](docs/live-browser-qa.md): a supervised check of generated artifacts against BadgeApp.
 - [Release procedure](docs/releasing.md): qualification, publication and release QA.
+- [Release verification](docs/verification.md): verify downloaded assets, publisher identity, provenance and SBOMs, and understand the limits of these claims.
 - [Roadmap](docs/roadmap.md): planned work and proposals under consideration.
 
 ## License

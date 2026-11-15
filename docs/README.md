@@ -21,6 +21,7 @@ This is an independent Reponomics project, not affiliated with, sponsored by, en
 | [Live browser QA](live-browser-qa.md) | Local PolicyChecks URL/script checks after first publication and for subsequent release candidates |
 | [CI and repository setup](ci.md) | Native compatibility matrix, security checks and service activation |
 | [Release procedure](releasing.md) | Release Please, approvals, OIDC publication and published-package QA |
+| [Release verification](verification.md) | Consumer checks for asset integrity, authenticity, provenance, SBOMs and scan evidence |
 
 The [project README](../README.md) covers installation, host configuration and everyday use. The [contributor guide](../CONTRIBUTING.md) covers development commands. The [reference terminal host](../examples/host.py) demonstrates both explicit documents and optional server-managed storage using MCP calls.
 
