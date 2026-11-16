@@ -1,19 +1,19 @@
 # Server specification
 
-The server exposes eleven tools for public BadgeApp reads, portable documents, optional local drafts, advisory validation, and reviewable update artifacts. The [implementation contracts](contracts.md) define exact payloads, errors and limits; [design decisions](design.md) explain the boundaries; [upstream compatibility](upstream-compatibility.md) identifies the source baseline and [transfer rules](transfer-rules.md) describe proposal semantics.
+The server exposes ten tools for public BadgeApp reads, portable documents, optional local drafts, advisory validation, and reviewable update artifacts. The [implementation contracts](contracts.md) define exact payloads, errors and limits; [design decisions](design.md) explain the boundaries; [upstream compatibility](upstream-compatibility.md) identifies the source baseline and [transfer rules](transfer-rules.md) describe proposal semantics.
 
 ## 1. Purpose and boundary
 
 The server makes BadgeApp's criteria, public application data, and update mechanisms available to MCP hosts. It prepares changes that a host or user can apply through BadgeApp and provides local draft storage keyed by BadgeApp project ID. Hosts can instead supply documents explicitly.
 
-The server owns field interpretation, structural validation, artifact construction, and configured draft-file operations. The host owns advisory reasoning, evidence gathering, choosing answers, browser interaction, executing generated scripts, publishing repository files, and saving forms. The server does not decide whether claims are true or award a badge.
+The server owns field interpretation, structural validation, artifact construction, and configured draft-file operations. The host owns advisory reasoning, evidence gathering, choosing answers, browser interaction, publishing repository files, and saving forms. The server does not decide whether claims are true or award a badge.
 
 V1 provides:
 
 - Criteria lookup for every supported badge level.
 - Project discovery and public application progress, independent of a local checkout or repository hosting provider.
 - Compact badge-family status observations and SVG artifacts with dynamic README embed snippets.
-- Proposal URLs and browser form-fill scripts for a project and level.
+- Proposal URLs for a project and level.
 - Creation and modification of portable `.bestpractices.json` documents.
 - Mechanical validation of supplied draft answers against the selected level's criterion flags, without fetching evidence or gating artifact generation.
 - Persistence of one draft per registered project under a default or environment-configured data directory.
@@ -97,7 +97,7 @@ Every project-specific public read, stored-draft operation, and generator requir
 
 For stored drafts, the project directory provides the association. No identity envelope is added to the flat document. Explicit documents use the supplied `project_id` as the target; they do not inherit an association from any stored file. `build_draft` remains a pure transformation without an ID argument, but the host's registration prerequisite still applies to application work using it.
 
-If a draft contains the public record's `id`, compare it with the requested project and reject a mismatch, including during stored-draft reads and updates. During generation, if it contains `repo_url`, compare it with the fetched project's repository URL using conservative URL normalization; report an unresolved or conflicting association rather than guessing. These fields are provenance, not editable answer fields, and are never encoded into proposal URLs or scripts. Report whether the association comes from the storage project key, document provenance, or the caller's explicit target. Storage association does not establish the truth or origin of the answers. A project name alone is not identity evidence.
+If a draft contains the public record's `id`, compare it with the requested project and reject a mismatch, including during stored-draft reads and updates. During generation, if it contains `repo_url`, compare it with the fetched project's repository URL using conservative URL normalization; report an unresolved or conflicting association rather than guessing. These fields are provenance, not editable answer fields, and are never encoded into proposal URLs. Report whether the association comes from the storage project key, document provenance, or the caller's explicit target. Storage association does not establish the truth or origin of the answers. A project name alone is not identity evidence.
 
 ### Saved application data
 
@@ -119,7 +119,6 @@ The signatures below describe domain inputs and outputs, not raw MCP wire envelo
 | `update_draft`          | `project_id`, `changes`                               | Applied patch, whether a draft was created, structural validation issues, and location. Writes only that project's draft.                                              |
 | `validate_draft`        | `project_id`, `level`, `draft?`                       | Structured findings from mechanical criterion checks, with checked/skipped scope and catalog provenance. Local catalog/document read; no network or writes.            |
 | `prepare_update_url`    | `project_id`, `level`, `draft?`, `override_fields=[]` | One exact proposal URL with encoded byte length, or no artifact with an explicit reason, plus a field-level transfer report. Public network read; optional local read. |
-| `prepare_update_script` | `project_id`, `level`, `draft?`                       | JavaScript artifact and a field-level transfer report. Public network read; optional local read.                                                                       |
 
 The tool list does not depend on which projects have local files. Separate resource templates and draft-listing tools are not needed for initial completeness; hosts select projects through BadgeApp lookup rather than through local draft discovery.
 
@@ -174,7 +173,7 @@ This is a convenience adapter around the document operations, with one file per 
 
 ### Input precedence
 
-For validation and both generators:
+For validation and URL generation:
 
 1. If `draft` is supplied, use that document exclusively. An explicit `{}` is an empty document, not a request to fall back.
 2. Otherwise, read `<data directory>/projects/<project_id>/.bestpractices.json` at call time.
@@ -198,7 +197,7 @@ If a response is lost after replacement, the outcome is uncertain to the caller;
 
 ## 6. Artifact generation
 
-Both generators validate the target, load the selected draft, retrieve the public record to verify the registered project and available identity, and encode eligible supplied fields relevant to the requested level. A missing document field means no proposed change. Include the four supported metadata fields where the target form supports them. Public answer values do not determine artifact inclusion: preserve eligible supplied values even when they match the public record.
+The URL generator validates the target, loads the selected draft, retrieves the public record to verify the registered project and available identity, and encodes eligible supplied fields relevant to the requested level. A missing document field means no proposed change. Include the four supported metadata fields where the target form supports them. Public answer values do not determine artifact inclusion: preserve eligible supplied values even when they match the public record.
 
 Do not add generator field selectors or a staged-submission state model. Normal host guidance is to update answers as work proceeds. If a user wants only a subset of locally stored answers transferred, the host may read the draft, construct the desired subset, and supply it as the explicit document. That accepted host responsibility does not change the stored draft and does not require a special MCP interface. The host remains responsible for opening artifacts and saving the website form.
 
@@ -230,14 +229,6 @@ Treat the structured URL string as the authoritative artifact. The host should o
 
 When no URL is generated, return `artifact: null` with a machine-readable reason and explanation distinguishing no supplied transferable answers from supplied work that could not be represented. Otherwise, `artifact` contains the `url` and `encoded_size_bytes` fields described above. Matching a saved answer is never grounds for omission. V1 does not support using `?` to reset live answers: omit unknown status placeholders and report them, evaluating supplied justifications independently. The upstream proposal guide and automation-approach decision matrix disagree about unknown-status resets; the [transfer rules](transfer-rules.md#unknown-status-limitation) record the chosen boundary. Any reset support requires a separate reviewed contract change. Do not silently infer reset intent from a reusable draft.
 
-### Form-fill scripts
-
-Return JavaScript as content with a suggested filename and instructions. Bind the script to the expected BadgeApp origin, project ID, and level; verify these before changing any form field. A wrong page causes a clear failure without changes.
-
-Serialize data safely as JSON rather than interpolating answer text into executable code. Preflight intended form controls before writing, report missing controls, and avoid knowingly filling only part of the requested set. Set values and dispatch appropriate input/change events; return a runtime report of filled and missing fields. A DOM script is not a transactional browser API, so runtime errors must remain visible.
-
-The script does not fetch credentials, submit the form, navigate, or save the application. It can carry long answers and wording replacements, including a supplied justification without an explicit draft status; in that case it changes only the textarea, without borrowing a status or running completeness checks. V1 still reports unknown-status resets as unsupported. Unlike unforced URL proposals, executing the script replaces the specified form values; its report and instructions must state that behavior. If an explicit unknown placeholder accompanies a justification, leave the status control alone and evaluate the supplied justification independently.
-
 ## 7. Errors, protocol behavior, and limits
 
 Use SDK-supported structured results with brief readable summaries. Domain failures are tool execution errors with a stable `code`, explanatory `message`, relevant field/path details, and a recovery action. Examples include `invalid_document`, `invalid_field`, `invalid_level`, `draft_not_found`, `draft_write_failed`, `document_too_large`, `project_not_found`, `project_mismatch`, `upstream_unavailable`, and `rate_limited`. Protocol/schema errors remain distinct from domain errors. A valid empty search or a generation result with no eligible supplied fields is not an error.
@@ -246,7 +237,7 @@ Mark public/catalog/file reads and artifact generators read-only. Mark `update_d
 
 Use `.json` URLs for structured API reads and explicit `.svg` badge URLs for image artifacts, finite timeouts, bounded GET retries, and shared request pacing of at most one request per second per server process. Respect upstream rate-limit responses and `Retry-After`; concurrent tool calls must share the limiter. Several independent processes can still aggregate traffic. Never retry writes to the local draft automatically after an ambiguous outcome.
 
-Publish bounded document/response sizes as implementation limits. Decoded SVG responses have a 1 MiB limit, separate from the 8 MiB JSON body limit and 16 MiB complete serialized MCP-result limit. Oversized documents or artifacts fail explicitly rather than being truncated. Criteria and progress filters reduce response size; discovery uses upstream pagination. Do not add output-format knobs merely to duplicate structured data. Do not log draft bodies, generated scripts, or full proposal query strings by default.
+Publish bounded document/response sizes as implementation limits. Decoded SVG responses have a 1 MiB limit, separate from the 8 MiB JSON body limit and 16 MiB complete serialized MCP-result limit. Oversized documents or artifacts fail explicitly rather than being truncated. Criteria and progress filters reduce response size; discovery uses upstream pagination. Do not add output-format knobs merely to duplicate structured data. Do not log draft bodies or full proposal query strings by default.
 
 Check the resulting draft size before committing an update. Every document successfully written by `update_draft` must remain returnable by `read_draft` under the server's own response policy, accounting for its result envelope and any compatibility representation. If the update would violate that invariant, return an error without changing the file. This is a server storage/response guarantee, not enforcement of upstream BadgeApp field/import limits.
 
@@ -271,12 +262,11 @@ No storage environment variable or local checkout is required.
 2. `read_draft(project_id=123)` optionally retrieves the existing document; a missing file returns `draft_not_found`.
 3. `update_draft(project_id=123, changes={...})` applies a small patch, creating the project draft if absent. Step 2 is not a prerequisite.
 4. `prepare_update_url(project_id=123, level="passing")` reads that file without retransmitting it through tool arguments.
-5. If URL transfer cannot carry some changes, `prepare_update_script(project_id=123, level="passing")` returns a form-fill artifact from the same file.
-6. After any save performed by the host/user, `get_project_progress` can inspect the actual saved result. This does not synchronize the local draft automatically.
+5. After any save performed by the host/user, `get_project_progress` can inspect the actual saved result. This does not synchronize the local draft automatically.
 
 Restarting the server preserves each project's draft. After resolving the registered project, the host reads its draft by ID. Working on project 456 selects a different file without restarting or reconfiguring the server. There is no handle to reopen, active-project session to recover, or hidden draft copy.
 
-Separate generator calls read independently. If either the file or the live application changes between URL and script generation, results may differ. There is no shared cross-call snapshot or draft version token.
+Separate generator calls read independently. If either the file or the live application changes between calls, results may differ. There is no shared cross-call snapshot or draft version token.
 
 ## 9. Implementation and acceptance
 
@@ -294,11 +284,10 @@ Acceptance checks must cover:
 - Missing required justifications/evidence URLs remain transferable wherever the BadgeApp edit/save flow accepts them; completeness findings are available only through the separate validator and never gate generation. No status is invented for a justification-only request, and replacement of existing wording requires the appropriate explicit URL override.
 - Mechanical validation reports missing required `N/A`/`Met` explanations and required URL text according to the selected level. It skips conditional checks without a known supplied status, performs no network calls or writes, and does not gate generators. Repeated criterion IDs are checked with the requested level's flags.
 - URL encoding, exact explicit overrides, inclusion of all eligible fields regardless of saved values, conservative unknown-status handling, exact UTF-8 byte counts after encoding, and explicit no-artifact reasons. Long URLs are returned intact without automatic batching or a guessed URL-length rejection threshold.
-- Script target guards, missing controls, text escaping, metadata fields, and absence of submit/navigation behavior.
 - JSON document fidelity: preserve fields through explicit patches, return the resulting document without advisory import findings, and do not apply upstream repository-import limits as local draft/generation limits.
 - MCP discovery and typed results in an actual target host, bounded errors/retries, shared network pacing, and protocol-clean stdout.
-- A realistically sized assessment edited through small `update_draft` calls and used by both generators without repeated full-document arguments.
+- A realistically sized assessment edited through small `update_draft` calls and used to generate proposal URLs without repeated full-document arguments.
 
-Use deterministic fixtures for routine tests, with expectations derived from documented upstream procedures, criteria YAML and explicitly agreed contract rules. Validate the approved form behavior against controlled test instances. Synthetic forms verify script guards and assignments, while the locally supervised live browser runbook checks the real integration. Import and Save/Submit internals remain outside the MCP contract. Read-only live smoke tests can confirm public API compatibility; no production saves are needed for acceptance. Exercise the live browser runbook after the first beta publication and before stable promotion; repeat it for subsequent release candidates. Keep the SDK and compatibility fixtures pinned and review updates against these boundaries.
+Use deterministic fixtures for routine tests, with expectations derived from documented upstream procedures, criteria YAML and explicitly agreed contract rules. The locally supervised live browser runbook checks proposal URLs against the real edit form. Import and Save/Submit internals remain outside the MCP contract. Read-only live smoke tests can confirm public API compatibility; no production saves are needed for acceptance. Exercise the live browser runbook after the first beta publication and before stable promotion; repeat it for subsequent release candidates. Keep the SDK and compatibility fixtures pinned and review updates against these boundaries.
 
 The [implementation contract](contracts.md) fixes initial document/response-size limits; implementation must verify their full-envelope accounting and record tested host compatibility before release. These are implementation limits, separate from BadgeApp's field and repository-import limits, which may be documented without becoming server checks.

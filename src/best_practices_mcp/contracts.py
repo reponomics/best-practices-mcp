@@ -15,7 +15,6 @@ INPUT_MODELS: dict[str, type[models.Model]] = {
     "update_draft": models.UpdateDraftInput,
     "validate_draft": models.DraftSourceInput,
     "prepare_update_url": models.PrepareURLInput,
-    "prepare_update_script": models.DraftSourceInput,
 }
 OUTPUT_MODELS: dict[str, type[models.Result]] = {
     "get_criteria": models.GetCriteriaResult,
@@ -28,7 +27,6 @@ OUTPUT_MODELS: dict[str, type[models.Result]] = {
     "update_draft": models.UpdateDraftResult,
     "validate_draft": models.ValidateDraftResult,
     "prepare_update_url": models.PrepareURLResult,
-    "prepare_update_script": models.PrepareScriptResult,
 }
 
 

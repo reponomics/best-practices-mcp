@@ -327,56 +327,6 @@
       }
     }
   },
-  "prepare_update_script": {
-    "input": {
-      "project_id": 123,
-      "level": "passing",
-      "draft": {}
-    },
-    "success": {
-      "schema_version": 1,
-      "project_id": 123,
-      "level": "passing",
-      "catalog": {
-        "revision": "868e1677339a3fdb48851b0c2ae8862c553115eb",
-        "source_url": "https://github.com/ossf/best-practices-badge",
-        "generated_at": "2026-11-09T00:00:00Z",
-        "format_version": 1
-      },
-      "draft_source": {
-        "kind": "explicit",
-        "location": null
-      },
-      "observation": {
-        "project_id": 123,
-        "source_url": "https://www.bestpractices.dev/en/projects/123.json",
-        "fetched_at": "2026-11-09T00:00:00Z",
-        "attribution": null,
-        "license": null
-      },
-      "identity": {
-        "association": "explicit_target",
-        "id_check": "absent",
-        "repo_check": "not_checked"
-      },
-      "outcome": "no_supplied_transferable_answers",
-      "artifact": null,
-      "no_artifact_reason": "no_supplied_transferable_answers",
-      "transfer": []
-    },
-    "error": {
-      "schema_version": 1,
-      "error": {
-        "code": "invalid_document",
-        "message": "Invalid document.",
-        "details": {
-          "field": "example_status"
-        },
-        "recovery": "Correct the input and try again.",
-        "retry_after_seconds": null
-      }
-    }
-  },
   "get_project_badge_status": {
     "input": {
       "project_id": 123

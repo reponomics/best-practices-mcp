@@ -21,7 +21,7 @@ Research baseline: **2026-11-13**, upstream revision [`31325acd7963e0c9203da0ff7
 
 #### Coverage and evidence
 
-Before this expansion, the nine-tool surface fetched only `/projects/{id}.json` and `/projects.json` with `q` or `url`, plus `page`. The eleven-tool surface also fetches the four badge JSON/SVG routes below. `get_project_progress` already returns all six level percentages and available overall progress fields; adding another full-record progress reader would duplicate it. The opportunity is to expose useful search controls and smaller or different datasets.
+Before this expansion, the nine-tool surface fetched only `/projects/{id}.json` and `/projects.json` with `q` or `url`, plus `page`. The current ten-tool surface also fetches the four badge JSON/SVG routes below. `get_project_progress` already returns all six level percentages and available overall progress fields; adding another full-record progress reader would duplicate it. The opportunity is to expose useful search controls and smaller or different datasets.
 
 | Upstream surface | Current coverage | Proposed disposition |
 | --- | --- | --- |
@@ -82,4 +82,4 @@ Start with locale-independent numeric datasets. Localized chart labels, activity
 2. **Deliver richer discovery separately.** The two badge tools are implemented. Discovery remains a separate proposal with strict input/result schemas, explicit route/query allowlists, adapter mappings, documentation and deterministic tests; its filter discrepancy is unresolved.
 3. **Decide statistics after a boundedness spike.** Confirm payload sizes, metric definitions and output reduction before committing to a new tool. Keep activity feeds and other representations deferred.
 
-Every addition reuses the shared GET client, one-request-per-second limiter, retry/cooldown rules, fixed production origin, body/result budgets and no-cookie/no-redirect policy. Add only specific supported routes and parameters; no generic `call_api` escape hatch. Preserve source attribution and explicitly label unknown, stale or incomplete information. Reads must not initialize or synchronize drafts. The badge-tool inventory and examples are maintained in the eleven-tool specification. Remaining proposals do not change that supported contract until separately implemented.
+Every addition reuses the shared GET client, one-request-per-second limiter, retry/cooldown rules, fixed production origin, body/result budgets and no-cookie/no-redirect policy. Add only specific supported routes and parameters; no generic `call_api` escape hatch. Preserve source attribution and explicitly label unknown, stale or incomplete information. Reads must not initialize or synchronize drafts. The badge-tool inventory and examples are maintained in the ten-tool specification. Remaining proposals do not change that supported contract until separately implemented.

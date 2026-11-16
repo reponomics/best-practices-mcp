@@ -407,7 +407,7 @@ def test_import_failure_leaves_existing_document_and_valid_import_calls_server(t
     assert client.calls == [("build_draft", {"draft": {"name": "Café Ω"}, "changes": {}})]
 
 
-@pytest.mark.parametrize("kind", ["url", "script", "document"])
+@pytest.mark.parametrize("kind", ["url", "document"])
 def test_exports_preserve_utf8_and_long_artifacts_exactly(tmp_path, kind) -> None:
     path = tmp_path / kind
     value = "Ω café 🍀\r\n" * 5000
@@ -429,7 +429,7 @@ def test_exports_preserve_utf8_and_long_artifacts_exactly(tmp_path, kind) -> Non
 def test_project_switch_discards_host_document_and_artifacts() -> None:
     app, _ = make_host(FakeClient(lambda *_: result(progress(456))), [])
     app.project_id, app.document = 123, {"id": 123}
-    app.artifacts["script"] = "old script"
+    app.artifacts["url"] = "old URL"
     asyncio.run(app.verify_selection(456))
     assert app.document is None and app.artifacts == {}
 
@@ -471,20 +471,20 @@ def test_real_generation_without_validation_exports_exact_artifacts(tmp_path) ->
     explanation = "https://example.org/new — café Ω 🍀 " + "Ω" * 1000
     source = tmp_path / "document.json"
     source.write_text(json.dumps({"description_good_justification": explanation}), encoding="utf-8")
-    url, override, script = [tmp_path / name for name in ("url.txt", "override.txt", "script.js")]
+    url, override = [tmp_path / name for name in ("url.txt", "override.txt")]
     transcript = (
         f"find\n123\n123\nlevel\npassing\nimport\n{source}\nurl\n\n\n"
         f"export\nurl\n{url}\nurl\n\ndescription_good_justification\n"
-        f"export\nurl\n{override}\nscript\n\nexport\nscript\n{script}\nquit\n"
+        f"export\nurl\n{override}\nquit\n"
     )
     completed = run_host(tmp_path, transcript)
     assert completed.returncode == 0, completed.stderr
     proposals = proposal_results(completed.stdout)
-    assert len(proposals) == 3
+    assert len(proposals) == 2
     assert proposals[0]["requested_overrides"] == []
     assert proposals[1]["requested_overrides"] == ["description_good_justification"]
-    for path, payload, key in zip((url, override, script), proposals, ("url", "url", "javascript")):
-        assert path.read_bytes() == payload["artifact"][key].encode("utf-8")
+    for path, payload in zip((url, override), proposals):
+        assert path.read_bytes() == payload["artifact"]["url"].encode("utf-8")
     assert explanation in unquote(override.read_text(encoding="utf-8"))
     assert not (tmp_path / "untouched").exists()
     assert "The report describes artifact contents." in completed.stdout
@@ -535,15 +535,13 @@ def test_stored_empty_initialize_and_remove_do_not_read_first() -> None:
 
 def test_stored_validation_and_whole_artifacts_omit_draft() -> None:
     client = FakeClient(lambda *_: result({"schema_version": 1, "artifact": None}))
-    app, _ = make_host(client, ["", "", ""])
+    app, _ = make_host(client, ["", ""])
     app.mode, app.project_id, app.level = "stored", 123, "passing"
     asyncio.run(app.validate_document())
     asyncio.run(app.prepare_url())
-    asyncio.run(app.prepare_script())
     assert client.calls == [
         ("validate_draft", {"project_id": 123, "level": "passing"}),
         ("prepare_update_url", {"project_id": 123, "level": "passing", "override_fields": []}),
-        ("prepare_update_script", {"project_id": 123, "level": "passing"}),
     ]
 
 
@@ -641,7 +639,6 @@ def test_uncertain_update_error_results_clear_artifacts_and_keep_read_available(
     app, output = make_host(client, [])
     app.mode, app.project_id = "stored", 123
     app.artifacts["url"] = "stale URL"
-    app.artifacts["script"] = "stale script"
     asyncio.run(app.patch_document({"name": "Possibly committed"}))
     assert len(client.calls) == 1
     assert app.artifacts == {}
@@ -670,7 +667,7 @@ def test_real_stored_workflow_restart_isolation_and_rejected_patch(tmp_path) -> 
         "find\n123\n123\nedit\nname\nFirst stored draft\nlevel\npassing\n"
         "edit\ndescription_good_status\nMet\n"
         f"export\ndocument\n{before}\nedit\ndescription_good_status\ninvalid\n"
-        f"export\ndocument\n{rejected}\nurl\n\n\nscript\n\nvalidate\nquit\n",
+        f"export\ndocument\n{rejected}\nurl\n\n\nvalidate\nquit\n",
         "--mode",
         "stored",
     )

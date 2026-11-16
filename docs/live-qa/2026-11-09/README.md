@@ -14,7 +14,7 @@ The checks demonstrated edit-form behavior only. No Save or Submit action was ta
 | 4. Unchanged forced status | Met remained selected; changed explanation retained its inherited override after the unchanged status was omitted from the URL | [Inherited override](04-inherited-override.png) | Exact URL not retained. The requested override named `contribution_requirements_status`; the effective emitted override named `contribution_requirements_justification`. |
 | 5. Changed forced status | Both supplied controls replaced; expanded notice showed previous values | [Status and explanation replaced](05-changed-status-inherited-override.png) | [Exact proposal URL](05-proposal-url.txt) |
 | 6. URL whitespace and Unicode | Form trimmed outer ASCII spaces while preserving internal text and Unicode | [URL text](06-whitespace-unicode.png) | [Exact proposal URL](06-proposal-url.txt), retaining the encoded leading/trailing spaces |
-| 7. Script assignment | Exact raw text, including two leading and trailing spaces, preserved; console reported `filled` | [Selected text](07-script-whitespace-selection.png), [console result](07-script-console-second-execution.jpg) | [Exact generated script](07-fill.js) |
+| 7. Script assignment | Exact raw text, including two leading and trailing spaces, preserved; console reported `filled` | [Selected text](07-script-whitespace-selection.png), [console result](07-script-console-second-execution.jpg) | [Historical generated script](https://github.com/reponomics/best-practices-mcp/blob/v0.2.0-beta.4/docs/live-qa/2026-11-09/07-fill.js) |
 | 8. Multi-criterion preview | All 24 inspected controls across 12 criteria matched the expected fill, override, retention, blocking and unchanged cases | [Criterion screenshots below](#multi-criterion-preview) | [Exact proposal URL](08-proposal-url.txt) |
 | 9. Discard and restore | Original form values restored after previews were discarded; no QA markers visible in the inspected form | [Restoration screenshots below](#baseline-restoration) | [Plain silver edit page](https://www.bestpractices.dev/en/projects/14356/silver/edit#all), without proposal parameters |
 
@@ -50,6 +50,8 @@ The restored form matched twelve baseline statuses and eight displayed justifica
 | Developer Certificate of Origin | [View](09-baseline-dco.png) |
 | Architecture documentation | [View](09-baseline-documentation_architecture.png) |
 | Unsafe dynamic analysis | [View](09-baseline-dynamic_analysis_unsafe.png) |
+
+The console-script tool has since been removed under [ADR 0003](../../adr/0003-remove-console-script-tool.md). Case 7 records historical behavior and is no longer part of the live-browser runbook.
 
 ## Evidence treatment and limits
 

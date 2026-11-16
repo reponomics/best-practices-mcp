@@ -9,17 +9,14 @@ Required tests establish conformance to the documented upstream automation proce
 | Criteria YAML and English locale; approved flag entailments, level-bounded details inheritance and Baseline aliases | `tests/test_criteria.py` independently reads all 209 definitions with standard PyYAML and checks public records; `make catalog-check` checks reproducible generation |
 | Upstream `automation-proposals.md` URL format and explicit override parameters; the artifact limits in the transfer-rules document | `tests/test_transfer_contract.py` and `tests/test_proposals.py` check exact encoding, explicit overrides, standalone justification, unchanged-value inclusion, and independence from observed answers |
 | Specification §4 advisory validation, including minimum length, exact comment prefix and URL-pattern rules | `tests/test_validation.py` checks explicit agreed examples and operational boundaries; successful validation does not establish website acceptance |
-| [Specification §6, Form-fill scripts](specification.md#form-fill-scripts): guarded console fallback, an approved project feature rather than an upstream-supported API | `tests/test_scripts.py` executes generated JavaScript against controlled synthetic forms, checking routes, control preflight, assignments, event dispatch, value preservation and partial-failure reporting |
-| Pinned source provenance and controlled-form derivation | Catalog integrity and `tests/test_upstream_sources.py` verify retained input hashes. The form derivation record preserves source references as explanatory context; it is not a checked copy of those sources or evidence of the deployed site |
+| Pinned source provenance | Catalog integrity and `tests/test_upstream_sources.py` verify retained input hashes. |
 | [ADR 0001](adr/0001-badge-image-and-status-tools.md) compact status and SVG contracts | `tests/test_badges.py` checks family mappings, timestamps, unavailable record attribution and one-endpoint calls; `tests/test_badge_tools.py` checks MCP wire schemas and effect boundaries; `tests/test_http.py` checks format allowlists, shared JSON/SVG pacing/retries and bounded SVG validation |
-| Eleven-tool MCP contract, bounded reads, local documents/storage and reference host | Protocol, network, document, storage, host and package tests remain required |
-| Actual BadgeApp edit-form integration | The [local browser runbook](live-browser-qa.md) exercises generated URLs and a script against an authenticated live form, with the exact server version and observations recorded |
+| Ten-tool MCP contract, bounded reads, local documents/storage and reference host | Protocol, network, document, storage, host and package tests remain required |
+| Actual BadgeApp edit-form integration | The [local browser runbook](live-browser-qa.md) exercises generated URLs against an authenticated live form, with the exact server version and observations recorded |
 
 The retained upstream documents are under `vendor/badgeapp/docs/`. The [transfer rules](transfer-rules.md) record approved compatibility details and the documented disagreement about unknown-status URL resets. Deterministic artifact tests verify included/excluded fields and exact supplied values. They do not compare saved answers or simulate BadgeApp's decision matrix. Live browser checks observe the actual edit-form effects. Save/Submit acceptance, persisted-value transformations, importer behavior and automated assessment remain outside this contract.
 
-## Synthetic forms and live checks answer different questions
-
-Synthetic forms are deliberately small test inputs, not a BadgeApp replica. They allow controlled tests of missing, ambiguous, disabled or wrong-type controls and runtime failures without altering a live application. Those tests establish how the generated script behaves under the supplied DOM conditions. They cannot establish that the real website still has the assumed field names, types or values: an incorrect assumption shared by code and fixture could pass both.
+## Live compatibility
 
 A locally supervised browser check supplies that integration evidence. It checks the actual controls and upstream URL handling without requiring production saves. Record unexpected form automation or a changed baseline explicitly; neither the public JSON observation nor an earlier screenshot guarantees the next rendered form's state. Limited tested levels and cases should be reported as such, without claiming exhaustive live coverage.
 
@@ -27,7 +24,7 @@ The first browser run is deferred until after publication of the first beta and 
 
 ## Commands and gates
 
-After `make setup` and `make setup-dom` with Node 24.22.3 or newer within 24.x, run:
+After `make setup`, run:
 
 ```sh
 make check

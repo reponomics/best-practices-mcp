@@ -1,7 +1,4 @@
-"""Verify integrity of the retained upstream documents, criteria and locale.
-
-Synthetic form source references record derivation, not live-site conformance.
-"""
+"""Verify integrity of the retained upstream documents, criteria and locale."""
 
 import hashlib
 import json

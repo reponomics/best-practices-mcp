@@ -17,7 +17,6 @@ NETWORK_TOOLS = frozenset(
         "get_project_badge_status",
         "get_project_badge_svg",
         "prepare_update_url",
-        "prepare_update_script",
     }
 )
 BADGE_TITLES = {

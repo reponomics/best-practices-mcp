@@ -1,6 +1,6 @@
 # V1 implementation contract
 
-The [specification](specification.md) defines scope and tool inputs; this document defines exact result payloads, operational policies and edge cases for the implemented eleven-tool server. Compatibility discrepancies require review before changing the contract.
+The [specification](specification.md) defines scope and tool inputs; this document defines exact result payloads, operational policies and edge cases for the implemented ten-tool server. Compatibility discrepancies require review before changing the contract.
 
 ## Common conventions
 
@@ -31,7 +31,7 @@ Application failures return `{schema_version: 1, error: Error}` in an SDK `CallT
 
 Stable domain codes: `invalid_document`, `invalid_field`, `invalid_level`, `invalid_criterion`, `invalid_query`, `invalid_override`, `draft_not_found`, `draft_read_failed`, `draft_write_failed`, `document_too_large`, `response_too_large`, `project_not_found`, `project_mismatch`, `project_identity_unresolved`, `upstream_unavailable`, `upstream_invalid_response`, `rate_limited`, `internal_error`. Recoveries identify an actual next action, such as supplying an explicit document, fixing a field, retrying a public read later, or reading after an uncertain write. There are no revision/conflict or validation-bypass tokens.
 
-## Eleven success payloads
+## Ten success payloads
 
 All rows also contain `schema_version: 1`. Input signatures are defined in [specification section 4](specification.md#4-tool-surface).
 
@@ -47,7 +47,6 @@ All rows also contain `schema_version: 1`. Input signatures are defined in [spec
 | `update_draft` | `project_id`, `applied_patch: object`, `created: boolean`, `location: string`, `issues: StructuralIssue[]`, `serialized_size_bytes: integer`, `identity: Identity`. Applied patch is the normalized accepted request, including null removals and content no-ops; no full document echo. |
 | `validate_draft` | `project_id`, `level`, `draft_source: DraftSource`, `identity: Identity`, `catalog: CatalogRef`, `findings: Finding[]`, `checked_criteria: string[]`, `skipped_criteria: Skipped[]`. `Finding` has `criterion_id: string|null`, `field`, `code`, `requirement: string`, `message`. `Skipped` has `criterion_id`, `reason: "status_absent"|"status_unknown"|"status_invalid"|"other_level"`, `checks: string[]`. |
 | `prepare_update_url` | Common artifact result below, plus `requested_overrides: string[]`, `effective_overrides: string[]`; `artifact` is `{url: string, encoded_size_bytes: integer}` or null. |
-| `prepare_update_script` | Common artifact result below; `artifact` is `{javascript: string, suggested_filename: string, instructions: string, encoded_size_bytes: integer}` or null. Script byte count measures UTF-8 JavaScript source. |
 
 `validate_draft` checks only represented selected-level criteria; wholly absent criteria appear in neither scope array. A criterion with a supplied field appears in checked scope for shape checks and may also appear in skipped scope for conditional checks; these arrays are not disjoint. Unknown fields receive `unknown_field` findings with null criterion ID. Other-level fields are outside checks and receive skipped scope entries, not selected-level invalidity findings. Metadata shape checks use null criterion ID. Supported finding codes are `invalid_type`, `invalid_status`, `unknown_field`, `na_not_allowed`, `missing_required_justification`, `missing_required_url`. Invalid statuses skip conditional checks. `Unmet` has no conditional evidence requirement. The exact five-character/comment-prefix/URL predicates remain those in spec section 4.
 
@@ -88,9 +87,9 @@ Unknown fields are unsupported; provenance rows are omitted with reason `provena
 
 ## Artifacts and overrides
 
-Requested overrides are deduplicated, sorted exact canonical field names, supplied and writable in scope; reject aliases, globs, unknown/provenance/out-of-scope/unsupplied entries. `requested_overrides` records that validated list. `effective_overrides` records only those explicitly requested fields actually encoded in the URL's `overrides` parameter. A transfer row's `override` is true exactly when its field is in that encoded list. It does not represent BadgeApp's eventual replacement decisions or implicit effects on paired fields. Do not expand a status override into a justification override; preserve the supplied status, justification and explicit status override so BadgeApp applies its documented semantics. Scripts accept no overrides and their transfer rows have `override: false`.
+Requested overrides are deduplicated, sorted exact canonical field names, supplied and writable in scope; reject aliases, globs, unknown/provenance/out-of-scope/unsupplied entries. `requested_overrides` records that validated list. `effective_overrides` records only those explicitly requested fields actually encoded in the URL's `overrides` parameter. A transfer row's `override` is true exactly when its field is in that encoded list. It does not represent BadgeApp's eventual replacement decisions or implicit effects on paired fields. Do not expand a status override into a justification override; preserve the supplied status, justification and explicit status override so BadgeApp applies its documented semantics.
 
-No-artifact reason equals the outcome enum, accompanied by field reasons in the transfer report. A valid empty search, completed validation with findings, and null artifact all remain successful tool results. Scripts share the artifact classifier and include every eligible supplied field without comparing it with saved answers. Script execution replaces the specified controls and returns actual execution results; neither generator promises the state of the rendered or saved form.
+No-artifact reason equals the outcome enum, accompanied by field reasons in the transfer report. A valid empty search, completed validation with findings, and null artifact all remain successful tool results. URL generation does not promise the state of the rendered or saved form.
 
 ## Resource and network policy
 
@@ -122,4 +121,3 @@ Regression fixtures cover these cases.
 - Supplied Met with a justification and an override on the status encodes both fields and only the explicit status override, including when either or both values match the public record.
 - Supplied Met plus text with only the justification overridden preserves both supplied values and that exact override. The report identifies included fields without classifying upstream retention or coupling effects.
 - Unknown-only input yields no_transferable_changes; other-level-only input yields no_supplied_transferable_answers; eligible fields matching the public record yield complete; matching eligible fields plus unsupported work yield partial.
-- A script on the wrong origin/project/level or missing intended control makes zero changes. Direct assignment/dispatch failures produce runtime_failed with completed fields; browser event-listener exceptions may remain browser-reported and cannot be certified by that result. Neither result implies atomic rollback or a saved update.

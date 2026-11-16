@@ -13,7 +13,6 @@ from mcp.types import CallToolResult, InputRequiredResult, Tool
 from pydantic import ValidationError
 
 from best_practices_mcp import __version__
-from best_practices_mcp.artifacts import prepare_update_script, prepare_update_url
 from best_practices_mcp.badgeapp import BadgeAppClient
 from best_practices_mcp.badges import get_project_badge_status, get_project_badge_svg
 from best_practices_mcp.contracts import validate_input
@@ -21,6 +20,7 @@ from best_practices_mcp.criteria import get_criteria
 from best_practices_mcp.drafts import build_draft, check_identity, normalize_draft
 from best_practices_mcp.errors import DomainError
 from best_practices_mcp.http import BadgeAppHTTP
+from best_practices_mcp.proposals import prepare_update_url
 from best_practices_mcp.sdk_adapter import tool_definition, tool_result
 from best_practices_mcp.storage import DraftStore, resolve_data_root
 from best_practices_mcp.validation import validate_draft
@@ -74,10 +74,6 @@ DOCUMENT_TOOLS = {
         "and trailing whitespace from URL-proposed justification text when applying it "
         "to the edit form. "
         "Does not open or save it."
-    ),
-    "prepare_update_script": (
-        "Prepare a guarded form-fill script and included/excluded field report. "
-        "Does not execute or save it."
     ),
 }
 
@@ -179,25 +175,24 @@ class BestPracticesServer(MCPServer):
         if name == "validate_draft":
             result = validate_draft(**values)
         else:
-            result = await self._artifact_payload(name, values, context)
+            result = await self._artifact_payload(values, context)
         result["draft_source"] = source
         if source["kind"] == "stored":
             result["identity"]["association"] = "storage_key"
         return result
 
-    async def _artifact_payload(self, name: str, values: dict, context: Context | None) -> dict:
+    async def _artifact_payload(self, values: dict, context: Context | None) -> dict:
         if context is None:
             raise RuntimeError("Network tools require the running server lifespan.")
         client = context.request_context.lifespan_context
         record, observation = await client.get_project_snapshot(values["project_id"])
-        generator = prepare_update_url if name == "prepare_update_url" else prepare_update_script
-        return generator(**values, record=record, observation=observation)
+        return prepare_update_url(**values, record=record, observation=observation)
 
 
 def create_server(
     *, http_factory: Callable[[], BadgeAppHTTP] = BadgeAppHTTP, data_root: Path | None = None
 ) -> MCPServer:
-    """Build all eleven tools; factory/root injection supports isolated offline tests."""
+    """Build all ten tools; factory/root injection supports isolated offline tests."""
     storage = DraftStore(resolve_data_root() if data_root is None else data_root)
 
     @asynccontextmanager

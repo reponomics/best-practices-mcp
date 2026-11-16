@@ -98,11 +98,6 @@ jobs:
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.11'
-      - name: Set up development-only Node
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: .nvmrc
-          package-manager-cache: false
       - name: Set up the pinned environment manager
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
@@ -114,7 +109,7 @@ jobs:
           go-version: '1.27.4'
           cache: false
       - name: Install locked development and isolated SBOM tools
-        run: make setup setup-dom release-evidence-setup
+        run: make setup release-evidence-setup
       - name: Validate tag, version, manifest and main ancestry
         env:
           RELEASE_PRERELEASE: ${{ needs.preflight.outputs.prerelease }}
@@ -131,7 +126,6 @@ jobs:
           scan-args: |-
             --config=osv-scanner.toml
             --lockfile=uv.lock
-            --lockfile=package-lock.json
             --lockfile=osv-scanner:build/actionlint-inventory/inventory.json
             --lockfile=osv-scanner:build/actionlint-inventory/stdlib-inventory.json
             --lockfile=osv-scanner:build/release/reports/runtime-wheel.inventory.json
@@ -146,7 +140,6 @@ jobs:
           scan-args: |-
             --config=osv-scanner.toml
             --lockfile=uv.lock
-            --lockfile=package-lock.json
             --lockfile=osv-scanner:build/actionlint-inventory/inventory.json
             --lockfile=osv-scanner:build/release/reports/runtime-wheel.inventory.json
             --lockfile=osv-scanner:build/release/reports/runtime-sdist.inventory.json
@@ -162,7 +155,6 @@ jobs:
           scan-args: |-
             --config=osv-scanner.toml
             --lockfile=uv.lock
-            --lockfile=package-lock.json
             --lockfile=osv-scanner:build/actionlint-inventory/inventory.json
             --no-resolve
             --all-packages

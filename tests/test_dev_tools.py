@@ -229,31 +229,3 @@ def test_twine_failure_propagates(tmp_path, monkeypatch):
     monkeypatch.setattr(TOOLS.subprocess, "run", fail)
     with pytest.raises(subprocess.CalledProcessError):
         TOOLS.check_distributions(tmp_path)
-
-
-def test_tool_launcher_uses_resolved_path(monkeypatch, tmp_path):
-    launcher = str(tmp_path / "Node installation" / "npm.cmd")
-    calls = []
-    monkeypatch.setattr(TOOLS.shutil, "which", lambda name: launcher)
-    monkeypatch.setattr(
-        TOOLS.subprocess, "run", lambda argv, **kwargs: calls.append((argv, kwargs))
-    )
-    TOOLS.run_tool(["npm.cmd", "ci", "--ignore-scripts"])
-    assert calls == [([launcher, "ci", "--ignore-scripts"], {"check": True})]
-
-
-def test_missing_tool_launcher_fails(monkeypatch):
-    monkeypatch.setattr(TOOLS.shutil, "which", lambda name: None)
-    with pytest.raises(FileNotFoundError, match="Executable not found: npm.cmd"):
-        TOOLS.run_tool(["npm.cmd", "ci"])
-
-
-def test_tool_launcher_failure_propagates(monkeypatch):
-    monkeypatch.setattr(TOOLS.shutil, "which", lambda name: name)
-
-    def fail(argv, **kwargs):
-        raise subprocess.CalledProcessError(2, argv)
-
-    monkeypatch.setattr(TOOLS.subprocess, "run", fail)
-    with pytest.raises(subprocess.CalledProcessError):
-        TOOLS.run_tool(["npm.cmd", "ci"])

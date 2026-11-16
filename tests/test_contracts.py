@@ -49,7 +49,6 @@ def test_schemas_and_examples(tool: str) -> None:
         "update_draft",
         "validate_draft",
         "prepare_update_url",
-        "prepare_update_script",
     ],
 )
 @pytest.mark.parametrize("project_id", [True, False, 0, -1, 1.0, "123", None])
@@ -65,7 +64,7 @@ def test_extra_arguments_are_rejected(tool: str) -> None:
         validate_input(tool, EXAMPLES[tool]["input"] | {"unexpected": True})
 
 
-@pytest.mark.parametrize("tool", ["validate_draft", "prepare_update_url", "prepare_update_script"])
+@pytest.mark.parametrize("tool", ["validate_draft", "prepare_update_url"])
 def test_omitted_draft_is_not_empty_or_null(tool: str) -> None:
     base = {"project_id": 123, "level": "passing"}
     absent = validate_input(tool, base)

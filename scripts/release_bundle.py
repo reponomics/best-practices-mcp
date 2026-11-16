@@ -27,9 +27,7 @@ REQUIRED_REPORTS = (
 POLICY_INPUTS = (
     ("osv-scanner.toml", "osv-scanner.toml"),
     ("uv.lock", "uv.lock"),
-    ("package-lock.json", "package-lock.json"),
     ("pyproject.toml", "pyproject.toml"),
-    (".nvmrc", "node-version.txt"),
     (".pre-commit-config.yaml", "pre-commit-config.yaml"),
     (".github/workflows/actionlint.yml", "actionlint-workflow.yml"),
     (".github/workflows/release.yml", "release-workflow.yml"),
@@ -126,7 +124,7 @@ def assemble(
             "runtime_sbom_scope": (
                 "Reference fresh installations; not a universal or bundled dependency set"
             ),
-            "tooling_sbom_scope": "Development lockfiles and actionlint executable modules",
+            "tooling_sbom_scope": "Development Python lockfile and actionlint executable modules",
         },
     )
 

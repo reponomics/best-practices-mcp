@@ -22,21 +22,6 @@ updates:
         applies-to: security-updates
         patterns: ['*']
 
-  - package-ecosystem: npm
-    directory: /
-    schedule:
-      interval: weekly
-    commit-message:
-      prefix: deps
-    groups:
-      dom-tooling-minor-patch:
-        applies-to: version-updates
-        patterns: ['*']
-        update-types: [minor, patch]
-      dom-tooling-security:
-        applies-to: security-updates
-        patterns: ['*']
-
   - package-ecosystem: github-actions
     directory: /
     schedule:

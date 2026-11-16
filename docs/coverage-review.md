@@ -2,7 +2,7 @@
 
 ## Scope and baseline
 
-Reviewed the existing `build/coverage/coverage.json` and `summary.json`, generated on November 11, 2026 at 23:02 America/New_York for commit `66fa5fac1efa73559e007403404575f393d6c96a`. The report measures the server package, including MCP subprocesses; it does not measure development scripts, the reference host, or generated JavaScript. Their behavioral tests remain part of the suite.
+Reviewed the existing `build/coverage/coverage.json` and `summary.json`, generated on November 11, 2026 at 23:02 America/New_York for commit `66fa5fac1efa73559e007403404575f393d6c96a`. The report measures the server package, including MCP subprocesses; it does not measure development scripts, the reference host, or generated JavaScript. The surviving behavioral tests remain part of the suite; the console-script generator and its dedicated tests were later removed under [ADR 0003](adr/0003-remove-console-script-tool.md).
 
 The baseline contains 1,342 executable statements and 386 branch destinations: 29 missing statements and 16 missing branch destinations, for 97.40% combined coverage (97.84% statements, 95.85% branches). The associated test run had 692 passes and one native-Windows skip. Baseline evidence was copied to ignored `build/coverage-review-baseline/` before regenerating the reports.
 

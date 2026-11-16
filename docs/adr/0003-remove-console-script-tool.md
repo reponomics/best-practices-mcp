@@ -1,6 +1,6 @@
 # ADR 0003: Remove the browser-console script tool
 
-Status: Draft for review; removal direction approved, implementation pending. Date: 2026-11-15.
+Status: Accepted. Date: 2026-11-15.
 
 ## Context
 
@@ -20,7 +20,7 @@ Remove `prepare_update_script` completely in the next beta. The project is still
 
 Delete the generator, script-only models and contract fixtures, DOM tests and forms, npm manifests, and the mandatory Node test setup. Remove their consumers from package checks, Make targets, CI, dependency scanning, tooling inventories, and release-bundle inputs. Retain shared URL transfer logic, identity checks, document/storage semantics, response limits, and source provenance. Python dependencies still used elsewhere, including pre-commit's `nodeenv`, remain. Optional MCP Inspector usage may still require externally installed Node/npm.
 
-Update maintained documentation and the current tool inventory. Preserve historical release facts and clearly identify obsolete planning and QA material; remove the archived executable fill script and resolve its documentation links. On implementation, this decision supersedes the DOM-test Node/npm requirements in [ADR 0002](0002-development-toolchain.md), without changing its Python/uv/Make decisions. The existing release-verification workflow continues checking the actual published assets and needs no old/new inventory compatibility branch.
+Update maintained documentation and the current tool inventory. Preserve historical release facts and clearly identify obsolete planning and QA material; remove the archived executable fill script and resolve its documentation links. This decision supersedes the DOM-test Node/npm requirements in [ADR 0002](0002-development-toolchain.md), without changing its Python/uv/Make decisions. The existing release-verification workflow continues checking the actual published assets and needs no old/new inventory compatibility branch.
 
 ## Reference host boundary
 

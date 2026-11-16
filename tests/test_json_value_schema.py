@@ -59,7 +59,6 @@ def test_each_output_schema_preserves_arbitrary_error_details(tool):
         ("update_draft", "changes"),
         ("validate_draft", "draft"),
         ("prepare_update_url", "draft"),
-        ("prepare_update_script", "draft"),
     ],
 )
 def test_document_input_schemas_preserve_nested_unfamiliar_json(tool, field):

@@ -8,18 +8,18 @@ This is an independent Reponomics project, not affiliated with, sponsored by, en
 | --- | --- |
 | [Roadmap](roadmap.md) | Planned work and proposals under consideration |
 | [Contributing](../CONTRIBUTING.md) | Development setup, validation commands and MCP client tooling |
-| [Server specification](specification.md) | Supported behavior, eleven tools and host/server responsibilities |
+| [Server specification](specification.md) | Supported behavior, ten tools and host/server responsibilities |
 | [Design decisions](design.md) | Human-review boundary, deliberate exclusion of direct saves and documented-procedure authority |
 | [ADR 0001: Badge image and status tools](adr/0001-badge-image-and-status-tools.md) | Accepted separation of SVG retrieval, compact status observations and detailed progress; reasons to keep update time and progress together |
 | [ADR 0002: Development toolchain](adr/0002-development-toolchain.md) | Canonical cross-platform Make tasks, locked uv environments and bootstrap-tool audit inventory |
-| [ADR 0003: Remove the console-script tool](adr/0003-remove-console-script-tool.md) | Draft removal decision, historical rationale, and boundaries preserving reference-host and live URL coverage |
+| [ADR 0003: Remove the console-script tool](adr/0003-remove-console-script-tool.md) | Accepted removal decision, historical rationale, and boundaries preserving reference-host and live URL coverage |
 | [Architecture](architecture.md) | Modules, data flow, protocol adaptation and persistence boundaries |
 | [Implementation contracts](contracts.md) | Exact payloads, errors, size/network policies and edge cases |
 | [Upstream compatibility](upstream-compatibility.md) | Source baseline, routes, catalog conventions and update procedure |
-| [Transfer rules](transfer-rules.md) | Faithful artifact contents, explicit overrides, exclusions and script behavior |
+| [Transfer rules](transfer-rules.md) | Faithful artifact contents, explicit overrides, and exclusions |
 | [Schema compatibility](schema-compatibility.md) | SDK-supported schema declarations and interoperability checks |
-| [Testing policy](testing-policy.md) | Deterministic contract tests, defensive DOM tests and live compatibility evidence |
-| [Live browser QA](live-browser-qa.md) | Local PolicyChecks URL/script checks after first publication and for subsequent release candidates |
+| [Testing policy](testing-policy.md) | Deterministic contract tests and live compatibility evidence |
+| [Live browser QA](live-browser-qa.md) | Local PolicyChecks proposal-URL checks after first publication and for subsequent release candidates |
 | [CI and repository setup](ci.md) | Native compatibility matrix, security checks and service activation |
 | [Release procedure](releasing.md) | Release Please, approvals, OIDC publication and published-package QA |
 | [Release verification](verification.md) | Consumer checks for asset integrity, authenticity, provenance, SBOMs and scan evidence |
@@ -30,4 +30,4 @@ The [project README](../README.md) covers installation, host configuration and e
 
 [Initial implementation planning](planning/initial-implementation/README.md) preserves the original scope, reviews and development decisions. These historical records do not override the maintained documentation.
 
-The [live Chrome QA record](live-qa/2026-11-09/README.md) includes the approved screenshots, associated retained proposal URLs/script, and the limits of the exercised transfer cases.
+The [live Chrome QA record](live-qa/2026-11-09/README.md) includes the approved screenshots, associated retained proposal URLs and historical script reference, and the limits of the exercised transfer cases.

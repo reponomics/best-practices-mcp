@@ -68,7 +68,7 @@ Replace both tag values with the same actual candidate tag. A dispatch on `main`
 
 The non-default `release-tools` group pins CycloneDX Python in an isolated tool environment. It inspects each freshly installed wheel/source-archive environment without installing the SBOM generator there. Runtime SBOMs are validated CycloneDX JSON 1.6 and identify the candidate digest, source commit, platform, Python version and creation time. They describe reference installations, including explicitly identified environment bootstrap tooling; they are not claims that all dependencies are bundled in the archives or identical on every platform and future installation date.
 
-Runtime OSV inventories come from pip's actual installation report, excluding the unpublished project root and avoiding unrelated bootstrap tooling. Public pip reports retain selected package identities and download hashes with local paths, credentials and URL queries removed. The separate tooling SBOM exports the uv/npm/actionlint inventory; Node and workflow tooling are not represented as MCP runtime dependencies. The Go standard-library version is checked separately for vulnerabilities. The release uses the same reviewed license policy as PR CI, including exact-version metadata corrections, the Docutils exception, and the permissive 0BSD allowlist entry used by release tooling.
+Runtime OSV inventories come from pip's actual installation report, excluding the unpublished project root and avoiding unrelated bootstrap tooling. Public pip reports retain selected package identities and download hashes with local paths, credentials and URL queries removed. The separate tooling SBOM exports the uv/actionlint inventory; workflow tooling is not represented as MCP runtime dependencies. The Go standard-library version is checked separately for vulnerabilities. The release uses the same reviewed license policy as PR CI, including exact-version metadata corrections, the Docutils exception, and the permissive 0BSD allowlist entry used by release tooling.
 
 Use the [consumer verification instructions](verification.md) after publication. Verify GitHub's immutable-release attestation and the local assets, the distributions' workflow provenance and SBOM attestations, and PyPI's publish attestations. Retain the release/run identity and verification results when recording release QA. Checksums alone are not authentication.
 
@@ -82,7 +82,7 @@ Post-publication checks verified all 31 downloaded asset digests, all 27 checksu
 
 ## Local candidate checks
 
-Use the project venv and the locked Node development tooling. The commands below prepare and qualify files; none publishes anything:
+Use the project venv. The commands below prepare and qualify files; none publishes anything:
 
 ```sh
 make check catalog-check lock-check workflow-check

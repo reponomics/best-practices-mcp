@@ -18,7 +18,6 @@ TOOLS = [
     "get_project_badge_status",
     "get_project_badge_svg",
     "get_project_progress",
-    "prepare_update_script",
     "prepare_update_url",
     "read_draft",
     "update_draft",
@@ -78,13 +77,12 @@ async def synthetic_public_workflow(workspace: Path, env: dict) -> None:
         assert found["candidates"][0]["project"]["project_id"] == 123
         progress = await call(client, "get_project_progress", {"project_id": 123})
         assert progress["project"]["project_id"] == 123
-        for tool in ("prepare_update_url", "prepare_update_script"):
-            result = await call(client, tool, {"project_id": 123, "level": "passing"})
-            assert result["draft_source"]["kind"] == "stored" and result["artifact"]
-            explicit = await call(
-                client, tool, {"project_id": 123, "level": "passing", "draft": {}}
-            )
-            assert explicit["draft_source"]["kind"] == "explicit"
+        result = await call(client, "prepare_update_url", {"project_id": 123, "level": "passing"})
+        assert result["draft_source"]["kind"] == "stored" and result["artifact"]
+        explicit = await call(
+            client, "prepare_update_url", {"project_id": 123, "level": "passing", "draft": {}}
+        )
+        assert explicit["draft_source"]["kind"] == "explicit"
 
 
 async def exercise(workspace: Path) -> None:

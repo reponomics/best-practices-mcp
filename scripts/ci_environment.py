@@ -29,7 +29,6 @@ def main() -> None:
         "python": platform.python_version(),
         "os": platform.platform(),
         "architecture": platform.machine(),
-        "node": output(["node", "--version"]),
         "make": make_version(),
         "matrix_os": os.environ.get("CI_MATRIX_OS"),
         "matrix_python": os.environ.get("CI_MATRIX_PYTHON"),

@@ -6,6 +6,8 @@ Detailed HTML QA reports, execution logs, test-count chronology and earlier docu
 
 The optional Ruby comparisons and copied implementation sources described in these historical records were removed during pre-release cleanup. The investigation remains in the preserved development repository. Current verification follows the [testing policy](../../testing-policy.md); references here to removed test and vendor paths describe the earlier development state.
 
+The console-script tool and its DOM test tooling were removed under [ADR 0003](../../adr/0003-remove-console-script-tool.md). References to them below describe historical scope, not supported functionality.
+
 ## Planning and review
 
 | Record | Historical purpose |

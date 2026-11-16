@@ -1,7 +1,7 @@
 """Small MCP-only terminal host for public reads and explicit or stored drafts.
 
 Files are imported/exported only at host-chosen paths. The host never opens a
-browser, executes generated JavaScript, or saves BadgeApp forms.
+browser or saves BadgeApp forms.
 """
 
 from __future__ import annotations
@@ -37,9 +37,7 @@ REGISTRATION_URL = "https://www.bestpractices.dev/en/projects/new"
 CALL_TIMEOUT_SECONDS = 45
 MAX_IMPORT_BYTES = 1024 * 1024
 METADATA_FIELDS = ("name", "description", "license", "implementation_languages")
-DOCUMENT_TOOLS = frozenset(
-    {"build_draft", "validate_draft", "prepare_update_url", "prepare_update_script"}
-)
+DOCUMENT_TOOLS = frozenset({"build_draft", "validate_draft", "prepare_update_url"})
 
 
 class HostError(Exception):
@@ -453,30 +451,23 @@ class ReadHost:
         return self.document_arguments(subset)
 
     async def prepare_url(self) -> None:
-        await self.prepare_artifact("url")
-
-    async def prepare_script(self) -> None:
-        await self.prepare_artifact("script")
-
-    async def prepare_artifact(self, kind: str) -> None:
         if not self.ready(level=True):
             return
         arguments = await self.scoped_arguments()
         if arguments is None:
             return
-        if kind == "url":
-            selected = await self.ask(
-                "Exact override field names, comma-separated (blank means none): "
-            )
-            if selected == "quit":
-                return
-            arguments["override_fields"] = comma_fields(selected)
-        self.artifacts.pop(kind, None)
-        result = await self.call(f"prepare_update_{kind}", arguments)
+        selected = await self.ask(
+            "Exact override field names, comma-separated (blank means none): "
+        )
+        if selected == "quit":
+            return
+        arguments["override_fields"] = comma_fields(selected)
+        self.artifacts.pop("url", None)
+        result = await self.call("prepare_update_url", arguments)
         if result is not None:
-            self.show_artifact(kind, result)
+            self.show_artifact(result)
 
-    def show_artifact(self, kind: str, result: dict) -> None:
+    def show_artifact(self, result: dict) -> None:
         self.write("Proposal only: inspect included and excluded fields; nothing has been applied.")
         self.show_json(result)
         self.write(
@@ -487,10 +478,9 @@ class ReadHost:
         if artifact is None:
             self.write("No artifact generated; inspect outcome and no_artifact_reason above.")
             return
-        key = "url" if kind == "url" else "javascript"
-        self.artifacts[kind] = artifact[key]
+        self.artifacts["url"] = artifact["url"]
         self.write("Exact artifact (export preserves UTF-8 bytes without added newline):")
-        self.write(artifact[key])
+        self.write(artifact["url"])
         self.write(
             "Use export to save explicitly. Review in your authenticated browser; saving is manual."
         )
@@ -498,7 +488,7 @@ class ReadHost:
     async def export_file(self) -> None:
         if not self.ready():
             return
-        kind = await self.ask("Export document / url / script (blank cancels): ")
+        kind = await self.ask("Export document / url (blank cancels): ")
         if kind == "document":
             document = self.document
             if self.mode == "stored":
@@ -536,7 +526,6 @@ class ReadHost:
             "show": self.show_document,
             "validate": self.validate_document,
             "url": self.prepare_url,
-            "script": self.prepare_script,
             "export": self.export_file,
         }
         if self.mode == "stored":

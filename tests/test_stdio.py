@@ -15,7 +15,7 @@ def server_command() -> str:
     return str(Path(sysconfig.get_path("scripts")) / f"bestpractices-mcp{suffix}")
 
 
-def test_stdio_discovery_has_eleven_tools_without_creating_storage(tmp_path: Path) -> None:
+def test_stdio_discovery_has_ten_tools_without_creating_storage(tmp_path: Path) -> None:
     async def exercise() -> None:
         parameters = StdioServerParameters(
             command=server_command(),
@@ -33,7 +33,6 @@ def test_stdio_discovery_has_eleven_tools_without_creating_storage(tmp_path: Pat
                 "get_project_badge_status",
                 "get_project_badge_svg",
                 "get_project_progress",
-                "prepare_update_script",
                 "prepare_update_url",
                 "read_draft",
                 "update_draft",

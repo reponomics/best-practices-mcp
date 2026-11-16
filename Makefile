@@ -9,16 +9,10 @@ ifeq ($(OS),Windows_NT)
 SHELL := cmd.exe
 .SHELLFLAGS := /d /c
 PYTHON ?= $(VENV)/Scripts/python.exe
-NPM ?= npm.cmd
-# Resolve the full batch-launcher path so npm finds its own installation.
-NPM_COMMAND = "$(PYTHON)" scripts/dev_tools.py run "$(NPM)"
 else
 PYTHON ?= $(VENV)/bin/python
-NPM ?= npm
-NPM_COMMAND = "$(NPM)"
 endif
 PIP ?= "$(PYTHON)" -m pip
-NODE ?= node
 UV ?= uv
 OSV_SCANNER ?= osv-scanner
 GO ?= go
@@ -37,7 +31,6 @@ RELEASE_SBOM ?= 0
 RELEASE_SBOM_ARG = $(if $(filter 1,$(RELEASE_SBOM)),--sbom-python "$(RELEASE_SBOM_PYTHON)")
 
 export UV_PROJECT_ENVIRONMENT := $(VENV)
-export NODE
 # Evidence must identify this Make executable, including gmake/custom paths.
 export VERIFICATION_MAKE := $(MAKE)
 
@@ -83,7 +76,7 @@ run: ## Run the stdio server (waits for an MCP client)
 example: ## Discover implemented tools through the reference host (offline)
 	"$(PYTHON)" examples/host.py --discover
 
-test-contract: ## Verify eleven-tool schemas and document normalization
+test-contract: ## Verify ten-tool schemas and document normalization
 	"$(PYTHON)" -m pytest tests/test_contracts.py tests/test_json_value_schema.py tests/test_documents.py tests/test_sdk_adapter.py
 
 test-catalog: catalog-check ## Verify six-level source compatibility and catalog data
@@ -135,16 +128,13 @@ smoke-live: ## Opt-in paced public GET compatibility check (PROJECT_ID=1)
 smoke-badges: ## Opt-in paced JSON/SVG badge compatibility check (PROJECT_ID=1, read-only)
 	"$(PYTHON)" scripts/smoke_badges.py --project-id "$(PROJECT_ID)"
 
-.PHONY: setup-dom test-upstream test-documents
-
-setup-dom: ## Install locked development-only DOM tooling (Node 24)
-	$(NPM_COMMAND) ci --ignore-scripts
+.PHONY: test-upstream test-documents
 
 test-documents: ## Verify pure patches, mechanical checks and real MCP document paths
 	"$(PYTHON)" -m pytest tests/test_drafts.py tests/test_validation.py tests/test_document_tools.py tests/test_storage_tools.py
 
-test-upstream: ## Verify documented proposal rules and agreed script behavior (offline)
-	"$(PYTHON)" -m pytest tests/test_transfer_contract.py tests/test_upstream_sources.py tests/test_proposals.py tests/test_scripts.py
+test-upstream: ## Verify documented proposal rules (offline)
+	"$(PYTHON)" -m pytest tests/test_transfer_contract.py tests/test_upstream_sources.py tests/test_proposals.py
 
 .PHONY: test-storage host-stored
 
@@ -188,11 +178,11 @@ pre-commit-check: ## Run all configured hooks against tracked files (no live tes
 actionlint-inventory: ## Generate CI-only actionlint inventory (network; requires Go and PyYAML)
 	"$(PYTHON)" scripts/actionlint_inventory.py --go "$(GO)"
 
-scan-vulnerabilities: ## Scan both lockfiles for vulnerabilities (network; requires OSV-Scanner)
-	"$(OSV_SCANNER)" --config=osv-scanner.toml --lockfile=uv.lock --lockfile=package-lock.json --no-resolve --format=sarif --output-file=osv-scanner.sarif
+scan-vulnerabilities: ## Scan the Python lockfile for vulnerabilities (network; requires OSV-Scanner)
+	"$(OSV_SCANNER)" --config=osv-scanner.toml --lockfile=uv.lock --no-resolve --format=sarif --output-file=osv-scanner.sarif
 
 scan-licenses: ## Check dependency license policy and retain JSON (network; requires OSV-Scanner)
-	"$(OSV_SCANNER)" --config=osv-scanner.toml --lockfile=uv.lock --lockfile=package-lock.json --no-resolve --licenses=$(OSV_LICENSES) --all-packages --format=json --output-file=osv-licenses.json
+	"$(OSV_SCANNER)" --config=osv-scanner.toml --lockfile=uv.lock --no-resolve --licenses=$(OSV_LICENSES) --all-packages --format=json --output-file=osv-licenses.json
 
 release-check: ## Check release tag/version/main identity (RELEASE_ARGS or CI environment)
 	"$(PYTHON)" scripts/release_check.py source $(RELEASE_ARGS)

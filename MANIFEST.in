@@ -1,5 +1,5 @@
 include CONTRIBUTING.md
-include Makefile package.json package-lock.json .nvmrc .python-version uv.lock
+include Makefile .python-version uv.lock
 include osv-scanner.toml
 include .github/workflows/actionlint.yml
 include .pre-commit-config.yaml
@@ -8,7 +8,7 @@ include .github/release-please-config.json .github/.release-please-manifest.json
 recursive-include docs *.md
 recursive-include examples *.py
 recursive-include scripts *.py
-recursive-include tests *.py *.json *.mjs *.html
+recursive-include tests *.py *.json
 recursive-include vendor/badgeapp *
 recursive-include src/best_practices_mcp/data *.json *.txt
 prune docs/live-qa

@@ -50,14 +50,6 @@ def test_document_workflow_wire_results_with_missing_storage_root(tmp_path):
                         "draft": {"description_good_status": "Met"},
                     },
                 ),
-                (
-                    "prepare_update_script",
-                    {
-                        "project_id": 123,
-                        "level": "passing",
-                        "draft": {"description_good_justification": "New ✨ text"},
-                    },
-                ),
             ]
             results = []
             for name, args in calls:
@@ -73,8 +65,7 @@ def test_document_workflow_wire_results_with_missing_storage_root(tmp_path):
             assert parse_qs(urlsplit(results[2]["artifact"]["url"]).query) == {
                 "description_good_status": ["Met"]
             }
-            assert results[3]["artifact"]["javascript"]
-            for name in ("validate_draft", "prepare_update_url", "prepare_update_script"):
+            for name in ("validate_draft", "prepare_update_url"):
                 result = await client.call_tool(name, {"project_id": 123, "level": "passing"})
                 assert result.is_error
                 assert result.structured_content["error"]["code"] == "draft_not_found"
@@ -101,7 +92,7 @@ def test_pure_handlers_and_missing_drafts_do_not_need_http(tmp_path):
             ("validate_draft", {"project_id": 123, "level": "passing", "draft": {}}),
         ):
             assert not (await server.call_tool(name, arguments)).is_error
-        for name in ("validate_draft", "prepare_update_url", "prepare_update_script"):
+        for name in ("validate_draft", "prepare_update_url"):
             result = await server.call_tool(name, {"project_id": 123, "level": "passing"})
             assert result.structured_content["error"]["code"] == "draft_not_found"
 
@@ -114,7 +105,6 @@ def test_pure_handlers_and_missing_drafts_do_not_need_http(tmp_path):
         ("find_project", {"query": "example"}),
         ("get_project_progress", {"project_id": 123}),
         ("prepare_update_url", {"project_id": 123, "level": "passing", "draft": {}}),
-        ("prepare_update_script", {"project_id": 123, "level": "passing", "draft": {}}),
     ],
 )
 def test_network_handlers_without_lifespan_return_safe_errors(tmp_path, name, arguments):

@@ -4,7 +4,7 @@
 
 Best Practices MCP lets an MCP-compatible assistant look up projects on the OpenSSF Best Practices Badge website (BadgeApp), inspect badge criteria and progress, retrieve badge images and README snippets, prepare draft answers, and generate proposed updates for review in the browser.
 
-The server provides the tools; your assistant decides how to assess the project and organize the work. It can prepare an edit-page URL or a guarded form-fill script, but does not authenticate to BadgeApp or save changes. You review the actual form before deciding to save.
+The server provides the tools; your assistant decides how to assess the project and organize the work. It can prepare an edit-page URL, but does not authenticate to BadgeApp or save changes. You review the actual form before deciding to save.
 
 Maintained by Reponomics. This is an independent project, not affiliated with, sponsored by, endorsed by, or an official project of OpenSSF, the Linux Foundation, or the OpenSSF Best Practices Badge project or its contributors.
 
@@ -35,7 +35,7 @@ Reload the host's MCP connections, then try a request such as:
 
 > Find the BadgeApp project for https://github.com/reponomics/PolicyChecks and show its silver-level progress. Do not prepare any changes yet.
 
-The pinned beta release above exposes all eleven tools listed below, including the two badge tools. Starting the executable directly in a terminal waits for MCP messages; it is not an interactive CLI. For a source checkout or connection debugging with Inspector, see [Contributing](CONTRIBUTING.md).
+The table below describes the ten tools in the current source. Releases through beta.4 also included the console-script tool, removed by [ADR 0003](docs/adr/0003-remove-console-script-tool.md). Starting the executable directly in a terminal waits for MCP messages; it is not an interactive CLI. For a source checkout or connection debugging with Inspector, see [Contributing](CONTRIBUTING.md).
 
 ## Tools
 
@@ -51,7 +51,6 @@ The pinned beta release above exposes all eleven tools listed below, including t
 | `update_draft` | Create or patch a locally stored project draft. | Local write; no BadgeApp update |
 | `validate_draft` | Check supplied answers against the bundled criteria's mechanical requirements. | Offline; may read a stored draft |
 | `prepare_update_url` | Generate a proposed edit-page URL and report included/excluded fields. | Public BadgeApp GETs; no remote write |
-| `prepare_update_script` | Generate a guarded browser form-fill script and report included/excluded fields. | Public BadgeApp GETs; does not execute the script |
 
 See the [tool specification](docs/specification.md) and [payload contracts](docs/contracts.md) for arguments, results and errors.
 
@@ -60,8 +59,8 @@ See the [tool specification](docs/specification.md) and [payload contracts](docs
 - **Compatibility:** Python 3.11 is the supported minimum. The CI compatibility matrix targets Python 3.11/3.12 on Linux, macOS and Windows. The protocol baseline is MCP `2026-07-28`; transport is stdio. Node and Ruby are not required to run the server.
 - **Catalog and language:** criteria are bundled from a pinned upstream revision, not fetched live. The current catalog is English and generated edit links use English paths. Translation support is [proposed](docs/roadmap.md#proposed).
 - **Validation is advisory:** it checks mechanical requirements, not whether claims are true or evidence is sufficient. Validation is optional and does not gate artifact generation.
-- **Review in the browser:** artifacts include eligible supplied fields even when they match saved values. Reports describe what was included or excluded, not what BadgeApp will retain or save. BadgeApp documents trimming leading/trailing whitespace from URL-proposed justifications. See [transfer rules](docs/transfer-rules.md) for overrides and script behavior.
-- **Authentication stays in your browser:** public reads need no BadgeApp credentials. Applying proposals requires your own authenticated session and appropriate project permissions. The console script is a project-provided fallback, not an upstream-supported API.
+- **Review in the browser:** artifacts include eligible supplied fields even when they match saved values. Reports describe what was included or excluded, not what BadgeApp will retain or save. BadgeApp documents trimming leading/trailing whitespace from URL-proposed justifications. See [transfer rules](docs/transfer-rules.md) for override behavior.
+- **Authentication stays in your browser:** public reads need no BadgeApp credentials. Applying proposals requires your own authenticated session and appropriate project permissions.
 
 ### Badge status and README images
 

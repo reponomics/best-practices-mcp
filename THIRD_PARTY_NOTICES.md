@@ -8,7 +8,7 @@ The packaged criteria catalog and retained upstream source materials derive from
 
 > Copyright (c) 2015-2016 The Linux Foundation, the Institute for Defense Analyses, and other project contributors.
 
-The complete upstream license is retained in `src/best_practices_mcp/data/BADGEAPP-LICENSE.txt`, in the installed package as `best_practices_mcp/data/BADGEAPP-LICENSE.txt`, and alongside each vendored source snapshot. The packaged provenance manifest records source inputs and hashes. Synthetic HTML test controls retain a concise record of the upstream source paths consulted during derivation. Copied Ruby implementation files and Rails templates are not included.
+The complete upstream license is retained in `src/best_practices_mcp/data/BADGEAPP-LICENSE.txt`, in the installed package as `best_practices_mcp/data/BADGEAPP-LICENSE.txt`, and alongside each vendored source snapshot. The packaged provenance manifest records source inputs and hashes. Copied Ruby implementation files and Rails templates are not included.
 
 ## Live project-entry data
 
@@ -16,4 +16,4 @@ Public BadgeApp project records supply their own attribution and license metadat
 
 ## Dependencies
 
-Python and development-only Node dependencies are installed separately under their respective licenses; their code is not vendored into this distribution. The dependency manifests identify direct requirements and the development lockfiles record resolved versions. Retain the notices accompanying those separately installed packages when redistributing them.
+Python dependencies are installed separately under their respective licenses; their code is not vendored into this distribution. The dependency manifests identify direct requirements and the development lockfiles record resolved versions. Retain the notices accompanying those separately installed packages when redistributing them.

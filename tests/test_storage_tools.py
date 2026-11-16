@@ -39,7 +39,7 @@ def test_stored_workflow_restart_explicit_precedence_and_stable_discovery(tmp_pa
         async with asyncio.timeout(30):
             async with Client(params) as client:
                 listed = (await client.list_tools()).tools
-                assert len(listed) == 11
+                assert len(listed) == 10
                 assert [t.name for t in listed] == sorted(IMPLEMENTED_TOOLS)
                 mutation = next(t for t in listed if t.name == "update_draft")
                 assert not mutation.annotations.read_only_hint
@@ -61,7 +61,7 @@ def test_stored_workflow_restart_explicit_precedence_and_stable_discovery(tmp_pa
                 assert read["draft"] == {"description_good_justification": "Stored ✨ proposal"}
                 assert read["identity"]["association"] == "storage_key"
                 assert read["location"] == str(path.resolve())
-                for name in ("validate_draft", "prepare_update_url", "prepare_update_script"):
+                for name in ("validate_draft", "prepare_update_url"):
                     result = await call(client, name, project_id=123, level="passing")
                     assert not result.is_error
                     assert result.structured_content["draft_source"] == {
@@ -92,7 +92,7 @@ def test_stored_workflow_restart_explicit_precedence_and_stable_discovery(tmp_pa
                 ] == {"name": "Other"}
                 # Explicit input bypasses malformed stored bytes, not merely a missing file.
                 path.write_text('{"name":')
-                for name in ("validate_draft", "prepare_update_url", "prepare_update_script"):
+                for name in ("validate_draft", "prepare_update_url"):
                     result = await call(client, name, project_id=123, level="passing", draft={})
                     assert not result.is_error
                     stored = await call(client, name, project_id=123, level="passing")
@@ -126,7 +126,6 @@ def test_offline_storage_validation_and_identity_before_network(tmp_path):
             ("read_draft", {"project_id": 123}),
             ("update_draft", {"project_id": 123, "changes": {"id": None}}),
             ("prepare_update_url", {"project_id": 123, "level": "passing"}),
-            ("prepare_update_script", {"project_id": 123, "level": "passing"}),
         ):
             result = await server.call_tool(name, arguments)
             assert result.structured_content["error"]["code"] == "project_mismatch"

@@ -48,7 +48,7 @@ async def main():
     assert tool_names == ["build_draft", "find_project", "get_criteria",
                           "get_project_badge_status", "get_project_badge_svg",
                           "get_project_progress",
-                          "prepare_update_script", "prepare_update_url", "read_draft",
+                          "prepare_update_url", "read_draft",
                           "update_draft", "validate_draft"]
     result = await server.call_tool("get_criteria", {"level": "passing"})
     assert result.structured_content["criteria"]
@@ -76,9 +76,7 @@ def check_archives(dist: Path) -> Path:
         assert "best_practices_mcp/data/provenance.json" in names
         assert any("LICENSE" in name for name in names)
         assert not any(name.startswith("vendor/") for name in names)
-        assert not any(
-            "node_modules" in name or name.endswith("package-lock.json") for name in names
-        )
+        assert not any("node_modules" in name for name in names)
     with tarfile.open(next(dist.glob("*.tar.gz"))) as archive:
         names = archive.getnames()
         for suffix in (
@@ -87,12 +85,7 @@ def check_archives(dist: Path) -> Path:
             "/scripts/generate_catalog.py",
             "/scripts/verification_support.py",
             "/tests/test_contracts.py",
-            "/tests/fixtures/forms/run_script.mjs",
-            "/tests/fixtures/forms/passing.html",
             "/vendor/badgeapp/docs/automation-approach.md",
-            "/package.json",
-            "/package-lock.json",
-            "/.nvmrc",
             "/.python-version",
             "/uv.lock",
             "/osv-scanner.toml",

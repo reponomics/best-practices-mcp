@@ -439,18 +439,7 @@ class URLArtifact(Model):
     encoded_size_bytes: NonNegativeInt
 
 
-class ScriptArtifact(Model):
-    javascript: str
-    suggested_filename: str
-    instructions: str
-    encoded_size_bytes: NonNegativeInt
-
-
 class PrepareURLResult(ArtifactResult):
     requested_overrides: list[str]
     effective_overrides: list[str]
     artifact: URLArtifact | None
-
-
-class PrepareScriptResult(ArtifactResult):
-    artifact: ScriptArtifact | None

@@ -1,18 +1,18 @@
 # Architecture
 
-The server is an installable Python package with a bounded eleven-tool interface over local stdio. Python 3.11 is the supported minimum. The official MCP Python SDK owns protocol handling; independent domain modules implement BadgeApp reads, document operations, artifact preparation and optional local persistence. The [specification](specification.md) defines behavior and the [contracts](contracts.md) define precise payloads and limits.
+The server is an installable Python package with a bounded ten-tool interface over local stdio. Python 3.11 is the supported minimum. The official MCP Python SDK owns protocol handling; independent domain modules implement BadgeApp reads, document operations, artifact preparation and optional local persistence. The [specification](specification.md) defines behavior and the [contracts](contracts.md) define precise payloads and limits.
 
 ## Responsibilities and data flow
 
 | Component | Responsibility |
 | --- | --- |
-| `server.py`, `__main__.py` | CLI startup, service lifecycle, eleven-tool registration and dispatch |
+| `server.py`, `__main__.py` | CLI startup, service lifecycle, ten-tool registration and dispatch |
 | `models.py`, `contracts.py`, `sdk_adapter.py` | Typed inputs/results, JSON Schema declarations, tool annotations, error and result-envelope adaptation |
 | `criteria.py`, `data/` | Offline six-level catalog, source revision and notices |
 | `documents.py`, `drafts.py` | Bounded JSON normalization, aliases, structural diagnostics and pure patches |
 | `http.py`, `badgeapp.py`, `badges.py` | Shared bounded JSON/SVG GET transport, pacing/retries, public-record mapping and compact badge observations |
 | `validation.py` | Optional mechanical checks using the selected level's catalog requirements |
-| `transfer.py`, `artifacts.py`, `proposals.py`, `scripts.py` | Transfer eligibility, identity checks, field reports, exact proposal URLs and guarded form-fill scripts |
+| `transfer.py`, `proposals.py` | Transfer eligibility, identity checks, field reports, exact proposal URLs |
 | `storage.py` | Project-keyed paths, process-local guards and atomic local draft replacement |
 | `examples/host.py` | Reference terminal host using the public MCP client interface |
 
@@ -32,7 +32,7 @@ The implemented capability set needs no resources, prompts, sampling, subscripti
 
 One lifespan-managed asynchronous HTTP client and monotonic request limiter serve all public reads. Requests target fixed production BadgeApp JSON routes and explicit badge SVG routes, use bounded attempts/time/body size, respect shared cooldowns, and never fetch supplied repository or evidence URLs. Full-record observations carry source URL, fetch time and upstream attribution/license values. They are not silently synchronized into drafts. The compact badge adapter fetches one badge family per call, with a separate status result and SVG artifact result. It does not fetch the full project record to enrich either response. SVG text is returned unchanged as data after bounded UTF-8/XML validation; the server neither renders nor sanitizes it. Compact status separates service credit from unavailable project-entry attribution and preserves record update time independently of fetch time.
 
-Validation is local and advisory. It neither checks claim truth nor gates artifact generation. URL generation follows the documented status-first proposal matrix and explicit compatibility choices; script generation uses guarded control replacement. Both preserve exact returned bytes. The host decides how to display, export or open them.
+Validation is local and advisory. It neither checks claim truth nor gates artifact generation. URL generation follows the documented proposal interface and explicit compatibility choices, preserving exact returned bytes. The host decides how to display, export or open them.
 
 The MCP has no authenticated remote-write capability and generated artifacts do not submit forms. A user may authorize a host agent to click Save, but that delegation is outside this implementation. The [design decision](design.md#prepare-changes-leave-the-final-save-to-the-human) explains why final saving remains outside the tool surface. The server does not simulate Save/Submit outcomes from internal Ruby behavior.
 
@@ -48,4 +48,4 @@ This protects concurrent updates within one server process and prevents partial-
 
 The reference terminal host launches the server through the official MCP client; it does not import server internals or read draft files directly. Document mode supports local imports, edits, validation, artifact generation and exact exports. Stored mode is opt-in and uses MCP reads/patches for persistence, including explicit document subsets derived from a complete read. Its interactive choices are illustrative host policy, not new MCP requirements.
 
-Required verification covers pure domain rules, controlled DOM execution, injected network/filesystem failures, real stdio discovery/calls, reference-host workflows and fresh wheel/sdist installation. The CI matrix covers Python 3.11/3.12 on native Linux, macOS and Windows. Synthetic DOM tests verify defensive script behavior; the [live browser runbook](live-browser-qa.md) checks current website compatibility. The [testing policy](testing-policy.md) defines the evidence boundaries. Coverage, package-verification and release results are written under ignored `build/coverage/`, `build/verification/` and `build/release/`, respectively.
+Required verification covers pure domain rules, injected network/filesystem failures, real stdio discovery/calls, reference-host workflows and fresh wheel/sdist installation. The CI matrix covers Python 3.11/3.12 on native Linux, macOS and Windows. The [live browser runbook](live-browser-qa.md) checks current proposal-URL compatibility. The [testing policy](testing-policy.md) defines the evidence boundaries. Coverage, package-verification and release results are written under ignored `build/coverage/`, `build/verification/` and `build/release/`, respectively.
