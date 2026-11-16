@@ -1,6 +1,6 @@
 # Baseline Level 1 milestone — November 16, 2026
 
-We used best-practices-mcp v0.3.0-beta.1 in Codex (GPT-6 Astra, as reported by the maintainer) to prepare the project's own OSPS Baseline Level 1 application. The maintainer reviewed the proposal, opened it in BadgeApp, then saved and exited. A subsequent MCP read confirmed **100% completion: 23 Met and one N/A**, with all 48 saved status/justification fields matching the reviewed draft. The public entry is [project 16754](https://www.bestpractices.dev/en/projects/16754/baseline-1).
+We used best-practices-mcp v0.3.0-beta.1 in the ChatGPT desktop application, in Codex mode (GPT-6 Astra, as reported by the maintainer), to prepare the project's own OSPS Baseline Level 1 application. The maintainer reviewed the proposal, opened it in BadgeApp, then saved and exited. A subsequent MCP read confirmed **100% completion: 23 Met and one N/A**, with all 48 saved status/justification fields matching the reviewed draft. The public entry is [project 16754](https://www.bestpractices.dev/en/projects/16754/baseline-1).
 
 The interaction was guided by the badge-buddy plugin's reference material, with the MCP tools replacing its older BadgeApp CLI workflow. Repository evidence, a peer review of the draft, and two maintainer confirmations supported the assessment: releases come from this single repository, and untrusted contributors use fork pull requests. No project remediation was needed during this session.
 

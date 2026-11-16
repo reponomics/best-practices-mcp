@@ -43,7 +43,7 @@ body:
     attributes:
       label: Host application
       description: The application you used to connect to the MCP server, if known.
-      placeholder: e.g. ChatGPT desktop application; Codex desktop application; Claude Code CLI
+      placeholder: e.g. ChatGPT desktop application (ChatGPT mode or Codex mode); Claude Code CLI
   - type: input
     id: platform
     attributes:
