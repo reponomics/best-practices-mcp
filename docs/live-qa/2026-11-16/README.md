@@ -19,7 +19,7 @@ The proposal carried 28 answer fields and exactly three justification overrides.
 
 A few useful observations for future work:
 
-- The local review board worked for Baseline-1, but required the plugin's separate renderer. A convenient host-side preview showing saved values, proposed values and differences would improve review.
+- The local review board worked for Baseline-1 through the plugin's separate renderer. The board is outside the MCP's scope; a preview showing saved values, proposed values and differences would be a useful plugin/host improvement, not a missing MCP capability.
 - Explicit documents worked well. Optional server-managed draft storage was not exercised; local working artifacts stayed under ignored `build/baseline-1-assessment/`.
 - Some answers already filled by BadgeApp lacked supporting URLs. The form described URLs as optional, so these were retained where the explanation was sufficient. Clearer evidence-writing guidance could help without imposing a blanket URL requirement.
 
