@@ -1,5 +1,7 @@
 # Best Practices MCP
 
+[![OpenSSF Baseline — project 16754](https://www.bestpractices.dev/projects/16754/baseline.svg)](https://www.bestpractices.dev/en/projects/16754/baseline-1)
+
 ## Description
 
 Best Practices MCP lets an MCP-compatible assistant look up projects on the OpenSSF Best Practices Badge website (BadgeApp), inspect badge criteria and progress, retrieve badge images and README snippets, prepare draft answers, and generate proposed updates for review in the browser.
