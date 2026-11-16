@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0-beta.1](https://github.com/reponomics/best-practices-mcp/compare/v0.2.0-beta.4...v0.3.0-beta.1) (2026-11-16)
+
+
+### Features
+
+* remove prepare_update_script tool ([#18](https://github.com/reponomics/best-practices-mcp/issues/18)) ([252b16e](https://github.com/reponomics/best-practices-mcp/commit/252b16ec1463b340a6908d195264ee2becde8f3b))
+
 ## [0.2.0-beta.4](https://github.com/reponomics/best-practices-mcp/compare/v0.2.0-beta.3...v0.2.0-beta.4) (2026-11-16)
 
 
