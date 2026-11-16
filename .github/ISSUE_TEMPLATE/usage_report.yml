@@ -39,6 +39,18 @@ body:
     validations:
       required: true
   - type: input
+    id: host_application
+    attributes:
+      label: Host application
+      description: The application you used to connect to the MCP server, if known.
+      placeholder: e.g. ChatGPT desktop application; Codex desktop application; Claude Code CLI
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: Your operating system, optionally including its version.
+      placeholder: e.g. macOS; Windows; Linux
+  - type: input
     id: models
     attributes:
       label: Assistant and model(s)
