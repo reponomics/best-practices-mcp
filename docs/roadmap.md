@@ -8,7 +8,7 @@ Planned items are accepted directions for future work, without a committed relea
 
 ## Planned
 
-- **Deprecate the interactive reference host application.** Replace the full terminal workflow with a small executable SDK integration example. Preserve server behavior coverage through the existing SDK-based tests, and use MCP Inspector for independent-client smoke checks and exploratory QA. The current host remains available until that transition is implemented.
+- **Remove the interactive reference host application.** [Proposed ADR 0004](adr/0004-remove-reference-host.md) and its [surface audit](reference-host-removal-audit.md) replace the earlier smaller-SDK-example plan with complete removal, two focused migrations into existing MCP tests, and Inspector plus live-browser qualification. The current host remains available until that transition is implemented.
 
 ## Proposed
 

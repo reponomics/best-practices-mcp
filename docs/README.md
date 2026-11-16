@@ -13,6 +13,8 @@ This is an independent Reponomics project, not affiliated with, sponsored by, en
 | [ADR 0001: Badge image and status tools](adr/0001-badge-image-and-status-tools.md) | Accepted separation of SVG retrieval, compact status observations and detailed progress; reasons to keep update time and progress together |
 | [ADR 0002: Development toolchain](adr/0002-development-toolchain.md) | Canonical cross-platform Make tasks, locked uv environments and bootstrap-tool audit inventory |
 | [ADR 0003: Remove the console-script tool](adr/0003-remove-console-script-tool.md) | Accepted removal decision, historical rationale, and boundaries preserving reference-host and live URL coverage |
+| [ADR 0004: Remove the reference host](adr/0004-remove-reference-host.md) | Proposed removal, preserved automated coverage, and Inspector/live-browser qualification boundaries |
+| [Reference host removal audit](reference-host-removal-audit.md) | File inventory, coverage migrations, packaging/CI impacts, and qualification procedure for ADR 0004 |
 | [Architecture](architecture.md) | Modules, data flow, protocol adaptation and persistence boundaries |
 | [Implementation contracts](contracts.md) | Exact payloads, errors, size/network policies and edge cases |
 | [Upstream compatibility](upstream-compatibility.md) | Source baseline, routes, catalog conventions and update procedure |
