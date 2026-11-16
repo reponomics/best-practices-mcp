@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0-beta.4](https://github.com/reponomics/best-practices-mcp/compare/v0.2.0-beta.3...v0.2.0-beta.4) (2026-11-16)
+
+
+### Continuous Integration
+
+* add release verification docs and confirmation workflow ([#16](https://github.com/reponomics/best-practices-mcp/issues/16)) ([ddd5407](https://github.com/reponomics/best-practices-mcp/commit/ddd5407ef8f9da3e3f35d5bdf202d57ef9a73191))
+
 ## [0.2.0-beta.3](https://github.com/reponomics/best-practices-mcp/compare/v0.2.0-beta.1...v0.2.0-beta.3) (2026-11-15)
 
 This release includes the changes prepared for 0.2.0-beta.2, which was tagged but remained unpublished after release preflight failed. The notes below cover the cumulative changes since 0.2.0-beta.1.
