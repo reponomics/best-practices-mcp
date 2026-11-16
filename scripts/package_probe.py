@@ -4,7 +4,6 @@ import asyncio
 import importlib.metadata
 import json
 import platform
-import subprocess
 import sys
 import sysconfig
 from pathlib import Path
@@ -100,16 +99,6 @@ def main() -> None:
     assert Path(best_practices_mcp.__file__).resolve().is_relative_to(Path(sys.prefix).resolve())
     workspace = Path.cwd()
     asyncio.run(exercise(workspace))
-    discovery = subprocess.run(
-        [sys.executable, "-I", str(workspace / "host.py"), "--discover"],
-        cwd=workspace,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        check=True,
-        timeout=30,
-    )
-    assert json.loads(discovery.stdout)["tools"] == TOOLS
     print(
         json.dumps(
             {
@@ -121,7 +110,6 @@ def main() -> None:
                 "installed_entry_point": "passed",
                 "stored_restart": "passed",
                 "synthetic_public_artifacts": "passed",
-                "reference_host_discovery": "passed",
                 "installed_in_fresh_venv": True,
                 "dependencies": {
                     dist.metadata["Name"]: dist.version

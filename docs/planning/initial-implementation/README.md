@@ -8,6 +8,8 @@ The optional Ruby comparisons and copied implementation sources described in the
 
 The console-script tool and its DOM test tooling were removed under [ADR 0003](../../adr/0003-remove-console-script-tool.md). References to them below describe historical scope, not supported functionality.
 
+The reference terminal host was subsequently removed under [ADR 0004](../../adr/0004-remove-reference-host.md). Its commands and workflow tests below describe historical scope; use [Inspector qualification](../../inspector-qa.md) for the maintained independent-client procedure.
+
 ## Planning and review
 
 | Record | Historical purpose |

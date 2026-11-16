@@ -6,7 +6,6 @@ include .pre-commit-config.yaml
 include .gitattributes
 include .github/release-please-config.json .github/.release-please-manifest.json
 recursive-include docs *.md
-recursive-include examples *.py
 recursive-include scripts *.py
 recursive-include tests *.py *.json
 recursive-include vendor/badgeapp *

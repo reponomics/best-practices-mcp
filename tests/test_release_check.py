@@ -22,8 +22,6 @@ spec.loader.exec_module(release)
 @pytest.fixture
 def project(tmp_path):
     (tmp_path / ".github").mkdir()
-    (tmp_path / "examples").mkdir()
-    (tmp_path / "examples/host.py").write_text("# reference host\n", encoding="utf-8")
     (tmp_path / "LICENSE").write_text("MIT project notice\n", encoding="utf-8")
     (tmp_path / "THIRD_PARTY_NOTICES.md").write_text("Upstream notices\n", encoding="utf-8")
     upstream = tmp_path / release.UPSTREAM_NOTICE
@@ -67,7 +65,6 @@ def archive_files(root):
     sdist = {"PKG-INFO": metadata(root)}
     for path in release.license_paths(root, release.project_metadata(root)) | {
         "pyproject.toml",
-        "examples/host.py",
     }:
         sdist[path] = (root / path).read_bytes()
     return wheel, {"best_practices_mcp-0.1.0b1/" + name: data for name, data in sdist.items()}
@@ -178,13 +175,6 @@ def test_changed_upstream_notice_fails(project):
     wheel, sdist = archive_files(project)
     wheel["best_practices_mcp/data/BADGEAPP-LICENSE.txt"] = b"incomplete notice"
     with pytest.raises(ValueError, match="BadgeApp notice"):
-        release.verify_artifacts(project, write_archives(project, wheel, sdist))
-
-
-def test_sdist_must_preserve_reference_host_and_project_notice(project):
-    wheel, sdist = archive_files(project)
-    del sdist["best_practices_mcp-0.1.0b1/examples/host.py"]
-    with pytest.raises(ValueError, match="examples/host.py"):
         release.verify_artifacts(project, write_archives(project, wheel, sdist))
 
 

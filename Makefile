@@ -34,7 +34,7 @@ export UV_PROJECT_ENVIRONMENT := $(VENV)
 # Evidence must identify this Make executable, including gmake/custom paths.
 export VERIFICATION_MAKE := $(MAKE)
 
-.PHONY: help setup quality tooling-check ci-environment check test format build run example test-contract test-catalog test-protocol test-package catalog catalog-check test-network test-api test-host host smoke-live
+.PHONY: help setup quality tooling-check ci-environment check test format build run test-contract test-catalog test-protocol test-package catalog catalog-check test-network test-api smoke-live
 
 help: ## Show available development commands (no project environment required)
 	@"$(UV)" run --no-project $(UV_PYTHON_ARG) python scripts/dev_tools.py help
@@ -43,8 +43,8 @@ setup: ## Sync the locked development group into .venv (Python 3.11 by default)
 	"$(UV)" sync --locked --group dev --no-group audit-tools $(UV_PYTHON_ARG)
 
 quality: tooling-check ## Check formatting, lint and installed dependency consistency
-	"$(PYTHON)" -m ruff format --check src tests examples scripts
-	"$(PYTHON)" -m ruff check src tests examples scripts
+	"$(PYTHON)" -m ruff format --check src tests scripts
+	"$(PYTHON)" -m ruff check src tests scripts
 	$(PIP) check
 
 check: quality ## Run quality checks and the offline test suite
@@ -64,17 +64,14 @@ ci-environment: ## Record allowlisted environment facts for CI evidence
 test: ## Run offline unit and MCP subprocess integration tests
 	"$(PYTHON)" -m pytest
 
-format: ## Format Python source, tests, and examples
-	"$(PYTHON)" -m ruff format src tests examples scripts
+format: ## Format Python source, tests, and development scripts
+	"$(PYTHON)" -m ruff format src tests scripts
 
 build: ## Build source and wheel distributions
 	"$(PYTHON)" -m build
 
 run: ## Run the stdio server (waits for an MCP client)
 	@"$(PYTHON)" -m best_practices_mcp
-
-example: ## Discover implemented tools through the reference host (offline)
-	"$(PYTHON)" examples/host.py --discover
 
 test-contract: ## Verify ten-tool schemas and document normalization
 	"$(PYTHON)" -m pytest tests/test_contracts.py tests/test_json_value_schema.py tests/test_documents.py tests/test_sdk_adapter.py
@@ -113,12 +110,6 @@ test-api: ## Verify BadgeApp mapping and real MCP read-tool calls (offline)
 test-badges: ## Verify badge transport, observations, SVG artifacts and MCP calls (offline)
 	"$(PYTHON)" -m pytest tests/test_http.py tests/test_badges.py tests/test_badge_tools.py
 
-test-host: ## Verify interactive host lookup and selection through MCP (offline)
-	"$(PYTHON)" -m pytest tests/test_host.py
-
-host: ## Start the interactive document host (queries contact BadgeApp)
-	"$(PYTHON)" examples/host.py
-
 PROJECT_ID ?= 1
 smoke-live: ## Opt-in paced public GET compatibility check (PROJECT_ID=1)
 	"$(PYTHON)" scripts/smoke_live.py --project-id "$(PROJECT_ID)"
@@ -136,13 +127,10 @@ test-documents: ## Verify pure patches, mechanical checks and real MCP document 
 test-upstream: ## Verify documented proposal rules (offline)
 	"$(PYTHON)" -m pytest tests/test_transfer_contract.py tests/test_upstream_sources.py tests/test_proposals.py
 
-.PHONY: test-storage host-stored
+.PHONY: test-storage
 
 test-storage: ## Verify atomic storage, concurrency, budgets and stored MCP paths (offline)
 	"$(PYTHON)" -m pytest tests/test_storage.py tests/test_storage_tools.py
-
-host-stored: ## Start the opt-in stored host; edits write server-local drafts
-	"$(PYTHON)" examples/host.py --mode stored
 
 .PHONY: test-coverage check-fresh-package
 

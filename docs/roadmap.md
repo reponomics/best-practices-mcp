@@ -6,9 +6,7 @@ Planned items are accepted directions for future work, without a committed relea
 
 - **Badge SVG and compact status tools.** `get_project_badge_svg` and `get_project_badge_status` implement [ADR 0001](adr/0001-badge-image-and-status-tools.md), accepted on 2026-11-14. They cover both badge families while keeping image retrieval separate from progress/update-time observations.
 
-## Planned
-
-- **Deprecate the interactive reference host application.** Replace the full terminal workflow with a small executable SDK integration example. Preserve server behavior coverage through the existing SDK-based tests, and use MCP Inspector for independent-client smoke checks and exploratory QA. The current host remains available until that transition is implemented.
+- **Reference terminal host removal.** [ADR 0004](adr/0004-remove-reference-host.md) removes the custom client, preserves two integration scenarios in existing MCP tests, and uses Inspector plus live-browser qualification.
 
 ## Proposed
 

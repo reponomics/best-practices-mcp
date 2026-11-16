@@ -159,7 +159,7 @@ def verify_sdist(files: dict[str, bytes], root: Path, project: dict) -> None:
     if "PKG-INFO" not in relative:
         raise ValueError("Source distribution is missing PKG-INFO")
     verify_metadata(relative["PKG-INFO"], project)
-    for name in license_paths(root, project) | {"pyproject.toml", "examples/host.py"}:
+    for name in license_paths(root, project) | {"pyproject.toml"}:
         if relative.get(name) != (root / name).read_bytes():
             raise ValueError(f"Source distribution is missing or changed: {name}")
 

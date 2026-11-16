@@ -92,7 +92,6 @@ def check_archives(dist: Path) -> Path:
             "/.pre-commit-config.yaml",
             "/.github/release-please-config.json",
             "/.github/.release-please-manifest.json",
-            "/examples/host.py",
         ):
             assert any(name.endswith(suffix) for name in names), suffix
         assert not any("/docs/live-qa/" in name for name in names)

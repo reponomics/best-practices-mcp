@@ -6,7 +6,7 @@ repos:
         entry: make quality
         language: system
         pass_filenames: false
-        files: ^((src|tests|examples|scripts)/.*\.py$|pyproject\.toml$|uv\.lock$|Makefile$|\.python-version$|\.pre-commit-config\.yaml$)
+        files: ^((src|tests|scripts)/.*\.py$|pyproject\.toml$|uv\.lock$|Makefile$|\.python-version$|\.pre-commit-config\.yaml$)
       - id: lock-check
         name: Check Python lock and bootstrap inventory
         entry: make lock-check

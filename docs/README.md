@@ -13,18 +13,21 @@ This is an independent Reponomics project, not affiliated with, sponsored by, en
 | [ADR 0001: Badge image and status tools](adr/0001-badge-image-and-status-tools.md) | Accepted separation of SVG retrieval, compact status observations and detailed progress; reasons to keep update time and progress together |
 | [ADR 0002: Development toolchain](adr/0002-development-toolchain.md) | Canonical cross-platform Make tasks, locked uv environments and bootstrap-tool audit inventory |
 | [ADR 0003: Remove the console-script tool](adr/0003-remove-console-script-tool.md) | Accepted removal decision, historical rationale, and boundaries preserving reference-host and live URL coverage |
+| [ADR 0004: Remove the reference host](adr/0004-remove-reference-host.md) | Accepted removal, preserved automated coverage, and Inspector/live-browser qualification boundaries |
+| [Reference host removal audit](reference-host-removal-audit.md) | File inventory, coverage migrations, packaging/CI impacts, and qualification procedure for ADR 0004 |
 | [Architecture](architecture.md) | Modules, data flow, protocol adaptation and persistence boundaries |
 | [Implementation contracts](contracts.md) | Exact payloads, errors, size/network policies and edge cases |
 | [Upstream compatibility](upstream-compatibility.md) | Source baseline, routes, catalog conventions and update procedure |
 | [Transfer rules](transfer-rules.md) | Faithful artifact contents, explicit overrides, and exclusions |
 | [Schema compatibility](schema-compatibility.md) | SDK-supported schema declarations and interoperability checks |
 | [Testing policy](testing-policy.md) | Deterministic contract tests and live compatibility evidence |
+| [Inspector qualification](inspector-qa.md) | Independent-client walkthrough and CLI checks for an installed candidate |
 | [Live browser QA](live-browser-qa.md) | Local PolicyChecks proposal-URL checks after first publication and for subsequent release candidates |
 | [CI and repository setup](ci.md) | Native compatibility matrix, security checks and service activation |
 | [Release procedure](releasing.md) | Release Please, approvals, OIDC publication and published-package QA |
 | [Release verification](verification.md) | Consumer checks for asset integrity, authenticity, provenance, SBOMs and scan evidence |
 
-The [project README](../README.md) covers installation, host configuration and everyday use. The [contributor guide](../CONTRIBUTING.md) covers development commands. The [reference terminal host](../examples/host.py) demonstrates both explicit documents and optional server-managed storage using MCP calls.
+The [project README](../README.md) covers installation, host configuration and everyday use. The [contributor guide](../CONTRIBUTING.md) covers development commands. [Inspector qualification](inspector-qa.md) covers explicit documents and optional server-managed storage through the public MCP interface.
 
 ## Historical records
 
