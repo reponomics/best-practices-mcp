@@ -7,6 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 from types import SimpleNamespace
+from urllib.parse import parse_qs, urlsplit
 
 import pytest
 from jsonschema import Draft202012Validator
@@ -102,6 +103,57 @@ def test_stored_workflow_restart_explicit_precedence_and_stable_discovery(tmp_pa
                 )
                 assert null.is_error
                 assert path.read_text(encoding="utf-8") == '{"name":'
+
+    asyncio.run(exercise())
+
+
+def test_stored_snapshot_subset_is_explicit_and_preserves_complete_document(tmp_path):
+    root = tmp_path / "drafts"
+    path = root / "projects/123/.bestpractices.json"
+    draft = {
+        "id": 123,
+        "repo_url": "https://code.example.org/alpha",
+        "name": "Selected ✨",
+        "license": "MIT",
+        "opaque": {"retained": [None, True]},
+    }
+    path.parent.mkdir(parents=True)
+    original = json.dumps(draft, ensure_ascii=False).encode("utf-8")
+    path.write_bytes(original)
+    params = StdioServerParameters(
+        command=sys.executable,
+        args=[str(FIXTURE.resolve())],
+        env={"BESTPRACTICES_DATA_DIR": str(root)},
+    )
+
+    async def exercise():
+        async with asyncio.timeout(20), Client(params) as client:
+            read = await call(client, "read_draft", project_id=123)
+            assert not read.is_error
+            snapshot = read.structured_content["draft"]
+            assert snapshot == draft
+            subset = {field: snapshot[field] for field in ("id", "repo_url", "name")}
+            result = await call(
+                client, "prepare_update_url", project_id=123, level="passing", draft=subset
+            )
+            assert not result.is_error
+            proposal = result.structured_content
+            assert proposal["draft_source"] == {"kind": "explicit", "location": None}
+            assert proposal["identity"] == {
+                "association": "document_provenance",
+                "id_check": "matched",
+                "repo_check": "matched",
+            }
+            assert parse_qs(urlsplit(proposal["artifact"]["url"]).query) == {
+                "name": [draft["name"]]
+            }
+            assert {
+                row["field"] for row in proposal["transfer"] if row["disposition"] == "encoded"
+            } == {"name"}
+            after = await call(client, "read_draft", project_id=123)
+            assert not after.is_error
+            assert after.structured_content["draft"] == draft
+            assert path.read_bytes() == original
 
     asyncio.run(exercise())
 

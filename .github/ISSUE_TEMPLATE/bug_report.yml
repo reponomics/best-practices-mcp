@@ -1,5 +1,5 @@
 name: Bug report
-description: Report unexpected behavior in the server, tools, or reference host.
+description: Report unexpected behavior in the server or its tools.
 title: "[Bug]: "
 body:
   - type: input

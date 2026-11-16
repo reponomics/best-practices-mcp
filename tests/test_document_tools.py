@@ -17,6 +17,7 @@ FIXTURE = Path(__file__).parent / "fixtures/read_server.py"
 
 def test_document_workflow_wire_results_with_missing_storage_root(tmp_path):
     root = tmp_path / "untouched-drafts"
+    explanation = "  https://example.org/new?q=a&x=2#qa — café Ω 🍀 " + "Ω" * 1000 + "  "
 
     async def exercise():
         parameters = StdioServerParameters(
@@ -35,19 +36,23 @@ def test_document_workflow_wire_results_with_missing_storage_root(tmp_path):
                     },
                 ),
                 (
+                    "prepare_update_url",
+                    {
+                        "project_id": 123,
+                        "level": "passing",
+                        "draft": {
+                            "description_good_status": "Met",
+                            "description_good_justification": explanation,
+                        },
+                        "override_fields": ["description_good_justification"],
+                    },
+                ),
+                (
                     "validate_draft",
                     {
                         "project_id": 123,
                         "level": "passing",
                         "draft": {"description_good_status": "N/A"},
-                    },
-                ),
-                (
-                    "prepare_update_url",
-                    {
-                        "project_id": 123,
-                        "level": "passing",
-                        "draft": {"description_good_status": "Met"},
                     },
                 ),
             ]
@@ -60,10 +65,15 @@ def test_document_workflow_wire_results_with_missing_storage_root(tmp_path):
                 assert json.loads(result.content[0].text) == payload
                 results.append(payload)
             assert results[0]["draft"]["opaque"] == [None, True, {"x": 3}]
-            assert results[1]["findings"]
-            assert results[2]["transfer"][0]["disposition"] == "encoded"
-            assert parse_qs(urlsplit(results[2]["artifact"]["url"]).query) == {
-                "description_good_status": ["Met"]
+            assert results[2]["findings"]
+            proposal = results[1]
+            assert all(row["disposition"] == "encoded" for row in proposal["transfer"])
+            assert proposal["requested_overrides"] == ["description_good_justification"]
+            assert proposal["effective_overrides"] == ["description_good_justification"]
+            assert parse_qs(urlsplit(proposal["artifact"]["url"]).query) == {
+                "description_good_status": ["Met"],
+                "description_good_justification": [explanation],
+                "overrides": ["description_good_justification"],
             }
             for name in ("validate_draft", "prepare_update_url"):
                 result = await client.call_tool(name, {"project_id": 123, "level": "passing"})

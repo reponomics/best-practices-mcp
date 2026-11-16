@@ -76,7 +76,6 @@ def copy_probe_inputs(sdist: Path, workspace: Path) -> None:
         for source, target in (
             ("scripts/package_probe.py", "package_probe.py"),
             ("tests/fixtures/read_server.py", "read_server.py"),
-            ("examples/host.py", "host.py"),
         ):
             members = [member for member in archive if member.name.endswith("/" + source)]
             assert len(members) == 1 and members[0].isfile(), source

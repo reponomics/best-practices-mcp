@@ -1,6 +1,6 @@
 # Reference host removal audit
 
-Audit date: 2026-11-15. Source baseline: main commit `252b16e` after removal of `prepare_update_script`. This is the implementation inventory for proposed [ADR 0004](adr/0004-remove-reference-host.md); the host has not yet been removed. Counts describe this baseline, not a coverage target.
+Audit date: 2026-11-15. Source baseline: main commit `252b16e` after removal of `prepare_update_script`. This pre-removal inventory guided the implementation of accepted [ADR 0004](adr/0004-remove-reference-host.md). The host has since been removed; the tables preserve the audited removal scope. Current operating instructions are in [Inspector qualification](inspector-qa.md). Counts describe this baseline, not a coverage target.
 
 ## Code, tooling, and package surface
 

@@ -35,7 +35,7 @@ def source_fingerprint(root: Path) -> str:
     digest = hashlib.sha256()
     for name in sorted(set(names.split("\0"))):
         path = root / name
-        relevant = name.split("/", 1)[0] in {"src", "tests", "scripts", "vendor", "examples"}
+        relevant = name.split("/", 1)[0] in {"src", "tests", "scripts", "vendor"}
         relevant |= name.startswith(".github/")
         relevant |= name in {
             "Makefile",

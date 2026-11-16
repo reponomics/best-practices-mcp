@@ -270,13 +270,13 @@ Separate generator calls read independently. If either the file or the live appl
 
 ## 9. Implementation and acceptance
 
-Catalog access, public API reads, document operations, artifact generation and optional local persistence are separate from MCP registration. The [architecture](architecture.md) maps these responsibilities to modules and the reference host.
+Catalog access, public API reads, document operations, artifact generation and optional local persistence are separate from MCP registration. The [architecture](architecture.md) maps these responsibilities to server modules and caller boundaries.
 
 Acceptance checks must cover:
 
 - Every supported level, level-qualified repeated criteria, catalog provenance, and offline criteria lookup.
 - Non-GitHub project URLs, ambiguous/empty/paginated searches, missing projects, real saved justifications, and missing upstream fields.
-- Registration/ID resolution before host application work, ambiguous lookups requiring selection, and no local draft creation when registration has not been completed.
+- Caller instructions require registration/ID resolution and selection before application work. Server tests verify ID representation, upstream target identity, and document provenance; the server does not enforce a client selection session or add registration lookups to local draft operations.
 - Document-only operation with default storage untouched; explicit document precedence including `{}`; no hidden file reads or writes.
 - Default and overridden data roots, multiple project IDs in one server instance, independent files, small patches, explicit directory/file creation without a prior read, restart persistence, unknown-field preservation, alias conflicts, null removals, and validation without partial writes.
 - Deliberately overlapping same-process updates preserve disjoint patches, including first-file creation. Same-field updates produce a valid one-at-a-time outcome without asserting arrival order. Different projects have separate guards. Reads see complete JSON and injected pre-replacement failures preserve the previous draft. No cross-process merge guarantee is tested or claimed.

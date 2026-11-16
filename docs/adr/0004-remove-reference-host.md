@@ -1,6 +1,6 @@
 # ADR 0004: Remove the reference terminal host
 
-Status: Proposed; audited before implementation. Date: 2026-11-15.
+Status: Accepted. Date: 2026-11-15.
 
 ## Context
 

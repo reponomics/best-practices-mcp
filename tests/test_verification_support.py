@@ -72,15 +72,6 @@ def test_deleted_implementation_file_changes_fingerprint(repo: Path) -> None:
     assert verification.source_fingerprint(repo) != before
 
 
-def test_example_host_changes_change_fingerprint(repo: Path) -> None:
-    (repo / "examples").mkdir()
-    host = repo / "examples" / "host.py"
-    host.write_text("print('host')\n", encoding="utf-8")
-    before = verification.source_fingerprint(repo)
-    host.write_text("raise RuntimeError('host failure')\n", encoding="utf-8")
-    assert verification.source_fingerprint(repo) != before
-
-
 @pytest.mark.parametrize(
     "name",
     [

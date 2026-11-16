@@ -36,7 +36,6 @@ The same commands work from a Unix shell or Windows PowerShell:
 make help
 make setup
 make check
-make example
 make build
 ```
 
@@ -54,9 +53,7 @@ If migrating from the previous `venv` default, recreate the environment with `ma
 
 After changing dependencies, run `make lock`, review the diff, then run `make setup` and the validation commands below. To update uv, change both its exact `required-version` and its `audit-tools` requirement, install that external uv version, then regenerate the lock. `make lock-check` verifies consistency without changing the lock. Fresh-consumer checks still install through pip without the development lock to exercise ordinary package installation.
 
-The interactive reference host remains available; its deprecation is [planned](docs/roadmap.md#planned).
-
-`make example` launches the official MCP client, verifies ten-tool discovery and schemas, then closes without contacting BadgeApp. `make host` starts the independent terminal host; `find`, `level`, `criteria`, `progress` and `refresh` guide public reads. After explicit project selection, `new` or `import` supplies a caller-owned document; `edit`, `remove`, `show`, optional `validate`, `url`, and `export` complete document mode. URL prompts accept a selective field subset and exact overrides. Export preserves exact UTF-8 artifact bytes and refuses existing destinations. No model or credentials are needed. `make host-stored` (or `examples/host.py --mode stored`) opts into server-local persistence. In stored mode, `edit` can create the first draft directly, `init` explicitly creates an empty draft, and `read`/`show` resumes the complete document. Whole-document validation/generation omit `draft`; a selected subset uses a complete read and an explicit temporary document. JSON export uses `read_draft`. The host never reads server files directly or retries an uncertain mutation.
+Use your MCP client or the optional [Inspector workflow](#inspect-the-implemented-tools) to exercise the server interactively. The reference terminal host was removed under [ADR 0004](docs/adr/0004-remove-reference-host.md).
 
 Required tests follow documented upstream procedures, criteria YAML and agreed MCP compatibility rules. A locally supervised live browser check tests actual proposal-URL compatibility. See the [testing policy](docs/testing-policy.md) for authority and traceability.
 
@@ -95,7 +92,7 @@ To optionally run checks automatically when committing, run `make setup-hooks` o
 
 | Hook | When it runs |
 | --- | --- |
-| Python quality | Python source, tests, examples, scripts, or Python/tooling configuration changes |
+| Python quality | Python source, tests, scripts, or Python/tooling configuration changes |
 | Lock consistency | Python manifest, lockfile, bootstrap configuration, or tooling helper changes |
 | Catalog reproduction | Vendored inputs, packaged catalog, generator, or relevant tooling configuration changes |
 | Offline tests | Every commit, including documentation-only changes |
@@ -105,9 +102,9 @@ The offline suite takes roughly a minute and includes MCP subprocess tests; it n
 
 Dependabot checks the actionlint hook revision weekly and proposes updates to its SHA and version comment together. When accepting an update, also update the source SHA and release version in `.github/workflows/actionlint.yml`; keep the hook’s `language_version`, that workflow’s `GO_VERSION`, and the OSV workflow’s Go version in agreement. CI rejects mismatched pins. Keep the `# frozen: v1.17.1`-style comment so hook updates follow release tags. CI generates and retains the executable module inventory for both OSV scans, and a separate Go standard-library inventory for vulnerability scanning. Contributors do not generate these inventories or maintain Go dependency files. This fork selection is tentative; review its maintenance and compatibility before changing releases, especially when moving to v2.
 
-`make test-storage`, `make test-documents`, `make test-upstream`, and `make test-host` select focused storage, document, transfer and reference-host tests from the ordinary offline suite. `make smoke-live PROJECT_ID=1` separately checks public GET compatibility; it never saves anything or establishes the deployed upstream revision.
+`make test-storage`, `make test-documents`, and `make test-upstream` select focused storage, document and transfer tests from the ordinary offline suite. `make smoke-live PROJECT_ID=1` separately checks public GET compatibility; it never saves anything or establishes the deployed upstream revision.
 
-For live-form QA, follow the brief [PolicyChecks browser runbook](docs/live-browser-qa.md): resolve the intended project and level, authenticate in the browser, inspect the actual form baseline, then review and apply selected artifacts. Its first execution follows beta publication and gates stable promotion; repeat it for subsequent release candidates. Compare retention, overrides, paired fields and exact text before discarding or separately deciding to save. The [recorded Chrome cases](docs/live-qa/2026-11-09/README.md) provide examples. Artifact reports identify included and excluded fields; they do not predict the form's effects or saved values. Eligible supplied fields are always included, even when equal to the public record. A user may delegate browser actions to a host agent; the MCP itself never saves. A later explicit `refresh` reports saved observations separately. The URL interface follows upstream recommendations.
+For live-form QA, follow the brief [PolicyChecks browser runbook](docs/live-browser-qa.md): resolve the intended project and level, authenticate in the browser, inspect the actual form baseline, then review the generated proposal URLs in the form without saving. Its first execution follows beta publication and gates stable promotion; repeat it for subsequent release candidates. Compare retention, overrides, paired fields and exact text before discarding the previews. The [recorded Chrome cases](docs/live-qa/2026-11-09/README.md) provide examples. Artifact reports identify included and excluded fields; they do not predict the form's effects or saved values. Eligible supplied fields are always included, even when equal to the public record. A user may delegate browser actions to a host agent; the MCP itself never saves. A later `get_project_progress` call reports saved observations separately. The URL interface follows upstream recommendations.
 
 `make catalog-check` verifies byte-for-byte regeneration from vendored inputs. `make test-package` checks the distribution contents and an isolated installed wheel using the current environment's dependencies. Fresh-install qualification separately installs wheel and sdist into new environments.
 
@@ -175,32 +172,30 @@ Only `update_draft` writes `<root>/projects/<project_id>/.bestpractices.json`. E
 
 Updates within one server process use per-project guards. Separate servers and external editors are not coordinated: avoid simultaneous writers to the same project/root. Atomic replacement prevents partial files, not lost updates between independent writers or sudden-power-loss guarantees. Cancellation or a lost response can leave an uncertain outcome; use `read_draft` to inspect before deciding on another patch. The server never retries the mutation automatically.
 
-For an independent stored workflow, pass a dedicated absolute root:
-
-```sh
-.venv/bin/python examples/host.py --mode stored --data-dir /absolute/path/to/drafts
-```
-
-On Windows PowerShell, use a dedicated absolute Windows path:
-
-```powershell
-.\.venv\Scripts\python.exe examples/host.py --mode stored --data-dir "C:\mcp-work\drafts"
-```
-
-Automated tests and package probes use temporary storage, never the normal draft directory.
+Automated tests and package probes use temporary storage, never the normal draft directory. Inspector checks should likewise use a disposable root as shown below.
 
 ## Inspect the implemented tools
 
-MCP Inspector 2.14.0 can connect to this stdio server in modern protocol mode:
+MCP Inspector 2.14.0 provides an independent client for this stdio server. After setup, launch its web UI with a disposable absolute storage root. No model, agent, or BadgeApp credentials are needed by Inspector.
+
+On macOS/Linux:
 
 ```sh
-npx -y @modelcontextprotocol/inspector@2.14.0 --protocol-era modern ./.venv/bin/bestpractices-mcp
+QA_ROOT="$(mktemp -d)"
+npx -y @modelcontextprotocol/inspector@2.14.0 --protocol-era modern -e "BESTPRACTICES_DATA_DIR=$QA_ROOT" ./.venv/bin/bestpractices-mcp
 ```
 
 On Windows PowerShell, use `npx.cmd` and the Windows server executable:
 
 ```powershell
-npx.cmd -y @modelcontextprotocol/inspector@2.14.0 --protocol-era modern .\.venv\Scripts\bestpractices-mcp.exe
+$qaRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("bestpractices-qa-" + [guid]::NewGuid())
+npx.cmd -y @modelcontextprotocol/inspector@2.14.0 --protocol-era modern -e "BESTPRACTICES_DATA_DIR=$qaRoot" .\.venv\Scripts\bestpractices-mcp.exe
 ```
 
-Only this optional Inspector workflow requires Node/npm. Install Node 24.22.3 or a newer 24.x version supported by that Inspector release; on Unix with nvm, use `nvm install 24` and `nvm use 24`, or install Node directly on Windows. Node is not required for project setup or tests. Discovery, get_criteria, build_draft, read_draft, update_draft and validate_draft are offline. update_draft mutates local storage; use a disposable absolute BESTPRACTICES_DATA_DIR for Inspector tests. find_project, get_project_progress and artifact generation make public BadgeApp GETs. No tool authenticates or submits changes. For a reproducible CLI schema check, add `--cli --method tools/list --strict --format json`. See [schema compatibility](docs/schema-compatibility.md) for official guidance and the distinction between portability lint and MCP conformance.
+Keep the same disposable root when testing a reconnect. Stop the server before removing that QA directory. For a custom environment, substitute its executable; for release qualification, use the absolute executable of the exact installed candidate outside the source checkout.
+
+Only this optional Inspector workflow requires Node/npm. Install Node 24.22.3 or a newer supported 24.x version; on Unix with nvm, use `nvm install 24` and `nvm use 24`, or install Node directly on Windows. Node is not required for project setup, automated tests, pre-commit, or default CI. Inspector is external to this project's dependency inventory and OSV scans.
+
+Discovery, `get_criteria`, `build_draft`, `read_draft`, `update_draft`, and `validate_draft` are offline; only `update_draft` writes local drafts. Public project/badge reads and `prepare_update_url` contact BadgeApp. No tool authenticates or submits changes. Resolve and explicitly select the intended project before application work. Inspector may retain old results: use the latest successful result for that project and draft, and read the draft before deciding whether to retry an uncertain write.
+
+Follow [Inspector qualification](docs/inspector-qa.md) for the short tool-call walkthrough, exact result handling, and CLI smoke checks. It is a maintainer qualification step for relevant release candidates and stable promotion; ordinary contributors need only the automated validation above. The [schema guide](docs/schema-compatibility.md) explains portability findings, and [live browser QA](docs/live-browser-qa.md) checks actual proposal application without saving.

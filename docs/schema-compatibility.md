@@ -23,7 +23,9 @@ For an optional Inspector check after setup, run:
 ```sh
 npx -y @modelcontextprotocol/inspector@2.14.0 --cli \
   ./.venv/bin/bestpractices-mcp --protocol-era modern \
-  --method tools/list --strict --format json
+  --connect-timeout 15000 --method tools/list --strict --format json
 ```
 
 Expected discovery is ten tools with no schema errors or warnings. Inspector may download its npm package; server discovery itself is offline. A successful check does not guarantee acceptance by every provider-specific schema subset. Inspector's [smoke-testing guidance](https://github.com/modelcontextprotocol/inspector/blob/main/docs/cli-smoke-testing.md) distinguishes portability lint from full conformance testing.
+
+Discovery alone does not exercise tool behavior. Follow [Inspector qualification](inspector-qa.md) for successes, expected errors, document/storage semantics, and exact artifact delivery. With JSON output, inspect the optional `schemaFindings` array as well as `result`; warning-severity findings do not cause a nonzero exit. Retain stderr separately from JSON stdout.

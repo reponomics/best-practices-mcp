@@ -14,7 +14,6 @@ The server is an installable Python package with a bounded ten-tool interface ov
 | `validation.py` | Optional mechanical checks using the selected level's catalog requirements |
 | `transfer.py`, `proposals.py` | Transfer eligibility, identity checks, field reports, exact proposal URLs |
 | `storage.py` | Project-keyed paths, process-local guards and atomic local draft replacement |
-| `examples/host.py` | Reference terminal host using the public MCP client interface |
 
 A host resolves and selects an existing BadgeApp project before application work. It can own a document and pass it explicitly, or use the optional project-keyed draft store. An explicit document, including `{}`, takes precedence over storage. Omitting a document reads one complete stored snapshot for that call. Each generator separately fetches a current public project observation, checks the registered target and any supplied identity provenance, and returns an artifact plus a field-level inclusion/exclusion report. Supplied answer values are not compared with the observation; every eligible field is encoded, including values equal to saved answers. There is no hidden active-project session or shared snapshot across separate calls.
 
@@ -42,10 +41,10 @@ The store holds one multi-level `.bestpractices.json` per registered project und
 
 A per-project in-memory guard covers each read/patch/check/replace operation. The store checks document size and the prospective complete read/update responses, then uses a same-directory temporary file, flush/fsync and atomic replacement. Cancellation shielding retains the guard until replacement or cleanup completes. There is no cleanup after a successful replacement that could falsely claim rollback.
 
-This protects concurrent updates within one server process and prevents partial-file visibility. It does not coordinate independent servers or external editors, guarantee request-arrival order, or promise survival of sudden power loss. An uncertain write requires a fresh read before deciding whether to issue another patch. The reference host clears stale artifacts after an uncertain mutation and does not retry it automatically.
+This protects concurrent updates within one server process and prevents partial-file visibility. It does not coordinate independent servers or external editors, guarantee request-arrival order, or promise survival of sudden power loss. An uncertain write requires a fresh read before deciding whether to issue another patch. Callers should discard stale generated results and read the draft before deciding whether to retry an uncertain mutation.
 
-## Reference host and verification
+## Verification
 
-The reference terminal host launches the server through the official MCP client; it does not import server internals or read draft files directly. Document mode supports local imports, edits, validation, artifact generation and exact exports. Stored mode is opt-in and uses MCP reads/patches for persistence, including explicit document subsets derived from a complete read. Its interactive choices are illustrative host policy, not new MCP requirements.
+Required verification covers pure domain rules, injected network/filesystem failures, real stdio discovery/calls, document and storage workflows, and fresh wheel/sdist installation. The CI matrix covers Python 3.11/3.12 on native Linux, macOS and Windows. [Inspector qualification](inspector-qa.md) exercises the installed server with an independent client; the [live browser runbook](live-browser-qa.md) checks current proposal-URL compatibility. These manual checks supplement deterministic regressions. The custom terminal host was removed under [ADR 0004](adr/0004-remove-reference-host.md).
 
-Required verification covers pure domain rules, injected network/filesystem failures, real stdio discovery/calls, reference-host workflows and fresh wheel/sdist installation. The CI matrix covers Python 3.11/3.12 on native Linux, macOS and Windows. The [live browser runbook](live-browser-qa.md) checks current proposal-URL compatibility. The [testing policy](testing-policy.md) defines the evidence boundaries. Coverage, package-verification and release results are written under ignored `build/coverage/`, `build/verification/` and `build/release/`, respectively.
+The [testing policy](testing-policy.md) defines the evidence boundaries. Coverage, package-verification and release results are written under ignored `build/coverage/`, `build/verification/` and `build/release/`, respectively.
