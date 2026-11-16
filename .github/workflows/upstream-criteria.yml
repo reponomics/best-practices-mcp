@@ -37,7 +37,7 @@ jobs:
         run: |
           python3 -m venv venv
           venv/bin/python -m pip install 'PyYAML==6.0.3'
-      - name: Prepare upstream sources, catalog and documentation pins
+      - name: Prepare upstream sources, catalog and provenance
         id: prepare
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -77,6 +77,8 @@ jobs:
             vendor/badgeapp/criteria/criteria.yml
             vendor/badgeapp/criteria/baseline_criteria.yml
             vendor/badgeapp/config/locales/en.yml
+            vendor/badgeapp/docs/api.md
+            vendor/badgeapp/docs/bestpractices-json.md
             vendor/badgeapp/docs/automation-approach.md
             vendor/badgeapp/docs/automation-proposals.md
             vendor/badgeapp/LICENSE
@@ -84,11 +86,6 @@ jobs:
             src/best_practices_mcp/data/catalog.json
             src/best_practices_mcp/data/provenance.json
             src/best_practices_mcp/data/BADGEAPP-LICENSE.txt
-            docs/upstream-compatibility.md
-            docs/transfer-rules.md
-            docs/design.md
-            docs/specification.md
-            THIRD_PARTY_NOTICES.md
       - name: Synchronize advisory labels
         if: steps.pr.outputs.pull-request-number != ''
         env:

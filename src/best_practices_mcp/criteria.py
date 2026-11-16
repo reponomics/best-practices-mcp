@@ -14,7 +14,20 @@ from best_practices_mcp.errors import DomainError
 @lru_cache(maxsize=1)
 def _catalog() -> dict[str, Any]:
     resource = files("best_practices_mcp").joinpath("data/catalog.json")
-    return json.loads(resource.read_text(encoding="utf-8"))
+    catalog = json.loads(resource.read_text(encoding="utf-8"))
+    if catalog["format_version"] != 2:
+        raise ValueError("Unsupported packaged catalog format")
+    source = provenance()
+    base_url = f"{source['repository']}/blob/{source['revision']}"
+    catalog["catalog"] = {
+        "revision": source["revision"],
+        "source_url": f"{base_url}/criteria/criteria.yml",
+        "generated_at": source["generated_at"],
+        "format_version": 1,
+    }
+    for criterion in catalog["criteria"]:
+        criterion["source_url"] = f"{base_url}/config/locales/en.yml"
+    return catalog
 
 
 def provenance() -> dict[str, Any]:

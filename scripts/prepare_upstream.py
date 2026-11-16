@@ -1,4 +1,4 @@
-"""Prepare retained sources, generated data and maintained documentation for review."""
+"""Prepare retained sources and generated data for review."""
 
 from __future__ import annotations
 
@@ -10,14 +10,6 @@ from pathlib import Path
 
 import yaml
 from generate_catalog import SourceLoader, catalog_content, encoded, flatten
-
-DOC_PINS = (
-    "docs/upstream-compatibility.md",
-    "docs/transfer-rules.md",
-    "docs/design.md",
-    "docs/specification.md",
-    "THIRD_PARTY_NOTICES.md",
-)
 
 
 def criterion_ids(contents: dict[str, bytes | None]) -> set[str]:
@@ -94,13 +86,6 @@ def apply_snapshot(root: Path, report, staged: Path, generated: dict[str, bytes]
     (source / "source.json").write_bytes((staged / "source.json").read_bytes())
     for name, content in generated.items():
         (root / "src/best_practices_mcp/data" / name).write_bytes(content)
-    for name in DOC_PINS:
-        path = root / name
-        path.write_bytes(
-            path.read_bytes().replace(
-                report.bundled_revision.encode(), report.production_revision.encode()
-            )
-        )
 
 
 def error_text(value: str) -> str:
@@ -114,7 +99,7 @@ def preparation_body(result: dict) -> str:
     if result["generation_error"]:
         lines.extend(
             [
-                "**Catalog generation failed.** The updated source inputs and documentation pins "
+                "**Catalog generation failed.** The updated source inputs "
                 "are included; the previous generated files remain unchanged. Fix generation and "
                 "run `make catalog` before merging. CI must pass.",
                 "",
@@ -154,9 +139,6 @@ def prepare_update(client, report, root: Path, output: Path) -> str:
     if report.changed:
         timestamp = source_timestamp(client, report.production_revision)
         result["ids"] = id_advisory(root / "vendor/badgeapp", report.production_files)
-        # Check all managed documentation exists before modifying any repository files.
-        for name in DOC_PINS:
-            (root / name).read_bytes()
         with tempfile.TemporaryDirectory(prefix="badgeapp-sources-") as temporary:
             staged = Path(temporary)
             generated, result["generation_error"] = build_snapshot(report, timestamp, staged)

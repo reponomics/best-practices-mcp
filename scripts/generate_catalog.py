@@ -97,7 +97,7 @@ def boolean_flags(raw: dict) -> dict[str, bool]:
 
 
 def criterion_record(
-    level: str, criterion_id: str, raw: dict, definitions: dict, english: dict, source_url: str
+    level: str, criterion_id: str, raw: dict, definitions: dict, english: dict
 ) -> tuple[dict, dict]:
     text = english[level][criterion_id]
     details, inherited_level = inherited_details(level, criterion_id, definitions, english)
@@ -116,7 +116,6 @@ def criterion_record(
         "status_field": f"{criterion_id}_status",
         "justification_field": f"{criterion_id}_justification",
         "aliases": aliases,
-        "source_url": source_url,
         **boolean_flags(raw),
     }
     metadata = {
@@ -137,19 +136,12 @@ def catalog_content(source_dir: Path) -> dict[str, bytes]:
     if set(groups) != set(SOURCE_LEVELS):
         raise ValueError("Source levels differ from the six supported levels")
     definitions = {level: flatten(group) for level, group in groups.items()}
-    base_url = f"{manifest['repository']}/blob/{manifest['revision']}"
-    catalog_ref = {
-        "revision": manifest["revision"],
-        "source_url": f"{base_url}/criteria/criteria.yml",
-        "generated_at": manifest["generated_at"],
-        "format_version": 1,
-    }
     criteria = []
     metadata = {}
     for level, definitions_at_level in definitions.items():
         for criterion_id, raw in sorted(definitions_at_level.items()):
             record, criterion_metadata = criterion_record(
-                level, criterion_id, raw, definitions, english, f"{base_url}/config/locales/en.yml"
+                level, criterion_id, raw, definitions, english
             )
             criteria.append(record)
             metadata[f"{SOURCE_LEVELS[level]}/{criterion_id}"] = criterion_metadata
@@ -158,7 +150,7 @@ def catalog_content(source_dir: Path) -> dict[str, bytes]:
         "generator": {
             "path": "scripts/generate_catalog.py",
             "sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-            "format_version": 1,
+            "format_version": 2,
         },
         "criteria_metadata": metadata,
         "counts": {level: sum(c["level"] == level for c in criteria) for level in LEVELS},
@@ -171,7 +163,7 @@ def catalog_content(source_dir: Path) -> dict[str, bytes]:
         "generated_at_policy": "Source-manifest generation timestamp preserved on regeneration",
     }
     return {
-        "catalog.json": encoded({"catalog": catalog_ref, "levels": LEVELS, "criteria": criteria}),
+        "catalog.json": encoded({"format_version": 2, "levels": LEVELS, "criteria": criteria}),
         "provenance.json": encoded(provenance),
         "BADGEAPP-LICENSE.txt": (source_dir / "LICENSE").read_bytes(),
     }
