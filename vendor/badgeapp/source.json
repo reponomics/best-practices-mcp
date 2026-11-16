@@ -5,9 +5,9 @@
     "criteria/baseline_criteria.yml": "e6225fc05b8e58f6aaa5cd6d0f39bd050c6ba9bef8c8a8b40adaf42e2ff37b91",
     "criteria/criteria.yml": "ca39078ee02032152210f0816add8b096a78d5c6d2f31f90e1de948ec190b1b9",
     "docs/automation-approach.md": "608c87b9db6becacbef3af3d0d60be7bb0347e01e7f60a98353a65588e955182",
-    "docs/automation-proposals.md": "2f73be53349300e26b4aed38c303e8167e92389c3f4fd2f2edb4adc34f66d89f"
+    "docs/automation-proposals.md": "3ab652c0aab80ae37969eb21fffad5ee4d997bdd75ff3a264120f4e0cd73b4c9"
   },
-  "generated_at": "2026-11-09T22:34:03Z",
+  "generated_at": "2026-11-13T20:11:24Z",
   "repository": "https://github.com/ossf/best-practices-badge",
-  "revision": "868e1677339a3fdb48851b0c2ae8862c553115eb"
+  "revision": "31325acd7963e0c9203da0ff798802a766237517"
 }

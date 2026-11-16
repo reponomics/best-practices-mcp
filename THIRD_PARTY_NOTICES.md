@@ -4,7 +4,7 @@ Best Practices MCP is an independent project maintained by Reponomics. It is not
 
 ## OpenSSF Best Practices Badge (BadgeApp)
 
-The packaged criteria catalog and retained upstream source materials derive from [ossf/best-practices-badge](https://github.com/ossf/best-practices-badge), revision `868e1677339a3fdb48851b0c2ae8862c553115eb`, under the MIT license. The original notice identifies:
+The packaged criteria catalog and retained upstream source materials derive from [ossf/best-practices-badge](https://github.com/ossf/best-practices-badge), revision `31325acd7963e0c9203da0ff798802a766237517`, under the MIT license. The original notice identifies:
 
 > Copyright (c) 2015-2016 The Linux Foundation, the Institute for Defense Analyses, and other project contributors.
 

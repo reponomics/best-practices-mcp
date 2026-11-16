@@ -4,9 +4,9 @@ The MCP prepares faithful proposal URLs from supplied drafts. The [server specif
 
 ## Primary references
 
-- [Automation proposals](https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/docs/automation-proposals.md): public URL format, fields, overrides, and review flow.
-- [Automation approach: decision matrix](https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/docs/automation-approach.md#the-decision-matrix): BadgeApp's status-first, justification-second precedence.
-- [Repository JSON](https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/docs/bestpractices-json.md): file locations, unknown answers, and triggering import.
+- [Automation proposals](https://github.com/ossf/best-practices-badge/blob/31325acd7963e0c9203da0ff798802a766237517/docs/automation-proposals.md): public URL format, fields, overrides, and review flow.
+- [Automation approach: decision matrix](https://github.com/ossf/best-practices-badge/blob/31325acd7963e0c9203da0ff798802a766237517/docs/automation-approach.md#the-decision-matrix): BadgeApp's status-first, justification-second precedence.
+- [Repository JSON](https://github.com/ossf/best-practices-badge/blob/31325acd7963e0c9203da0ff798802a766237517/docs/bestpractices-json.md): file locations, unknown answers, and triggering import.
 
 ## Artifact contents
 
@@ -28,7 +28,7 @@ The transfer report contains one row per supplied normalized field. It identifie
 
 Values in encoded artifacts remain exact strings. How BadgeApp parses a URL value or a browser represents a control value is verified in the actual interface, not simulated from upstream implementation details.
 
-BadgeApp's [justification-value documentation](https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/docs/automation-proposals.md#justification-values) specifies trimming leading and trailing whitespace from URL-proposed justification text. The tool description communicates this procedure; the MCP preserves the supplied text in the URL and leaves trimming to BadgeApp.
+BadgeApp's [justification-value documentation](https://github.com/ossf/best-practices-badge/blob/31325acd7963e0c9203da0ff798802a766237517/docs/automation-proposals.md#justification-values) specifies trimming leading and trailing whitespace from URL-proposed justification text. The tool description communicates this procedure; the MCP preserves the supplied text in the URL and leaves trimming to BadgeApp.
 
 ## Explicit overrides
 
@@ -46,6 +46,6 @@ Repository publishing and import acceptance belong to the host and BadgeApp. Loc
 
 ## Unknown-status limitation
 
-The public proposal guide describes URL `?` as an explicit reset, while the automation-approach decision matrix discards it. This MCP makes no reset promise: preserve unknown answers locally, omit them from artifacts with an explicit unsupported-field reason, and evaluate any accompanying justification independently. [Public guide](https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/docs/automation-proposals.md#status-value-semantics-query-strings-vs-json), [decision matrix](https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/docs/automation-approach.md#the-decision-matrix).
+The public proposal guide describes URL `?` as an explicit reset, while the automation-approach decision matrix discards it. This MCP makes no reset promise: preserve unknown answers locally, omit them from artifacts with an explicit unsupported-field reason, and evaluate any accompanying justification independently. [Public guide](https://github.com/ossf/best-practices-badge/blob/31325acd7963e0c9203da0ff798802a766237517/docs/automation-proposals.md#status-value-semantics-query-strings-vs-json), [decision matrix](https://github.com/ossf/best-practices-badge/blob/31325acd7963e0c9203da0ff798802a766237517/docs/automation-approach.md#the-decision-matrix).
 
 Required checks and live compatibility verification are mapped in the [testing policy](testing-policy.md).
