@@ -8,7 +8,6 @@
     ".": {
       "package-name": "best-practices-mcp",
       "changelog-path": "CHANGELOG.md",
-      "prerelease": true,
       "extra-files": [
         {
           "type": "toml",
