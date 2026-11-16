@@ -1,0 +1,64 @@
+name: Share your experience
+description: Tell us how you used best-practices-mcp and how it went.
+title: "[Usage]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping us understand how best-practices-mcp works in practice. This is a voluntary, self-reported account of your experience; your description is enough. Successful, partial, and unsuccessful interactions are all useful.
+
+        We may summarize your report in the project's interaction log and link back to this issue.
+  - type: input
+    id: project
+    attributes:
+      label: Project
+      description: The project name, with a public repository or BadgeApp link if you wish.
+    validations:
+      required: true
+  - type: input
+    id: interaction_date
+    attributes:
+      label: Interaction date
+      description: An approximate date or date range is fine.
+      placeholder: YYYY-MM-DD
+    validations:
+      required: true
+  - type: dropdown
+    id: badge_level
+    attributes:
+      label: Badge level(s)
+      multiple: true
+      options:
+        - Best Practices Passing
+        - Best Practices Silver
+        - Best Practices Gold
+        - OSPS Baseline Level 1
+        - OSPS Baseline Level 2
+        - OSPS Baseline Level 3
+        - No particular level / not sure
+    validations:
+      required: true
+  - type: input
+    id: models
+    attributes:
+      label: Assistant and model(s)
+      description: Free text; list any assistants or models involved, as reported by your host. Leave blank if unknown.
+      placeholder: e.g. Claude Code Opus 5.5; Codex GPT-6 Astra
+  - type: input
+    id: mcp_version
+    attributes:
+      label: best-practices-mcp version
+      description: If known.
+  - type: textarea
+    id: interaction
+    attributes:
+      label: How did the interaction go?
+      description: Briefly describe what you tried, what worked, and any difficulties. If you used a proposal URL, mention whether it opened as expected, whether overrides worked, and whether you previewed or saved the form. Share only the parts relevant to your experience.
+      placeholder: Prepared a Baseline-1 draft, opened the proposal URL, and reviewed the answers. The justification overrides worked as expected. I saved the form afterward.
+    validations:
+      required: true
+  - type: textarea
+    id: feedback
+    attributes:
+      label: Additional feedback
+      description: Anything else you would like us to know, including suggestions or confusing parts of the experience.

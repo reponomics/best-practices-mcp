@@ -82,6 +82,14 @@ Default storage locations are:
 
 To choose another location, set `BESTPRACTICES_DATA_DIR` in the server's environment through your MCP host. Use an absolute path; `~` is not expanded. Avoid simultaneous writers from separate server processes or external editors to the same project draft. After an uncertain update result, use `read_draft` before deciding whether to issue another patch. See [persistence boundaries](docs/architecture.md#optional-local-persistence).
 
+If you prefer a dot directory in your home directory, add an `env` entry to the server configuration, for example `"env": {"BESTPRACTICES_DATA_DIR": "/home/yourname/.bestpractices-mcp"}`. Replace that example with your actual absolute home path (on macOS, typically `/Users/yourname/.bestpractices-mcp`). Changing the setting does not move existing drafts: either keep using their original directory or stop the server instances and move the existing `projects` directory into the new data directory, taking care not to overwrite drafts already there.
+
+## Share your experience
+
+Help improve best-practices-mcp by [sharing how you used it](https://github.com/reponomics/best-practices-mcp/issues/new?template=usage_report.yml). A brief account in your own words is enough: what you tried, how it went, which assistant/model(s) you used if known, and any additional feedback. Successful, partial, and unsuccessful interactions are all welcome.
+
+Reports are voluntary and self-reported. We may summarize them in the [interaction log](docs/interaction-log.md), with a link to the original issue.
+
 ## Documentation
 
 - [Documentation index](docs/README.md): the complete guide to maintained documentation and historical records.

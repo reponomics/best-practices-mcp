@@ -1,6 +1,6 @@
 # Baseline Level 1 milestone — November 16, 2026
 
-We used best-practices-mcp v0.3.0-beta.1 in Codex to prepare the project's own OSPS Baseline Level 1 application. The maintainer reviewed the proposal, opened it in BadgeApp, then saved and exited. A subsequent MCP read confirmed **100% completion: 23 Met and one N/A**, with all 48 saved status/justification fields matching the reviewed draft. The public entry is [project 16754](https://www.bestpractices.dev/en/projects/16754/baseline-1).
+We used best-practices-mcp v0.3.0-beta.1 in Codex (GPT-6 Astra, as reported by the maintainer) to prepare the project's own OSPS Baseline Level 1 application. The maintainer reviewed the proposal, opened it in BadgeApp, then saved and exited. A subsequent MCP read confirmed **100% completion: 23 Met and one N/A**, with all 48 saved status/justification fields matching the reviewed draft. The public entry is [project 16754](https://www.bestpractices.dev/en/projects/16754/baseline-1).
 
 The interaction was guided by the badge-buddy plugin's reference material, with the MCP tools replacing its older BadgeApp CLI workflow. Repository evidence, a peer review of the draft, and two maintainer confirmations supported the assessment: releases come from this single repository, and untrusted contributors use fork pull requests. No project remediation was needed during this session.
 
@@ -23,4 +23,4 @@ A few useful observations for future work:
 - Explicit documents worked well. Optional server-managed draft storage was not exercised; local working artifacts stayed under ignored `build/baseline-1-assessment/`.
 - Some answers already filled by BadgeApp lacked supporting URLs. The form described URLs as optional, so these were retained where the explanation was sufficient. Clearer evidence-writing guidance could help without imposing a blanket URL requirement.
 
-This was a successful real-project workflow smoke test, not exhaustive qualification of every tool or transfer case. A full-page screenshot of the proposal form, `best-practices-mcp-baseline-level-proposal-url-11-16-2026.png` (about 3.1 MB), remains outside the repository. It documents the preview; the post-save MCP read establishes the persisted outcome.
+This was a successful real-project workflow smoke test, not exhaustive qualification of every tool or transfer case. A full-page screenshot of the proposal form, `best-practices-mcp-baseline-level-proposal-url-11-16-2026.png` (about 3.1 MB), is retained locally under gitignored `INTERNAL/` and is not committed. It documents the preview; the post-save MCP read establishes the persisted outcome.

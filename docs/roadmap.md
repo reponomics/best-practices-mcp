@@ -10,6 +10,7 @@ Planned items are accepted directions for future work, without a committed relea
 
 ## Proposed
 
+- **Home dot-directory storage default.** [Research and recommendation](planning/draft-storage-location.md) compare persistence conventions. Retain platform defaults for now; users can already select a dot directory with `BESTPRACTICES_DATA_DIR`. A future default change would need explicit migration guidance.
 - **Support translations.** Explore localized criteria and language selection for BadgeApp interactions. Define language coverage, fallback behavior and translation maintenance before adding this capability; the current catalog and generated edit links use English.
 - **BadgeApp API coverage.** Expand public reads around project discovery and ecosystem reporting, following the remaining proposals below. Badge image and compact status tools are implemented; other tool names and contracts remain provisional. Endpoint availability alone is not a reason to add a tool.
 
