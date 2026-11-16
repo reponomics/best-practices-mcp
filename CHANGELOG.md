@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/reponomics/best-practices-mcp/compare/v0.3.0-beta.1...v0.5.0) (2026-11-16)
+
+
+### Documentation
+
+* document successful trial and add usage reporting issue form ([#21](https://github.com/reponomics/best-practices-mcp/issues/21)) ([4a6a919](https://github.com/reponomics/best-practices-mcp/commit/4a6a9191a0360d76fe87fdbf09c6a820b5ef0523))
+
 ## [0.3.0-beta.1](https://github.com/reponomics/best-practices-mcp/compare/v0.2.0-beta.4...v0.3.0-beta.1) (2026-11-16)
 
 
