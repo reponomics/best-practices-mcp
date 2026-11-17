@@ -28,7 +28,8 @@ def test_one_input(data: bytes) -> None:
     }
     encoded = serialize_document(original)
     draft = parse_document(encoded)
-    result = prepare_update_url(123, "passing", draft, {}, OBSERVATION, [JUSTIFICATION])
+    overrides = {"mode": "fields", "fields": [JUSTIFICATION]}
+    result = prepare_update_url(123, "passing", draft, {}, OBSERVATION, overrides=overrides)
     assert result["outcome"] == "complete"
     artifact = result["artifact"]
     parts = urlsplit(artifact["url"])
@@ -44,7 +45,10 @@ def test_one_input(data: bytes) -> None:
     assert artifact["encoded_size_bytes"] == len(artifact["url"].encode("utf-8"))
     assert serialize_document(draft) == encoded
     reordered = dict(reversed(draft.items()))
-    assert prepare_update_url(123, "passing", reordered, {}, OBSERVATION, [JUSTIFICATION]) == result
+    assert (
+        prepare_update_url(123, "passing", reordered, {}, OBSERVATION, overrides=overrides)
+        == result
+    )
 
 
 if __name__ == "__main__":
