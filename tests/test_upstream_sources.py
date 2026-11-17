@@ -28,12 +28,16 @@ def test_required_retained_sources_form_a_complete_verified_baseline():
 def test_active_revision_is_owned_only_by_source_and_packaged_provenance():
     manifest = ROOT / "vendor/badgeapp/source.json"
     revision = json.loads(manifest.read_text(encoding="utf-8"))["revision"]
+    # The roadmap's dated research pin is independent of the active snapshot,
+    # even when an update happens to select that same revision.
+    research = ROOT / "docs/roadmap.md"
     candidates = [manifest, *ROOT.glob("*.md"), *ROOT.glob("*.toml"), ROOT / "Makefile"]
     for directory in ("src", "scripts", "docs", ".github"):
         candidates.extend(
             path
             for path in (ROOT / directory).rglob("*")
             if path.is_file()
+            and path != research
             and path.suffix in {".py", ".json", ".md", ".yml", ".yaml", ".toml"}
             and not set(path.relative_to(ROOT).parts[:2]) & {"adr", "planning", "archive"}
         )
