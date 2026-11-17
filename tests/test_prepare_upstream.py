@@ -44,6 +44,16 @@ def checkout(tmp_path):
     archive.parent.mkdir(parents=True)
     manifest = json.loads((root / "vendor/badgeapp/source.json").read_text())
     archive.write_text(f"Historical baseline: {manifest['revision']}\n", encoding="utf-8")
+    # Explicit citations remain fixed even when they match either sync endpoint.
+    (root / "docs/explicit-citations.md").write_text(
+        "\n".join(
+            f"Reviewed upstream docs/api.md at commit {sha}: "
+            f"https://github.com/ossf/best-practices-badge/blob/{sha}/docs/api.md"
+            for sha in (manifest["revision"], PRODUCTION)
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     return root
 
 

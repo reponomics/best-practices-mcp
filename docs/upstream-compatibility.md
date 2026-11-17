@@ -10,11 +10,15 @@ Vendored criteria, locale, documentation and license notices support reproducibi
 
 Badge-specific compatibility follows [ADR 0001](adr/0001-badge-image-and-status-tools.md), which records the separately scoped upstream revision and controller/view evidence for the four badge endpoints. This reference does not update the bundled catalog or transfer semantics. Synthetic fixtures exercise the agreed adapters rather than executing upstream Ruby or proving the deployed revision.
 
-## Source revision ownership
+## Upstream references and synchronization
 
-The active upstream SHA is stored in exactly two places: the authoritative `vendor/badgeapp/source.json` input and its generated `src/best_practices_mcp/data/provenance.json` package record. The installed wheel needs its own provenance because it does not contain the vendored source tree. Regeneration verifies the generated copy, and the isolated packaging check compares installed provenance with the source manifest.
+By default, references such as “upstream `docs/api.md`” or “`best-practices-badge/docs/api.md`” mean that file at the revision identified by the [source manifest](../vendor/badgeapp/source.json), or packaged provenance for an installed distribution. Use links to the synced copies where useful; do not put a SHA in ordinary documentation links. A reference explicitly naming a particular commit is a deliberate fixed citation and remains tied to that commit, wherever the document lives.
 
-The stored catalog contains criterion content and its internal format version, without repeated source URLs or snapshot metadata. Runtime responses derive the existing catalog reference and criterion URLs from packaged provenance, preserving the public response schema. A source revision or timestamp change alone therefore leaves `catalog.json` unchanged. Durable documentation uses local retained-source links; historical and separately scoped evidence keeps its original revision.
+`vendor/badgeapp/source.json` owns the selected upstream revision. Its generated `src/best_practices_mcp/data/provenance.json` record carries that revision into installed distributions, which do not contain the vendored source tree. Regeneration and the isolated packaging check verify their agreement. This is an ownership convention, not a limit on how often a commit may be cited.
+
+Synchronization updates only the retained upstream sources, their manifest, and generated package data. It never edits project-authored documentation. Changes to our explanations, decisions, or explicit commit citations are made deliberately, including documents under `adr/`, `planning/`, and `archive/`.
+
+The stored catalog contains criterion content and its internal format version, without repeated source URLs or snapshot metadata. Runtime responses derive catalog references and criterion URLs from packaged provenance. A source revision or timestamp change alone therefore leaves `catalog.json` unchanged.
 
 ## Routes and public observations
 
