@@ -221,6 +221,51 @@ def test_all_metadata_fields_available_at_all_levels():
         assert set(params(result)) == set(draft)
 
 
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("name", 42),
+        ("description", False),
+        ("license", None),
+        ("implementation_languages", ["Python"]),
+        ("description", {"text": "example"}),
+    ],
+)
+@pytest.mark.parametrize("mode", ["none", "all", "fields"])
+def test_invalid_metadata_is_excluded_from_url_and_effective_overrides(field, value, mode):
+    draft = {field: value, STATUS: "Met"}
+    original = deepcopy(draft)
+    overrides = fields(field, STATUS) if mode == "fields" else {"mode": mode}
+    result = prepare(draft, overrides=overrides)
+
+    query = {STATUS: ["Met"]}
+    if mode != "none":
+        query["overrides"] = ["*" if mode == "all" else STATUS]
+    assert params(result) == query
+    assert result["outcome"] == "partial"
+    assert result["effective_overrides"] == ([] if mode == "none" else [STATUS])
+    assert reports(result)[field] == {
+        "field": field,
+        "disposition": "invalid",
+        "reason": "invalid_type",
+        "override": False,
+        "applicable_levels": get_criteria()["levels"],
+        "restrictions": [],
+    }
+    assert draft == original
+
+
+@pytest.mark.parametrize("overrides", [{"mode": "none"}, {"mode": "all"}, fields("name")])
+def test_invalid_metadata_alone_produces_no_artifact_or_effective_overrides(overrides):
+    result = prepare({"name": None}, overrides=overrides, section="choose_section")
+    assert result["artifact"] is None
+    assert result["outcome"] == "no_transferable_changes"
+    assert result["no_artifact_reason"] == "no_transferable_changes"
+    assert result["effective_overrides"] == []
+    assert reports(result)["name"]["reason"] == "invalid_type"
+    assert not reports(result)["name"]["override"]
+
+
 def test_long_valid_values_are_neither_truncated_nor_advisory_gated():
     text = "x" * 50000
     result = prepare({JUST: text})

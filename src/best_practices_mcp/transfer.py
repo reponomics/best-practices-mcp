@@ -92,10 +92,9 @@ def _answer_problem(field, draft, definition, criterion):
     kind = definition["kind"]
     if kind == "status":
         return _status_problem(draft[field], criterion)
-    if kind == "justification":
-        status = criterion["status_field"]
-        if status in draft and _status_problem(draft[status], criterion):
-            return "invalid_companion_status"
+    status = criterion["status_field"]
+    if status in draft and _status_problem(draft[status], criterion):
+        return "invalid_companion_status"
     if type(draft[field]) is not str:
         return "invalid_type"
     return None
