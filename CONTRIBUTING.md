@@ -79,12 +79,11 @@ From the repository root after `make setup`:
 
 ```sh
 make validate
-make test-coverage
 make test-package
 make check-fresh-package
 ```
 
-`make validate` checks lock consistency, runs quality checks and the offline test suite, verifies the catalog, and lints workflows. It continues with independent checks after a failure and exits nonzero if any check fails. It does not run OSV or require OSV-Scanner to be installed; dependency scans run in CI. Individual targets remain available for focused work, including `make check` for quality checks and tests. Coverage reports are written under `build/coverage/`; fresh-package results and sanitized logs are written under `build/verification/`. The [release procedure](docs/releasing.md) covers exact candidate qualification, publication controls and published-package QA.
+`make validate` checks lock consistency, runs quality checks and the offline test suite with coverage enforcement, verifies the catalog, and lints workflows. It continues with independent checks after a failure and exits nonzero if any check fails. It does not run OSV or require OSV-Scanner to be installed; dependency scans run in CI. Individual targets remain available for focused work, including `make check` for quality checks and tests. Coverage reports are written under `build/coverage/`; fresh-package results and sanitized logs are written under `build/verification/`. The [release procedure](docs/releasing.md) covers exact candidate qualification, publication controls and published-package QA.
 
 Workflow lint tentatively uses the [kjanat/actionlint fork](https://github.com/kjanat/actionlint), pinned to v1.17.1 by full commit SHA in `.pre-commit-config.yaml`, built with Go 1.27.4. The separate [Actionlint workflow](.github/workflows/actionlint.yml) uses the same source and toolchain pins. `make setup` installs pre-commit in `.venv`; `make workflow-check` (also included in `make validate`) checks all tracked workflows without a separate actionlint installation. Stage new workflow files with `git add` before checking them. The first run needs network access to download the pinned Go toolchain and build and cache actionlint; contributors do not need to install Go separately, including on Windows. Later runs reuse the cached environment.
 
@@ -146,7 +145,7 @@ py -3.11 -m venv .venv
 
 For development and QA on Windows, use the same Make targets documented above from PowerShell. CI exercises native Make with `cmd.exe` recipes, including an environment path containing spaces.
 
-Coverage measures server-package lines and branches, including Python MCP subprocesses. A temporary hook in the development venv forwards only Coverage.py's process configuration through the SDK's filtered environment; it is removed after collection and does not modify production code. `make test-coverage` writes `build/coverage/html/index.html`, XML/JSON reports and a summary with commit/environment details. Coverage percentages complement behavioral assertions; they do not establish that uncovered paths are safe. CI retains the reports for each matrix combination.
+Coverage measures server-package statements and branches, including Python MCP subprocesses. `make test-coverage` and `make validate` require at least 95% statement coverage and 95% branch coverage independently, using unrounded counts. The Make variable `COVERAGE_MINIMUM` sets this shared floor. A temporary hook in the development venv forwards only Coverage.py's process configuration through the SDK's filtered environment; it is removed after collection and does not modify production code. `make test-coverage` writes `build/coverage/html/index.html`, XML/JSON reports and a summary with commit/environment details and gate results, retaining reports when coverage falls below the floor. For focused diagnostic measurements without the full-suite floor, invoke `.venv/bin/python scripts/check_coverage.py tests/test_read_tools.py` directly (on Windows, use `.venv\Scripts\python.exe`). Coverage percentages complement behavioral assertions; they do not establish that uncovered paths are safe. CI retains the reports for each matrix combination.
 
 `make check-fresh-package` explicitly permits dependency downloads and creates fresh temporary environments for wheel and sdist installation outside the checkout. It does not reuse the development environment's dependencies. Use `make test-package` for the offline package check. Dependency installation requires network access unless the required packages are cached; runtime fixture checks are offline.
 

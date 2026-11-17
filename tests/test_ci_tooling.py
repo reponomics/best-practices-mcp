@@ -5,11 +5,167 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 spec = importlib.util.spec_from_file_location("check_coverage", ROOT / "scripts/check_coverage.py")
 coverage_check = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(coverage_check)
+
+
+@pytest.fixture
+def simulated_coverage(tmp_path, monkeypatch):
+    """Exercise gate integration without executing another test suite."""
+    from contextlib import nullcontext
+
+    monkeypatch.setattr(coverage_check, "forward_sdk_coverage", nullcontext)
+
+    def collect(payload, minimum=95):
+        def execute(args, env, log):
+            if args[0] == "run":
+                (tmp_path / "junit.xml").write_text("test results")
+            if args[0] == "html":
+                (tmp_path / "html").mkdir()
+                (tmp_path / "html/index.html").write_text("coverage details")
+            if args[0] == "xml":
+                (tmp_path / "coverage.xml").write_text("coverage results")
+            if args[0] == "json" and payload is not None:
+                content = payload if isinstance(payload, str) else json.dumps(payload)
+                (tmp_path / "coverage.json").write_text(content)
+            return 0
+
+        monkeypatch.setattr(coverage_check, "command", execute)
+        status = coverage_check.run(tmp_path, [], minimum)
+        summary = json.loads((tmp_path / "summary.json").read_text())
+        return status, summary
+
+    return collect
+
+
+@pytest.mark.parametrize(
+    ("covered_lines", "num_statements", "covered_branches", "num_branches", "expected_status"),
+    [
+        (95, 100, 19, 20, 0),
+        (94, 100, 20, 20, 1),
+        (990, 1000, 18, 20, 1),
+        (94999, 100000, 20, 20, 1),
+        (100, 100, 0, 0, 0),
+    ],
+)
+def test_coverage_minimum_checks_each_unrounded_metric(
+    simulated_coverage,
+    covered_lines,
+    num_statements,
+    covered_branches,
+    num_branches,
+    expected_status,
+):
+    totals = {
+        "covered_lines": covered_lines,
+        "num_statements": num_statements,
+        "covered_branches": covered_branches,
+        "num_branches": num_branches,
+        # This combined display metric cannot satisfy an independent branch gate.
+        "percent_covered": 99.99,
+    }
+    status, summary = simulated_coverage({"totals": totals})
+    assert status == expected_status
+    assert summary["coverage_gate"]["passed"] is (expected_status == 0)
+    assert summary["status"] == ("passed" if expected_status == 0 else "failed")
+    assert summary["threshold"] == 95
+    assert summary["totals"] == totals
+
+
+def test_below_minimum_retains_reports_and_explains_failure(simulated_coverage, tmp_path, capsys):
+    totals = {
+        "covered_lines": 99,
+        "num_statements": 100,
+        "covered_branches": 18,
+        "num_branches": 20,
+    }
+    status, summary = simulated_coverage({"totals": totals})
+    assert status == 1
+    assert summary["coverage_gate"]["metrics"]["statements"]["passed"] is True
+    assert summary["coverage_gate"]["metrics"]["branches"]["passed"] is False
+    assert "Coverage branches: 18/20 (90.0000%), minimum 95%: failed" in capsys.readouterr().out
+    for report in ("coverage.json", "coverage.xml", "html/index.html", "junit.xml"):
+        assert (tmp_path / report).is_file()
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        None,
+        "invalid json",
+        [],
+        {},
+        {"totals": []},
+        {"totals": {"percent_covered": 100}},
+        {
+            "totals": {
+                "covered_lines": 100,
+                "num_statements": 100,
+                "covered_branches": "20",
+                "num_branches": 20,
+            }
+        },
+        {
+            "totals": {
+                "covered_lines": True,
+                "num_statements": 1,
+                "covered_branches": 1,
+                "num_branches": 1,
+            }
+        },
+        {
+            "totals": {
+                "covered_lines": 101,
+                "num_statements": 100,
+                "covered_branches": 20,
+                "num_branches": 20,
+            }
+        },
+        {
+            "totals": {
+                "covered_lines": 0,
+                "num_statements": 0,
+                "covered_branches": 0,
+                "num_branches": 0,
+            }
+        },
+    ],
+)
+def test_coverage_minimum_cannot_pass_without_valid_measurements(simulated_coverage, payload):
+    status, summary = simulated_coverage(payload)
+    assert status == 1
+    assert summary["status"] == "failed"
+    assert summary["coverage_gate"]["passed"] is False
+    assert summary["coverage_gate"]["error"]
+
+
+def test_focused_diagnostics_do_not_require_a_minimum(simulated_coverage):
+    totals = {
+        "covered_lines": 10,
+        "num_statements": 100,
+        "covered_branches": 1,
+        "num_branches": 20,
+    }
+    status, summary = simulated_coverage({"totals": totals}, minimum=None)
+    assert status == 0
+    assert summary["threshold"] is None
+    assert "coverage_gate" not in summary
+
+
+@pytest.mark.parametrize("minimum", ["-1", "101", "nan", "inf", "-inf", "not-a-number"])
+def test_invalid_minimum_is_rejected_before_test_execution(monkeypatch, minimum):
+    monkeypatch.setattr(sys, "argv", ["check_coverage.py", f"--minimum-coverage={minimum}"])
+    monkeypatch.setattr(
+        coverage_check, "run", lambda *args: pytest.fail("Must reject before running")
+    )
+    with pytest.raises(SystemExit) as error:
+        coverage_check.main()
+    assert error.value.code == 2
 
 
 def test_slow_coverage_stage_announces_progress(monkeypatch, capsys):
