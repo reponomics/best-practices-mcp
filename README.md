@@ -1,6 +1,6 @@
 # Best Practices MCP
 
-[![OpenSSF Best Practices — project 16754](https://www.bestpractices.dev/projects/16754/badge.svg)](https://www.bestpractices.dev/en/projects/16754/passing) [![OpenSSF Baseline — project 16754](https://www.bestpractices.dev/projects/16754/baseline.svg)](https://www.bestpractices.dev/en/projects/16754/baseline-1)
+[![OpenSSF Best Practices — project 16754](https://www.bestpractices.dev/projects/16754/badge.svg)](https://www.bestpractices.dev/en/projects/16754/passing) [![OpenSSF Baseline — project 16754](https://www.bestpractices.dev/projects/16754/baseline.svg)](https://www.bestpractices.dev/en/projects/16754/baseline-1) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/reponomics/best-practices-mcp/badge)](https://scorecard.dev/viewer/?uri=github.com/reponomics/best-practices-mcp)
 
 ## Description
 
