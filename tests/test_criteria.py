@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+from best_practices_mcp import criteria as criteria_module
 from best_practices_mcp.contracts import validate_output
 from best_practices_mcp.criteria import field_aliases, get_criteria, provenance
 from best_practices_mcp.errors import DomainError
@@ -291,6 +292,56 @@ def test_regeneration_is_byte_reproducible_from_vendored_sources(tmp_path: Path)
         assert (output / name).read_bytes() == files("best_practices_mcp").joinpath(
             f"data/{name}"
         ).read_bytes()
+
+
+def test_metadata_refresh_preserves_catalog_bytes_and_updates_public_references(
+    tmp_path, catalog_generator, monkeypatch
+):
+    source = tmp_path / "source"
+    shutil.copytree(ROOT / "vendor/badgeapp", source)
+    before = catalog_generator.catalog_content(source)
+    manifest_path = source / "source.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest.update(revision="a" * 40, generated_at="2030-01-01T00:00:00Z")
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    after = catalog_generator.catalog_content(source)
+    assert after["catalog.json"] == before["catalog.json"]
+    assert after["provenance.json"] != before["provenance.json"]
+
+    data = tmp_path / "package" / "data"
+    data.mkdir(parents=True)
+    for name, content in after.items():
+        (data / name).write_bytes(content)
+    monkeypatch.setattr(criteria_module, "files", lambda package: data.parent)
+    criteria_module._catalog.cache_clear()
+    try:
+        result = get_criteria("passing")
+        validate_output("get_criteria", result)
+        base_url = f"{manifest['repository']}/blob/{manifest['revision']}"
+        assert result["catalog"] == {
+            "revision": manifest["revision"],
+            "generated_at": manifest["generated_at"],
+            "source_url": f"{base_url}/criteria/criteria.yml",
+            "format_version": 1,
+        }
+        assert all(
+            row["source_url"] == f"{base_url}/config/locales/en.yml" for row in result["criteria"]
+        )
+    finally:
+        criteria_module._catalog.cache_clear()
+
+
+def test_unsupported_packaged_catalog_format_is_rejected(tmp_path, monkeypatch):
+    data = tmp_path / "data"
+    data.mkdir()
+    (data / "catalog.json").write_text('{"format_version": 999}', encoding="utf-8")
+    monkeypatch.setattr(criteria_module, "files", lambda package: tmp_path)
+    criteria_module._catalog.cache_clear()
+    try:
+        with pytest.raises(ValueError, match="Unsupported packaged catalog format"):
+            get_criteria()
+    finally:
+        criteria_module._catalog.cache_clear()
 
 
 def test_generator_refuses_tampered_source_and_check_refuses_drift(tmp_path: Path) -> None:

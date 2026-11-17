@@ -41,7 +41,7 @@ async def main():
         result = get_criteria(level)
         validate_output("get_criteria", result)
         assert result["criteria"]
-    assert provenance()["revision"] == "868e1677339a3fdb48851b0c2ae8862c553115eb"
+    assert provenance()["revision"] == sys.argv[2], "Installed revision differs from manifest"
     assert field_aliases()
     server = create_server()
     tool_names = [tool.name for tool in await server.list_tools()]
@@ -86,6 +86,8 @@ def check_archives(dist: Path) -> Path:
             "/scripts/verification_support.py",
             "/tests/test_contracts.py",
             "/vendor/badgeapp/docs/automation-approach.md",
+            "/vendor/badgeapp/docs/api.md",
+            "/vendor/badgeapp/docs/bestpractices-json.md",
             "/.python-version",
             "/uv.lock",
             "/osv-scanner.toml",
@@ -100,6 +102,7 @@ def check_archives(dist: Path) -> Path:
 
 
 def main() -> None:
+    manifest = json.loads((ROOT / "vendor/badgeapp/source.json").read_text(encoding="utf-8"))
     env = {**os.environ, "PIP_NO_INDEX": "1", "PIP_DISABLE_PIP_VERSION_CHECK": "1"}
     with tempfile.TemporaryDirectory(prefix="bestpractices-package-") as directory:
         workspace = Path(directory)
@@ -123,7 +126,11 @@ def main() -> None:
             workspace,
             env,
         )
-        output = run([sys.executable, "-I", "-c", PROBE, str(installed)], workspace, env)
+        output = run(
+            [sys.executable, "-I", "-c", PROBE, str(installed), manifest["revision"]],
+            workspace,
+            env,
+        )
         summary = json.loads(output)
         print("Offline sdist/wheel build and isolated target install: PASS")
         print(

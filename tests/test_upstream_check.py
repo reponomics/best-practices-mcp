@@ -10,6 +10,7 @@ from unittest.mock import Mock
 from urllib.error import HTTPError, URLError
 
 import pytest
+import yaml
 
 from scripts import check_upstream as check
 
@@ -18,6 +19,27 @@ sys.path.insert(0, str(ROOT / "scripts"))
 prepare = importlib.import_module("prepare_upstream")
 BASE = "a" * 40
 PRODUCTION = "b" * 40
+
+
+def test_monitored_sources_include_the_public_integration_contracts():
+    assert {"docs/api.md", "docs/bestpractices-json.md"} <= set(check.SOURCE_FILES)
+
+
+def test_workflow_stages_every_monitored_source_and_only_generated_outputs():
+    workflow = yaml.safe_load((ROOT / ".github/workflows/upstream-criteria.yml").read_text())
+    publish = next(
+        step
+        for job in workflow["jobs"].values()
+        for step in job.get("steps", [])
+        if step.get("id") == "pr"
+    )
+    assert set(publish["with"]["add-paths"].splitlines()) == {
+        *(f"vendor/badgeapp/{name}" for name in check.SOURCE_FILES),
+        "vendor/badgeapp/source.json",
+        "src/best_practices_mcp/data/catalog.json",
+        "src/best_practices_mcp/data/provenance.json",
+        "src/best_practices_mcp/data/BADGEAPP-LICENSE.txt",
+    }
 
 
 @pytest.fixture
@@ -70,6 +92,21 @@ def test_each_source_detects_whitespace_changes_and_deletion(source, client, nam
     body = check.report_body(report)
     assert f"/blob/{BASE}/{name}" in body
     assert ("Missing (HTTP 404)" if content is None else f"/blob/{PRODUCTION}/{name}") in body
+
+
+@pytest.mark.parametrize("name", ["docs/api.md", "docs/bestpractices-json.md"])
+def test_public_contract_only_change_triggers_update_and_report(source, client, name):
+    original = client.source_file.side_effect
+    client.source_file.side_effect = lambda sha, path: (
+        b"Updated public integration contract.\n" if path == name else original(sha, path)
+    )
+    report = check.check_upstream(client, source)
+    assert report.changed == [name]
+    client.source_file.assert_any_call(PRODUCTION, name)
+    body = check.report_body(report)
+    assert f"| `{name}` |" in body
+    assert f"/blob/{BASE}/{name}" in body
+    assert f"/blob/{PRODUCTION}/{name}" in body
 
 
 @pytest.mark.parametrize("failure", ["corrupt", "missing", "repository", "revision", "paths"])

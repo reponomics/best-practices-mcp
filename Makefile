@@ -195,3 +195,23 @@ release-qualify: release-artifacts ## Install/probe the exact candidates in fres
 
 release-bundle: ## Bind qualified archives and release reports into a checksummed publication bundle
 	"$(PYTHON)" scripts/release_bundle.py --dist "$(RELEASE_DIST)" --evidence "$(RELEASE_EVIDENCE)" --reports build/release/reports --output build/release/bundle
+
+# Fuzzing is supported on Linux x86_64 with the published Atheris wheels.
+FUZZ_SECONDS ?= 30
+FUZZ_ARGS ?=
+
+.PHONY: setup-fuzz fuzz fuzz-documents fuzz-proposals
+
+setup-fuzz: BOOTSTRAP_PYTHON = 3.12
+setup-fuzz: ## Install locked development and fuzz tools (Linux x86_64, Python 3.12)
+	"$(UV)" sync --locked --group fuzz --no-group audit-tools $(UV_PYTHON_ARG)
+
+fuzz: fuzz-documents fuzz-proposals ## Fuzz document and proposal round trips (30 seconds each)
+
+fuzz-documents: ## Fuzz arbitrary document bytes and canonical serialization
+	@mkdir -p build/fuzz/documents
+	"$(PYTHON)" scripts/fuzz_documents.py build/fuzz/documents tests/fuzz/documents -max_total_time=$(FUZZ_SECONDS) -max_len=65536 -timeout=10 -artifact_prefix=build/fuzz/documents/ $(FUZZ_ARGS)
+
+fuzz-proposals: ## Fuzz exact proposal query encoding from valid documents
+	@mkdir -p build/fuzz/proposals
+	"$(PYTHON)" scripts/fuzz_proposals.py build/fuzz/proposals tests/fuzz/proposals -max_total_time=$(FUZZ_SECONDS) -max_len=65536 -timeout=10 -artifact_prefix=build/fuzz/proposals/ $(FUZZ_ARGS)

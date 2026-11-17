@@ -66,14 +66,18 @@ READ_TOOLS = {
 
 DOCUMENT_TOOLS = {
     "build_draft": "Patch a caller-owned document without storage or network.",
-    "validate_draft": "Check supplied answers mechanically against pinned criteria offline.",
+    "validate_draft": (
+        "Check supplied answers against pinned criteria offline for a section or all applicable "
+        "levels with choose_section. Unknown-status URL resets are observed not to work, "
+        "even with overrides; results include a warning."
+    ),
     "prepare_update_url": (
-        "Prepare a BadgeApp edit URL and included/excluded field report. "
-        "Verify the target by public read. "
-        "Supplied text is encoded without modification. BadgeApp documents trimming leading "
-        "and trailing whitespace from URL-proposed justification text when applying it "
-        "to the edit form. "
-        "Does not open or save it."
+        "Prepare an edit URL and field report after a public target read. "
+        "Choose a section or defer with choose_section. Overrides select none, all, or fields; "
+        "overriding a status also overrides its supplied justification. "
+        "Unknown-status resets are observed not to work, even with overrides, despite "
+        "conflicting BadgeApp documentation. Encodes exact text; BadgeApp trims outer "
+        "justification whitespace. Does not open or save the form."
     ),
 }
 

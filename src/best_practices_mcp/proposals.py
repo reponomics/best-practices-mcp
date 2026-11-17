@@ -2,6 +2,7 @@
 
 from urllib.parse import quote, urlencode
 
+from best_practices_mcp.compatibility import unknown_status_warnings
 from best_practices_mcp.transfer import (
     finish_result,
     override_scope,
@@ -12,28 +13,29 @@ from best_practices_mcp.transfer import (
 ORIGIN = "https://www.bestpractices.dev"
 
 
-def prepare_update_url(project_id, level, draft, record, observation, override_fields=None):
-    """Encode every eligible supplied value and explicit override without normalization."""
-    draft, criteria, scope, result = transfer_context(project_id, level, draft, record, observation)
+def prepare_update_url(project_id, section, draft, record, observation, overrides=None):
+    """Encode supplied values and override intent without changing answer text."""
+    draft, criteria, scope, result = transfer_context(
+        project_id, section, draft, record, observation
+    )
     requested, effective = override_scope(
-        [] if override_fields is None else override_fields, draft, scope
+        {"mode": "none"} if overrides is None else overrides, draft, scope
     )
     rows = transfer_rows(draft, criteria, scope, effective)
-    effective.intersection_update(
-        item["field"] for item in rows if item["disposition"] == "encoded"
-    )
-    for item in rows:
-        item["override"] = item["field"] in effective
+    encoded = {item["field"] for item in rows if item["disposition"] == "encoded"}
+    effective.intersection_update(encoded)
     result.update(
-        requested_overrides=requested, effective_overrides=sorted(effective), artifact=None
+        overrides=requested,
+        effective_overrides=sorted(effective),
+        warnings=unknown_status_warnings(draft, encoded),
+        artifact=None,
     )
     if finish_result(result, rows):
-        params = {
-            item["field"]: draft[item["field"]] for item in rows if item["disposition"] == "encoded"
-        }
+        params = {field: draft[field] for field in encoded}
         if effective:
-            params["overrides"] = ",".join(sorted(effective))
+            params["overrides"] = "*" if requested["mode"] == "all" else ",".join(sorted(effective))
         query = urlencode(sorted(params.items()), quote_via=quote)
-        url = f"{ORIGIN}/en/projects/{project_id}/{level}/edit?{query}"
+        route = "choose" if section == "choose_section" else section
+        url = f"{ORIGIN}/en/projects/{project_id}/{route}/edit?{query}"
         result["artifact"] = {"url": url, "encoded_size_bytes": len(url.encode("utf-8"))}
     return result

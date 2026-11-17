@@ -58,7 +58,7 @@ async def catalog_and_storage(params: StdioServerParameters) -> None:
             client, "update_draft", {"project_id": 123, "changes": {"name": 3}}, "invalid_field"
         )
         assert (await call(client, "read_draft", {"project_id": 123}))["draft"] == draft
-        result = await call(client, "validate_draft", {"project_id": 123, "level": "passing"})
+        result = await call(client, "validate_draft", {"project_id": 123, "section": "passing"})
         assert result["draft_source"]["kind"] == "stored"
     async with Client(params) as client:
         assert (await call(client, "read_draft", {"project_id": 123}))["draft"] == draft
@@ -76,10 +76,10 @@ async def synthetic_public_workflow(workspace: Path, env: dict) -> None:
         assert found["candidates"][0]["project"]["project_id"] == 123
         progress = await call(client, "get_project_progress", {"project_id": 123})
         assert progress["project"]["project_id"] == 123
-        result = await call(client, "prepare_update_url", {"project_id": 123, "level": "passing"})
+        result = await call(client, "prepare_update_url", {"project_id": 123, "section": "passing"})
         assert result["draft_source"]["kind"] == "stored" and result["artifact"]
         explicit = await call(
-            client, "prepare_update_url", {"project_id": 123, "level": "passing", "draft": {}}
+            client, "prepare_update_url", {"project_id": 123, "section": "passing", "draft": {}}
         )
         assert explicit["draft_source"]["kind"] == "explicit"
 

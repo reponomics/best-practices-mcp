@@ -1,10 +1,4 @@
 {
-  "catalog": {
-    "format_version": 1,
-    "generated_at": "2026-11-09T22:34:03Z",
-    "revision": "868e1677339a3fdb48851b0c2ae8862c553115eb",
-    "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/criteria/criteria.yml"
-  },
   "criteria": [
     {
       "aliases": [],
@@ -19,7 +13,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "build_status"
     },
     {
@@ -35,7 +28,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "SUGGESTED",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "build_common_tools_status"
     },
     {
@@ -51,7 +43,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "SHOULD",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "build_floss_tools_status"
     },
     {
@@ -67,7 +58,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "contribution_status"
     },
     {
@@ -83,7 +73,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "SHOULD",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "contribution_requirements_status"
     },
     {
@@ -99,7 +88,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "SHOULD",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "crypto_call_status"
     },
     {
@@ -115,7 +103,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "crypto_floss_status"
     },
     {
@@ -131,7 +118,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "crypto_keylength_status"
     },
     {
@@ -147,7 +133,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "crypto_password_storage_status"
     },
     {
@@ -163,7 +148,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "SHOULD",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "crypto_pfs_status"
     },
     {
@@ -179,7 +163,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "crypto_published_status"
     },
     {
@@ -195,7 +178,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "crypto_random_status"
     },
     {
@@ -211,7 +193,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "SHOULD",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "crypto_weaknesses_status"
     },
     {
@@ -227,7 +208,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "crypto_working_status"
     },
     {
@@ -243,7 +223,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "delivery_mitm_status"
     },
     {
@@ -259,7 +238,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "delivery_unsigned_status"
     },
     {
@@ -275,7 +253,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "description_good_status"
     },
     {
@@ -291,7 +268,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "discussion_status"
     },
     {
@@ -307,7 +283,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "documentation_basics_status"
     },
     {
@@ -323,7 +298,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "documentation_interface_status"
     },
     {
@@ -339,7 +313,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "SUGGESTED",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "dynamic_analysis_status"
     },
     {
@@ -355,7 +328,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "SUGGESTED",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "dynamic_analysis_enable_assertions_status"
     },
     {
@@ -371,7 +343,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "dynamic_analysis_fixed_status"
     },
     {
@@ -387,7 +358,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "SUGGESTED",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "dynamic_analysis_unsafe_status"
     },
     {
@@ -403,7 +373,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "SHOULD",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "english_status"
     },
     {
@@ -419,7 +388,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "SHOULD",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "enhancement_responses_status"
     },
     {
@@ -435,7 +403,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "floss_license_status"
     },
     {
@@ -451,7 +418,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "SUGGESTED",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "floss_license_osi_status"
     },
     {
@@ -467,7 +433,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "interact_status"
     },
     {
@@ -483,7 +448,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "know_common_errors_status"
     },
     {
@@ -499,7 +463,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "know_secure_design_status"
     },
     {
@@ -515,7 +478,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "license_location_status"
     },
     {
@@ -531,7 +493,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "maintained_status"
     },
     {
@@ -547,7 +508,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "no_leaked_credentials_status"
     },
     {
@@ -563,7 +523,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "release_notes_status"
     },
     {
@@ -579,7 +538,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "release_notes_vulns_status"
     },
     {
@@ -595,7 +553,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "SUGGESTED",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "repo_distributed_status"
     },
     {
@@ -611,7 +568,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "repo_interim_status"
     },
     {
@@ -627,7 +583,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "repo_public_status"
     },
     {
@@ -643,7 +598,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "repo_track_status"
     },
     {
@@ -659,7 +613,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "report_archive_status"
     },
     {
@@ -675,7 +628,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "report_process_status"
     },
     {
@@ -691,7 +643,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "report_responses_status"
     },
     {
@@ -707,7 +658,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "SHOULD",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "report_tracker_status"
     },
     {
@@ -723,7 +673,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "sites_https_status"
     },
     {
@@ -739,7 +688,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "static_analysis_status"
     },
     {
@@ -755,7 +703,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "SUGGESTED",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "static_analysis_common_vulnerabilities_status"
     },
     {
@@ -771,7 +718,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "static_analysis_fixed_status"
     },
     {
@@ -787,7 +733,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "SUGGESTED",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "static_analysis_often_status"
     },
     {
@@ -803,7 +748,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "test_status"
     },
     {
@@ -819,7 +763,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "SUGGESTED",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "test_continuous_integration_status"
     },
     {
@@ -835,7 +778,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "SHOULD",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "test_invocation_status"
     },
     {
@@ -851,7 +793,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "SUGGESTED",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "test_most_status"
     },
     {
@@ -867,7 +808,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "test_policy_status"
     },
     {
@@ -883,7 +823,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "tests_are_added_status"
     },
     {
@@ -899,7 +838,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "SUGGESTED",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "tests_documented_added_status"
     },
     {
@@ -915,7 +853,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "SUGGESTED",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "version_semver_status"
     },
     {
@@ -931,7 +868,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "SUGGESTED",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "version_tags_status"
     },
     {
@@ -947,7 +883,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "version_unique_status"
     },
     {
@@ -963,7 +898,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "SHOULD",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "vulnerabilities_critical_fixed_status"
     },
     {
@@ -979,7 +913,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "vulnerabilities_fixed_60_days_status"
     },
     {
@@ -995,7 +928,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "vulnerability_report_private_status"
     },
     {
@@ -1011,7 +943,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "vulnerability_report_process_status"
     },
     {
@@ -1027,7 +958,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "vulnerability_report_response_status"
     },
     {
@@ -1043,7 +973,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "warnings_status"
     },
     {
@@ -1059,7 +988,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "warnings_fixed_status"
     },
     {
@@ -1075,7 +1003,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "SUGGESTED",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "warnings_strict_status"
     },
     {
@@ -1091,7 +1018,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "access_continuity_status"
     },
     {
@@ -1107,7 +1033,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "SHOULD",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "accessibility_best_practices_status"
     },
     {
@@ -1123,7 +1048,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "achieve_passing_status"
     },
     {
@@ -1139,7 +1063,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "assurance_case_status"
     },
     {
@@ -1155,7 +1078,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "automated_integration_testing_status"
     },
     {
@@ -1171,7 +1093,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "build_non_recursive_status"
     },
     {
@@ -1187,7 +1108,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "SHOULD",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "build_preserve_debug_status"
     },
     {
@@ -1203,7 +1123,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "build_repeatable_status"
     },
     {
@@ -1219,7 +1138,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "build_standard_variables_status"
     },
     {
@@ -1235,7 +1153,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "SHOULD",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "bus_factor_status"
     },
     {
@@ -1251,7 +1168,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "code_of_conduct_status"
     },
     {
@@ -1267,7 +1183,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "coding_standards_status"
     },
     {
@@ -1283,7 +1198,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "coding_standards_enforced_status"
     },
     {
@@ -1299,7 +1213,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "contribution_requirements_status"
     },
     {
@@ -1315,7 +1228,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "SHOULD",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "crypto_algorithm_agility_status"
     },
     {
@@ -1331,7 +1243,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "crypto_certificate_verification_status"
     },
     {
@@ -1347,7 +1258,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "crypto_credential_agility_status"
     },
     {
@@ -1363,7 +1273,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "SHOULD",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "crypto_tls12_status"
     },
     {
@@ -1379,7 +1288,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "SHOULD",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "crypto_used_network_status"
     },
     {
@@ -1395,7 +1303,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "crypto_verification_private_status"
     },
     {
@@ -1411,7 +1318,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "crypto_weaknesses_status"
     },
     {
@@ -1427,7 +1333,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "SHOULD",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "dco_status"
     },
     {
@@ -1443,7 +1348,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "dependency_monitoring_status"
     },
     {
@@ -1459,7 +1363,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "documentation_achievements_status"
     },
     {
@@ -1475,7 +1378,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "documentation_architecture_status"
     },
     {
@@ -1491,7 +1393,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "documentation_current_status"
     },
     {
@@ -1507,7 +1408,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "documentation_quick_start_status"
     },
     {
@@ -1523,7 +1423,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "documentation_roadmap_status"
     },
     {
@@ -1539,7 +1438,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "documentation_security_status"
     },
     {
@@ -1555,7 +1453,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "dynamic_analysis_unsafe_status"
     },
     {
@@ -1571,7 +1468,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "external_dependencies_status"
     },
     {
@@ -1587,7 +1483,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "governance_status"
     },
     {
@@ -1603,7 +1498,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "SHOULD",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "hardening_status"
     },
     {
@@ -1619,7 +1513,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "implement_secure_design_status"
     },
     {
@@ -1635,7 +1528,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "input_validation_status"
     },
     {
@@ -1651,7 +1543,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "installation_common_status"
     },
     {
@@ -1667,7 +1558,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "installation_development_quick_status"
     },
     {
@@ -1683,7 +1573,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "installation_standard_variables_status"
     },
     {
@@ -1699,7 +1588,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "SHOULD",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "interfaces_current_status"
     },
     {
@@ -1715,7 +1603,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "SHOULD",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "internationalization_status"
     },
     {
@@ -1731,7 +1618,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "maintenance_or_update_status"
     },
     {
@@ -1747,7 +1633,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "regression_tests_added50_status"
     },
     {
@@ -1763,7 +1648,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "report_tracker_status"
     },
     {
@@ -1779,7 +1663,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "roles_responsibilities_status"
     },
     {
@@ -1795,7 +1678,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "signed_releases_status"
     },
     {
@@ -1811,7 +1693,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "sites_password_security_status"
     },
     {
@@ -1827,7 +1708,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "static_analysis_common_vulnerabilities_status"
     },
     {
@@ -1843,7 +1723,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "test_policy_mandated_status"
     },
     {
@@ -1859,7 +1738,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "test_statement_coverage80_status"
     },
     {
@@ -1875,7 +1753,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "tests_documented_added_status"
     },
     {
@@ -1891,7 +1768,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "updateable_reused_components_status"
     },
     {
@@ -1907,7 +1783,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "SUGGESTED",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "version_tags_signed_status"
     },
     {
@@ -1923,7 +1798,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "vulnerability_report_credit_status"
     },
     {
@@ -1939,7 +1813,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "vulnerability_response_process_status"
     },
     {
@@ -1955,7 +1828,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "warnings_strict_status"
     },
     {
@@ -1971,7 +1843,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "achieve_silver_status"
     },
     {
@@ -1987,7 +1858,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "build_reproducible_status"
     },
     {
@@ -2003,7 +1873,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "bus_factor_status"
     },
     {
@@ -2019,7 +1888,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "code_review_standards_status"
     },
     {
@@ -2035,7 +1903,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "contributors_unassociated_status"
     },
     {
@@ -2051,7 +1918,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "copyright_per_file_status"
     },
     {
@@ -2067,7 +1933,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "crypto_tls12_status"
     },
     {
@@ -2083,7 +1948,6 @@
       "na_allowed": true,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "crypto_used_network_status"
     },
     {
@@ -2099,7 +1963,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "dynamic_analysis_status"
     },
     {
@@ -2115,7 +1978,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "SHOULD",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "dynamic_analysis_enable_assertions_status"
     },
     {
@@ -2131,7 +1993,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "hardened_site_status"
     },
     {
@@ -2147,7 +2008,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "hardening_status"
     },
     {
@@ -2163,7 +2023,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "license_per_file_status"
     },
     {
@@ -2179,7 +2038,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "repo_distributed_status"
     },
     {
@@ -2195,7 +2053,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "require_2FA_status"
     },
     {
@@ -2211,7 +2068,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "SHOULD",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "secure_2FA_status"
     },
     {
@@ -2227,7 +2083,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "security_review_status"
     },
     {
@@ -2243,7 +2098,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "small_tasks_status"
     },
     {
@@ -2259,7 +2113,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "test_branch_coverage80_status"
     },
     {
@@ -2275,7 +2128,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "test_continuous_integration_status"
     },
     {
@@ -2291,7 +2143,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "test_invocation_status"
     },
     {
@@ -2307,7 +2158,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "test_statement_coverage90_status"
     },
     {
@@ -2323,7 +2173,6 @@
       "na_allowed": false,
       "na_justification_required": false,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "two_person_review_status"
     },
     {
@@ -2341,7 +2190,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_ac_01_01_status"
     },
     {
@@ -2359,7 +2207,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_ac_02_01_status"
     },
     {
@@ -2377,7 +2224,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_ac_03_01_status"
     },
     {
@@ -2395,7 +2241,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_ac_03_02_status"
     },
     {
@@ -2413,7 +2258,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_br_01_01_status"
     },
     {
@@ -2431,7 +2275,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_br_01_03_status"
     },
     {
@@ -2449,7 +2292,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_br_03_01_status"
     },
     {
@@ -2467,7 +2309,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_br_03_02_status"
     },
     {
@@ -2485,7 +2326,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_br_07_01_status"
     },
     {
@@ -2503,7 +2343,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_do_01_01_status"
     },
     {
@@ -2521,7 +2360,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_do_02_01_status"
     },
     {
@@ -2539,7 +2377,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_gv_02_01_status"
     },
     {
@@ -2557,7 +2394,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_gv_03_01_status"
     },
     {
@@ -2575,7 +2411,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_le_02_01_status"
     },
     {
@@ -2593,7 +2428,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_le_02_02_status"
     },
     {
@@ -2611,7 +2445,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_le_03_01_status"
     },
     {
@@ -2629,7 +2462,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_le_03_02_status"
     },
     {
@@ -2647,7 +2479,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_qa_01_01_status"
     },
     {
@@ -2665,7 +2496,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_qa_01_02_status"
     },
     {
@@ -2683,7 +2513,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_qa_02_01_status"
     },
     {
@@ -2701,7 +2530,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_qa_04_01_status"
     },
     {
@@ -2719,7 +2547,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_qa_05_01_status"
     },
     {
@@ -2737,7 +2564,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_qa_05_02_status"
     },
     {
@@ -2755,7 +2581,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_vm_02_01_status"
     },
     {
@@ -2773,7 +2598,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_ac_04_01_status"
     },
     {
@@ -2791,7 +2615,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_br_02_01_status"
     },
     {
@@ -2809,7 +2632,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_br_04_01_status"
     },
     {
@@ -2827,7 +2649,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_br_05_01_status"
     },
     {
@@ -2845,7 +2666,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_br_06_01_status"
     },
     {
@@ -2863,7 +2683,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_do_06_01_status"
     },
     {
@@ -2881,7 +2700,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_do_07_01_status"
     },
     {
@@ -2899,7 +2717,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_gv_01_01_status"
     },
     {
@@ -2917,7 +2734,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_gv_01_02_status"
     },
     {
@@ -2935,7 +2751,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_gv_03_02_status"
     },
     {
@@ -2953,7 +2768,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_le_01_01_status"
     },
     {
@@ -2971,7 +2785,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_qa_03_01_status"
     },
     {
@@ -2989,7 +2802,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_qa_06_01_status"
     },
     {
@@ -3007,7 +2819,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_sa_01_01_status"
     },
     {
@@ -3025,7 +2836,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_sa_02_01_status"
     },
     {
@@ -3043,7 +2853,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_sa_03_01_status"
     },
     {
@@ -3061,7 +2870,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_vm_01_01_status"
     },
     {
@@ -3079,7 +2887,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_vm_03_01_status"
     },
     {
@@ -3097,7 +2904,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_vm_04_01_status"
     },
     {
@@ -3115,7 +2921,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_ac_04_02_status"
     },
     {
@@ -3133,7 +2938,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_br_01_04_status"
     },
     {
@@ -3151,7 +2955,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_br_02_02_status"
     },
     {
@@ -3169,7 +2972,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_br_07_02_status"
     },
     {
@@ -3187,7 +2989,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_do_03_01_status"
     },
     {
@@ -3205,7 +3006,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_do_03_02_status"
     },
     {
@@ -3223,7 +3023,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_do_04_01_status"
     },
     {
@@ -3241,7 +3040,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_do_05_01_status"
     },
     {
@@ -3259,7 +3057,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_gv_04_01_status"
     },
     {
@@ -3277,7 +3074,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_qa_02_02_status"
     },
     {
@@ -3295,7 +3091,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_qa_04_02_status"
     },
     {
@@ -3313,7 +3108,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_qa_06_02_status"
     },
     {
@@ -3331,7 +3125,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_qa_06_03_status"
     },
     {
@@ -3349,7 +3142,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_qa_07_01_status"
     },
     {
@@ -3367,7 +3159,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_sa_03_02_status"
     },
     {
@@ -3385,7 +3176,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_vm_04_02_status"
     },
     {
@@ -3403,7 +3193,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_vm_05_01_status"
     },
     {
@@ -3421,7 +3210,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_vm_05_02_status"
     },
     {
@@ -3439,7 +3227,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_vm_05_03_status"
     },
     {
@@ -3457,7 +3244,6 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_vm_06_01_status"
     },
     {
@@ -3475,10 +3261,10 @@
       "na_allowed": true,
       "na_justification_required": true,
       "requirement": "MUST",
-      "source_url": "https://github.com/ossf/best-practices-badge/blob/868e1677339a3fdb48851b0c2ae8862c553115eb/config/locales/en.yml",
       "status_field": "osps_vm_06_02_status"
     }
   ],
+  "format_version": 2,
   "levels": [
     "passing",
     "silver",

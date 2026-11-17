@@ -3,14 +3,13 @@
 import re
 from typing import Any
 
-from best_practices_mcp.criteria import get_criteria
+from best_practices_mcp.compatibility import section_catalog, unknown_status_warnings
 from best_practices_mcp.drafts import (
     check_identity,
     field_definitions,
     normalize_draft,
     structural_issues,
 )
-from best_practices_mcp.errors import DomainError
 
 _URL = re.compile(r"https?://[^/. ]+\.[^ ]")
 _CONDITIONAL_CHECKS = ["conditional_requirements"]
@@ -29,6 +28,7 @@ def contains_url(value: Any) -> bool:
 def _finding(criterion: dict, field: str, code: str, requirement: str, message: str) -> dict:
     return {
         "criterion_id": criterion["criterion_id"],
+        "level": criterion["level"],
         "field": field,
         "code": code,
         "requirement": requirement,
@@ -92,19 +92,23 @@ def _skip_reason(draft: dict, criterion: dict) -> str | None:
     return None
 
 
-def _shape_findings(draft: dict, selected: dict, fields: dict) -> list[dict]:
+def _shape_findings(draft: dict, selected: list[dict], fields: dict) -> list[dict]:
+    levels = {}
+    for criterion in selected:
+        levels.setdefault(criterion["criterion_id"], []).append(criterion["level"])
     findings = []
     for issue in structural_issues(draft):
         definition = fields.get(issue["field"], {})
         criterion_id = definition.get("criterion_id")
-        if criterion_id is not None and criterion_id not in selected:
-            continue
-        findings.append(
+        applicable = [None] if criterion_id is None else levels.get(criterion_id, [])
+        findings.extend(
             {
                 **issue,
                 "criterion_id": criterion_id,
+                "level": level,
                 "requirement": "recognized_field_shape" if definition else "recognized_field",
             }
+            for level in applicable
         )
     return findings
 
@@ -117,49 +121,68 @@ def _represented(draft: dict, fields: dict) -> set[str]:
     }
 
 
-def validate_draft(project_id: int, level: str, draft: dict[str, Any]) -> dict:
-    """Report checkable findings as data, without completing missing answers."""
-    if level is None:
-        raise DomainError("invalid_level", "A level is required for validation.")
-    catalog = get_criteria(level)
-    document = normalize_draft(draft)
-    identity = check_identity(project_id, document)
-    selected = {criterion["criterion_id"]: criterion for criterion in catalog["criteria"]}
-    fields = field_definitions()
-    represented = _represented(document, fields)
-    findings = _shape_findings(document, selected, fields)
-    skipped = [
+def _identity(criterion: dict) -> dict:
+    return {"level": criterion["level"], "criterion_id": criterion["criterion_id"]}
+
+
+def _other_level_skips(represented: set[str], selected: list[dict]) -> list[dict]:
+    outside = represented - {criterion["criterion_id"] for criterion in selected}
+    if not outside:
+        return []
+    return [
         {
-            "criterion_id": key,
+            **_identity(criterion),
             "reason": "other_level",
             "checks": ["field_shape", *_CONDITIONAL_CHECKS],
         }
-        for key in sorted(represented - selected.keys())
+        for criterion in section_catalog("choose_section")["criteria"]
+        if criterion["criterion_id"] in outside
     ]
-    checked = sorted(represented & selected.keys())
-    for key in checked:
-        criterion = selected[key]
-        reason = _skip_reason(document, criterion)
-        if reason is not None:
-            skipped.append(
-                {"criterion_id": key, "reason": reason, "checks": list(_CONDITIONAL_CHECKS)}
-            )
-        else:
-            findings.extend(
-                _conditional_findings(
-                    criterion,
-                    document[criterion["status_field"]],
-                    document.get(criterion["justification_field"]),
-                )
-            )
+
+
+def _check_criterion(document: dict, criterion: dict) -> tuple[list[dict], list[dict]]:
+    reason = _skip_reason(document, criterion)
+    if reason is not None:
+        return [], [{**_identity(criterion), "reason": reason, "checks": list(_CONDITIONAL_CHECKS)}]
+    return _conditional_findings(
+        criterion,
+        document[criterion["status_field"]],
+        document.get(criterion["justification_field"]),
+    ), []
+
+
+def validate_draft(project_id: int, section: str, draft: dict[str, Any]) -> dict:
+    """Report level-qualified checks of supplied answers, without completing them."""
+    catalog = section_catalog(section)
+    document = normalize_draft(draft)
+    identity = check_identity(project_id, document)
+    fields = field_definitions()
+    represented = _represented(document, fields)
+    selected = catalog["criteria"]
+    checked = [criterion for criterion in selected if criterion["criterion_id"] in represented]
+    findings = _shape_findings(document, selected, fields)
+    skipped = _other_level_skips(represented, selected)
+    for criterion in checked:
+        criterion_findings, criterion_skips = _check_criterion(document, criterion)
+        findings.extend(criterion_findings)
+        skipped.extend(criterion_skips)
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "project_id": project_id,
-        "level": level,
+        "section": section,
         "draft_source": {"kind": "explicit", "location": None},
         "identity": identity,
         "catalog": catalog["catalog"],
-        "findings": sorted(findings, key=lambda finding: (finding["field"], finding["code"])),
-        "checked_criteria": checked,
-        "skipped_criteria": sorted(skipped, key=lambda item: item["criterion_id"]),
+        "findings": sorted(
+            findings,
+            key=lambda finding: (finding["field"], finding["level"] or "", finding["code"]),
+        ),
+        "checked_criteria": sorted(
+            (_identity(criterion) for criterion in checked),
+            key=lambda item: (item["level"], item["criterion_id"]),
+        ),
+        "skipped_criteria": sorted(skipped, key=lambda item: (item["level"], item["criterion_id"])),
+        "warnings": unknown_status_warnings(
+            document, {criterion["status_field"] for criterion in selected}
+        ),
     }
