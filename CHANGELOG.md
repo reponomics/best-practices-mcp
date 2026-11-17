@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.0](https://github.com/reponomics/best-practices-mcp/compare/v0.5.0...v0.6.0) (2026-11-17)
+
+
+### Features
+
+* update proposal semantics and refactor docs sync ([#25](https://github.com/reponomics/best-practices-mcp/issues/25)) ([c59e93d](https://github.com/reponomics/best-practices-mcp/commit/c59e93dbe92ea5405f1bd98481aad4cee7e5b7c7))
+
+
+### Documentation
+
+* display OpenSSF badges and record the Passing milestone ([#28](https://github.com/reponomics/best-practices-mcp/issues/28)) ([c5d1067](https://github.com/reponomics/best-practices-mcp/commit/c5d1067b300a3eb5c5e8535d89620b3e498aa533))
+* focus contributor guidance and consolidate Inspector setup ([#30](https://github.com/reponomics/best-practices-mcp/issues/30)) ([d7faad6](https://github.com/reponomics/best-practices-mcp/commit/d7faad6ff90d90c028c9c293b0bdeb2ef03e1538))
+
 ## [0.5.0](https://github.com/reponomics/best-practices-mcp/compare/v0.3.0-beta.1...v0.5.0) (2026-11-16)
 
 
