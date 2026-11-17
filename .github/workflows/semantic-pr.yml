@@ -1,4 +1,4 @@
-name: Semantic PR
+name: PR Requirements
 
 on:
   pull_request:
@@ -9,12 +9,12 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: semantic-pr-${{ github.event.pull_request.number }}
+  group: pr-requirements-${{ github.event_name }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   validate-title:
-    name: Validate PR title
+    name: Semantic PR
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -40,7 +40,7 @@ jobs:
           requireScope: false
 
   validate-checklist:
-    name: Validate PR checklist
+    name: PR Checklist
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions: {}
