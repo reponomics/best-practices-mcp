@@ -18,7 +18,14 @@ ROOT = Path(__file__).resolve().parents[1]
 UPSTREAM = "ossf/best-practices-badge"
 UPSTREAM_URL = f"https://github.com/{UPSTREAM}"
 INPUTS = ("criteria/criteria.yml", "criteria/baseline_criteria.yml", "config/locales/en.yml")
-SOURCE_FILES = (*INPUTS, "docs/automation-approach.md", "docs/automation-proposals.md", "LICENSE")
+SOURCE_FILES = (
+    *INPUTS,
+    "docs/api.md",
+    "docs/automation-approach.md",
+    "docs/automation-proposals.md",
+    "docs/bestpractices-json.md",
+    "LICENSE",
+)
 
 
 def revision(value: str) -> str:
@@ -165,7 +172,7 @@ def report_body(report: Report) -> str:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--prepare-update", action="store_true", help="Refresh local sources, catalog and doc pins"
+        "--prepare-update", action="store_true", help="Refresh retained sources and generated data"
     )
     parser.add_argument("--output-dir", type=Path, default=ROOT / "build/upstream")
     args = parser.parse_args(argv)

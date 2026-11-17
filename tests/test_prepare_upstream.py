@@ -25,16 +25,35 @@ def checkout(tmp_path):
     root = tmp_path / "checkout"
     shutil.copytree(ROOT / "vendor/badgeapp", root / "vendor/badgeapp")
     names = [
-        *prepare.DOC_PINS,
+        "docs/upstream-compatibility.md",
+        "docs/transfer-rules.md",
+        "docs/design.md",
+        "docs/specification.md",
+        "THIRD_PARTY_NOTICES.md",
         *(f"src/best_practices_mcp/data/{name}" for name in GENERATED),
         "src/best_practices_mcp/criteria.py",
         "tests/test_criteria.py",
         "docs/planning/initial-implementation/badgeapp-mcp-upstream-baseline.md",
+        "docs/adr/0001-badge-image-and-status-tools.md",
     ]
     for name in names:
         destination = root / name
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(ROOT / name, destination)
+    archive = root / "docs/archive/historical-baseline.md"
+    archive.parent.mkdir(parents=True)
+    manifest = json.loads((root / "vendor/badgeapp/source.json").read_text())
+    archive.write_text(f"Historical baseline: {manifest['revision']}\n", encoding="utf-8")
+    # Explicit citations remain fixed even when they match either sync endpoint.
+    (root / "docs/explicit-citations.md").write_text(
+        "\n".join(
+            f"Reviewed upstream docs/api.md at commit {sha}: "
+            f"https://github.com/ossf/best-practices-badge/blob/{sha}/docs/api.md"
+            for sha in (manifest["revision"], PRODUCTION)
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     return root
 
 
@@ -86,7 +105,7 @@ def prepared_result(output):
     return json.loads((output / "result.json").read_text(encoding="utf-8"))
 
 
-def test_wording_refresh_regenerates_manifest_catalog_provenance_and_documentation(
+def test_wording_refresh_regenerates_data_and_preserves_all_documentation(
     checkout, client, tmp_path
 ):
     before = read_tree(checkout)
@@ -106,23 +125,19 @@ def test_wording_refresh_regenerates_manifest_catalog_provenance_and_documentati
     assert manifest["files"] == report.production_hashes
     assert all((source / name).read_bytes() == content for name, content in remote.items())
     catalog = generated_catalog(checkout)
-    assert catalog["catalog"]["revision"] == PRODUCTION
-    assert catalog["catalog"]["generated_at"] == TIMESTAMP
+    assert catalog["format_version"] == 2
+    assert "catalog" not in catalog
     selected = next(row for row in catalog["criteria"] if row["criterion_id"] == "description_good")
     assert selected["description"] == "Updated upstream wording."
-    assert PRODUCTION in selected["source_url"]
+    assert "source_url" not in selected
     provenance = json.loads((checkout / "src/best_practices_mcp/data/provenance.json").read_text())
     assert provenance["files"] == manifest["files"]
     assert provenance["revision"] == PRODUCTION
-    for name in prepare.DOC_PINS:
-        assert (checkout / name).read_bytes() == before[name].replace(
-            report.bundled_revision.encode(), PRODUCTION.encode()
-        )
+    assert provenance["generated_at"] == TIMESTAMP
     managed = {
         *(f"vendor/badgeapp/{name}" for name in check.SOURCE_FILES),
         "vendor/badgeapp/source.json",
         *(f"src/best_practices_mcp/data/{name}" for name in GENERATED),
-        *prepare.DOC_PINS,
     }
     after = read_tree(checkout)
     assert {name for name in before if before[name] != after[name]} <= managed
@@ -130,8 +145,6 @@ def test_wording_refresh_regenerates_manifest_catalog_provenance_and_documentati
         after["src/best_practices_mcp/criteria.py"] == before["src/best_practices_mcp/criteria.py"]
     )
     assert after["tests/test_criteria.py"] == before["tests/test_criteria.py"]
-    historical = "docs/planning/initial-implementation/badgeapp-mcp-upstream-baseline.md"
-    assert after[historical] == before[historical]
 
 
 def test_condition_change_flows_through_generation_without_id_classification(
@@ -158,9 +171,18 @@ def test_condition_change_flows_through_generation_without_id_classification(
 
 
 @pytest.mark.parametrize(
-    "name", ["docs/automation-approach.md", "docs/automation-proposals.md", "LICENSE"]
+    "name",
+    [
+        "docs/api.md",
+        "docs/automation-approach.md",
+        "docs/automation-proposals.md",
+        "docs/bestpractices-json.md",
+        "LICENSE",
+    ],
 )
 def test_retained_document_and_notice_changes_are_prepared(checkout, client, tmp_path, name):
+    catalog_path = checkout / "src/best_practices_mcp/data/catalog.json"
+    catalog_before = catalog_path.read_bytes()
     remote = remote_files(checkout)
     remote[name] += b"\nUpdated upstream text.\n"
     report = report_for(checkout, remote)
@@ -168,6 +190,7 @@ def test_retained_document_and_notice_changes_are_prepared(checkout, client, tmp
     output = tmp_path / "reports"
     prepare.prepare_update(client, report, checkout, output)
     assert prepared_result(output)["generation_error"] is None
+    assert catalog_path.read_bytes() == catalog_before
     assert (checkout / "vendor/badgeapp" / name).read_bytes() == remote[name]
     provenance = json.loads((checkout / "src/best_practices_mcp/data/provenance.json").read_text())
     assert provenance["files"][name] == report.production_hashes[name]
@@ -269,7 +292,7 @@ def test_malformed_yaml_preserves_source_patch_and_reports_advisory_and_generati
     assert (checkout / "vendor/badgeapp/criteria/criteria.yml").read_bytes() == b"invalid: [\n"
 
 
-def test_generation_failure_keeps_old_outputs_but_refreshes_sources_and_docs(
+def test_generation_failure_keeps_old_outputs_and_docs_but_refreshes_sources(
     checkout, client, tmp_path, monkeypatch
 ):
     before = read_tree(checkout)
@@ -289,20 +312,20 @@ def test_generation_failure_keeps_old_outputs_but_refreshes_sources_and_docs(
     for name in GENERATED:
         path = f"src/best_practices_mcp/data/{name}"
         assert (checkout / path).read_bytes() == before[path]
-    for name in prepare.DOC_PINS:
-        assert (checkout / name).read_bytes() == before[name].replace(
-            report.bundled_revision.encode(), PRODUCTION.encode()
-        )
+    for name in before:
+        if name.startswith("docs/") or name == "THIRD_PARTY_NOTICES.md":
+            assert (checkout / name).read_bytes() == before[name]
 
 
-def test_missing_managed_document_fails_before_repository_writes(checkout, client, tmp_path):
-    (checkout / prepare.DOC_PINS[0]).unlink()
-    before = read_tree(checkout)
+def test_preparation_does_not_require_maintained_documentation(checkout, client, tmp_path):
+    shutil.rmtree(checkout / "docs")
+    (checkout / "THIRD_PARTY_NOTICES.md").unlink()
     remote = remote_files(checkout)
     change_wording(remote)
-    with pytest.raises(FileNotFoundError):
-        prepare.prepare_update(client, report_for(checkout, remote), checkout, tmp_path / "reports")
-    assert read_tree(checkout) == before
+    output = tmp_path / "reports"
+    prepare.prepare_update(client, report_for(checkout, remote), checkout, output)
+    assert prepared_result(output)["generation_error"] is None
+    assert not (checkout / "docs").exists()
 
 
 @pytest.mark.parametrize(

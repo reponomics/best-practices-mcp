@@ -66,7 +66,7 @@ def test_extra_arguments_are_rejected(tool: str) -> None:
 
 @pytest.mark.parametrize("tool", ["validate_draft", "prepare_update_url"])
 def test_omitted_draft_is_not_empty_or_null(tool: str) -> None:
-    base = {"project_id": 123, "level": "passing"}
+    base = {"project_id": 123, "section": "passing"}
     absent = validate_input(tool, base)
     assert absent.draft is MISSING
     assert "draft" not in absent.model_dump(mode="json")
@@ -97,7 +97,7 @@ def test_filter_requires_level_and_distinct_ids(tool: str) -> None:
     [
         ("build_draft", "changes"),
         ("update_draft", "changes"),
-        ("prepare_update_url", "override_fields"),
+        ("prepare_update_url", "overrides"),
         ("find_project", "page"),
     ],
 )
@@ -151,3 +151,34 @@ def test_badge_status_default_and_svg_explicit_family() -> None:
         validate_input("get_project_badge_svg", {"project_id": 123})
     with pytest.raises(SchemaValidationError):
         Draft202012Validator(input_schema("get_project_badge_svg")).validate({"project_id": 123})
+
+
+@pytest.mark.parametrize("tool", ["validate_draft", "prepare_update_url"])
+def test_section_selection_is_explicit_and_old_level_is_rejected(tool):
+    base = {"project_id": 123, "draft": {}}
+    for extra in ({}, {"level": "passing"}, {"section": None}, {"section": "choose"}):
+        with pytest.raises(ValidationError):
+            validate_input(tool, base | extra)
+    assert validate_input(tool, base | {"section": "choose_section"}).section == "choose_section"
+    for version in (1, True):
+        with pytest.raises(ValidationError):
+            validate_output(tool, EXAMPLES[tool]["success"] | {"schema_version": version})
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        "*",
+        None,
+        {},
+        {"mode": "fields", "fields": []},
+        {"mode": "all", "fields": ["name"]},
+        {"mode": "none", "fields": []},
+    ],
+)
+def test_override_intent_rejects_ambiguous_or_contradictory_shapes(overrides):
+    arguments = EXAMPLES["prepare_update_url"]["input"] | {"overrides": overrides}
+    with pytest.raises(ValidationError):
+        validate_input("prepare_update_url", arguments)
+    with pytest.raises(SchemaValidationError):
+        Draft202012Validator(input_schema("prepare_update_url")).validate(arguments)

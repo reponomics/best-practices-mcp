@@ -217,13 +217,12 @@
   "validate_draft": {
     "input": {
       "project_id": 123,
-      "level": "passing",
-      "draft": {}
+      "draft": {},
+      "section": "passing"
     },
     "success": {
-      "schema_version": 1,
+      "schema_version": 2,
       "project_id": 123,
-      "level": "passing",
       "draft_source": {
         "kind": "explicit",
         "location": null
@@ -241,7 +240,9 @@
       },
       "findings": [],
       "checked_criteria": [],
-      "skipped_criteria": []
+      "skipped_criteria": [],
+      "section": "passing",
+      "warnings": []
     },
     "error": {
       "schema_version": 1,
@@ -259,18 +260,20 @@
   "prepare_update_url": {
     "input": {
       "project_id": 123,
-      "level": "passing",
       "draft": {
         "name": "Existing value"
       },
-      "override_fields": [
-        "name"
-      ]
+      "section": "passing",
+      "overrides": {
+        "mode": "fields",
+        "fields": [
+          "name"
+        ]
+      }
     },
     "success": {
-      "schema_version": 1,
+      "schema_version": 2,
       "project_id": 123,
-      "level": "passing",
       "catalog": {
         "revision": "868e1677339a3fdb48851b0c2ae8862c553115eb",
         "source_url": "https://github.com/ossf/best-practices-badge",
@@ -304,15 +307,29 @@
           "field": "name",
           "disposition": "encoded",
           "reason": "eligible_field",
-          "override": true
+          "override": true,
+          "applicable_levels": [
+            "passing",
+            "silver",
+            "gold",
+            "baseline-1",
+            "baseline-2",
+            "baseline-3"
+          ],
+          "restrictions": []
         }
-      ],
-      "requested_overrides": [
-        "name"
       ],
       "effective_overrides": [
         "name"
-      ]
+      ],
+      "section": "passing",
+      "warnings": [],
+      "overrides": {
+        "mode": "fields",
+        "fields": [
+          "name"
+        ]
+      }
     },
     "error": {
       "schema_version": 1,

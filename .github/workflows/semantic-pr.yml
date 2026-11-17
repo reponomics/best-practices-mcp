@@ -1,7 +1,7 @@
-name: Semantic PR
+name: PR Requirements
 
 on:
-  pull_request_target:
+  pull_request:
     branches: [main]
     types: [opened, edited, synchronize, reopened, ready_for_review]
 
@@ -9,16 +9,15 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: semantic-pr-${{ github.event.pull_request.number }}
+  group: pr-requirements-${{ github.event_name }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   validate-title:
-    name: Validate PR title
+    name: Semantic PR
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      # Read metadata only. Never check out or execute PR code on this event.
       - name: Validate conventional title
         uses: amannn/action-semantic-pull-request@2252a14e810aa9b85c2d560bd7070c802206ecf6 # v6.1.2
         env:
@@ -38,3 +37,62 @@ jobs:
             style
             test
           requireScope: false
+
+  validate-checklist:
+    name: PR Checklist
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Require contributor acknowledgments
+        if: >-
+          ${{ !(github.event.pull_request.user.type == 'Bot' &&
+            (github.event.pull_request.user.login == 'dependabot[bot]' ||
+             (github.event.pull_request.user.login == 'best-practices-mcp-releases[bot]' &&
+              github.event.pull_request.head.repo.full_name == github.repository &&
+              github.event.pull_request.base.ref == 'main' &&
+              contains(fromJSON('["automation/upstream-criteria", "release-please--branches--main--components--best-practices-mcp"]'), github.event.pull_request.head.ref)))) }}
+        env:
+          REQUIRED_CHECKBOXES: |
+            I have read and agreed to the project's [Code of Conduct](https://raw.githubusercontent.com/reponomics/best-practices-mcp/refs/heads/main/CODE_OF_CONDUCT.md).
+            I have read the project's [CONTRIBUTING.md guidelines](https://raw.githubusercontent.com/reponomics/best-practices-mcp/refs/heads/main/CONTRIBUTING.md).
+            I certify that my contribution complies with the [Developer Certificate of Origin](https://raw.githubusercontent.com/reponomics/best-practices-mcp/refs/heads/main/docs/DCO.txt).
+        run: |
+          python3 - <<'PYTHON'
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          def visible_lines(body):
+              fence = None
+              body = re.sub(r"<!--.*?(?:-->|\Z)", "", body, flags=re.S)
+              for line in body.splitlines():
+                  if fence:
+                      closing = r" {0,3}" + re.escape(fence[0]) + "{" + str(len(fence)) + r",}[ \t]*"
+                      if re.fullmatch(closing, line):
+                          fence = None
+                      continue
+                  opening = re.match(r" {0,3}(`{3,}|~{3,})", line)
+                  if opening:
+                      fence = opening[1]
+                      continue
+                  yield line
+
+          def missing_acknowledgments(body, required):
+              states = {label: [] for label in required}
+              for line in visible_lines(body):
+                  checkbox = re.fullmatch(r" {0,3}- \[([ xX])\] (.+?)\s*", line)
+                  if checkbox and checkbox[2] in states:
+                      states[checkbox[2]].append(checkbox[1].lower())
+              return [label for label, values in states.items() if values != ["x"]]
+
+          event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8"))
+          required = os.environ["REQUIRED_CHECKBOXES"].splitlines()
+          missing = missing_acknowledgments(event["pull_request"].get("body") or "", required)
+          for label in missing:
+              print(f"::error::Include and check exactly one acknowledgment: {label}")
+          if not missing:
+              print("All required contributor acknowledgments are checked.")
+          raise SystemExit(bool(missing))
+          PYTHON
