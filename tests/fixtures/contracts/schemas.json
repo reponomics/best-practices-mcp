@@ -2815,18 +2815,13 @@
             "observed_on": {
               "title": "Observed On",
               "type": "string"
-            },
-            "scope": {
-              "title": "Scope",
-              "type": "string"
             }
           },
           "required": [
             "code",
             "fields",
             "message",
-            "observed_on",
-            "scope"
+            "observed_on"
           ],
           "title": "CompatibilityWarning",
           "type": "object"
@@ -3437,18 +3432,13 @@
             "observed_on": {
               "title": "Observed On",
               "type": "string"
-            },
-            "scope": {
-              "title": "Scope",
-              "type": "string"
             }
           },
           "required": [
             "code",
             "fields",
             "message",
-            "observed_on",
-            "scope"
+            "observed_on"
           ],
           "title": "CompatibilityWarning",
           "type": "object"

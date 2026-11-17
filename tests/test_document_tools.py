@@ -164,7 +164,17 @@ def test_chooser_override_all_and_unknown_warning_over_mcp(tmp_path):
                 assert result.structured_content["schema_version"] == 2
             prepared = proposal.structured_content
             assert prepared["warnings"] == validation.structured_content["warnings"]
-            assert prepared["warnings"][0]["fields"] == ["code_of_conduct_status"]
+            assert prepared["warnings"] == [
+                {
+                    "code": "unknown_status_reset_unsupported",
+                    "fields": ["code_of_conduct_status"],
+                    "message": (
+                        "URL proposals to reset a status to '?' are observed not to work, "
+                        "even with overrides, despite conflicting BadgeApp documentation."
+                    ),
+                    "observed_on": "2026-11-16",
+                }
+            ]
             url = urlsplit(prepared["artifact"]["url"])
             assert url.path == "/en/projects/123/choose/edit"
             assert parse_qs(url.query) == {

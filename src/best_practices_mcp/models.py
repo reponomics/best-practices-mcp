@@ -427,7 +427,6 @@ class CompatibilityWarning(Model):
     fields: list[str]
     message: str
     observed_on: str
-    scope: str
 
 
 class CriterionRef(Model):

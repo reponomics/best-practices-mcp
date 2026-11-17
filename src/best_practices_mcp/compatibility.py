@@ -29,10 +29,8 @@ def unknown_status_warnings(draft: dict, fields) -> list[dict]:
             "fields": affected,
             "message": (
                 "URL proposals to reset a status to '?' are observed not to work, even with "
-                "overrides, despite conflicting BadgeApp documentation. Set the status manually "
-                "in BadgeApp if a reset is intended."
+                "overrides, despite conflicting BadgeApp documentation."
             ),
             "observed_on": "2026-11-16",
-            "scope": "Silver and Baseline Level 2 previews.",
         }
     ]
