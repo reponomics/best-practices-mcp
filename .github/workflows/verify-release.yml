@@ -43,6 +43,8 @@ jobs:
       RELEASE_TAG: ${{ github.event.workflow_run.head_branch || inputs.tag }}
       EXPECTED_SHA: ${{ github.event.workflow_run.head_sha || inputs.commit }}
       REPOSITORY: reponomics/best-practices-mcp
+      BUILDER_WORKFLOW: reponomics/release-infrastructure/.github/workflows/attest.yml
+      BUILDER_COMMIT: '4f684c645ece1c84caaf2868df5b146670219683'
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Select the release used in the guide's commands
@@ -60,6 +62,27 @@ jobs:
             echo "UV_PROJECT_ENVIRONMENT=$RUNNER_TEMP/release-verification-tools"
           } >> "$GITHUB_ENV"
           gh --version
+      - name: Select the reviewed signer policy for this release
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          def select_signer(tag, source_sha):
+              match = re.fullmatch(r'v([0-9]+)\.([0-9]+)\.([0-9]+)(?:-beta\.[0-9]+)?', tag)
+              if match is None or re.fullmatch(r'[0-9a-f]{40}', source_sha) is None:
+                  raise ValueError('Invalid release identity')
+              # This reviewed cutoff covers the source-local signer history.
+              # Never select a signer from downloaded release.json or a bundle.
+              if tuple(map(int, match.groups())) <= (0, 5, 0):
+                  return 'reponomics/best-practices-mcp/.github/workflows/release.yml', source_sha
+              return os.environ['BUILDER_WORKFLOW'], os.environ['BUILDER_COMMIT']
+
+          workflow, digest = select_signer(os.environ['RELEASE_TAG'], os.environ['EXPECTED_SHA'])
+          with Path(os.environ['GITHUB_ENV']).open('a', encoding='utf-8') as output:
+              output.write('SIGNER_WORKFLOW=' + workflow + '\nSIGNER_COMMIT=' + digest + '\n')
+          PY
       - name: Check out only the locked verification tools
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -99,14 +122,36 @@ jobs:
           cd "$RUNNER_TEMP/release-verification/assets"
           for distribution in "$WHEEL" "$SDIST"; do
             gh attestation verify "$distribution" --repo "$REPOSITORY" \
-              --signer-workflow "$REPOSITORY/.github/workflows/release.yml" \
+              --signer-workflow "$SIGNER_WORKFLOW" --signer-digest "$SIGNER_COMMIT" \
               --cert-oidc-issuer https://token.actions.githubusercontent.com \
               --source-ref "refs/tags/$RELEASE_TAG" --source-digest "$EXPECTED_SHA" --deny-self-hosted-runners
             gh attestation verify "$distribution" --repo "$REPOSITORY" \
-              --signer-workflow "$REPOSITORY/.github/workflows/release.yml" \
+              --signer-workflow "$SIGNER_WORKFLOW" --signer-digest "$SIGNER_COMMIT" \
               --cert-oidc-issuer https://token.actions.githubusercontent.com \
               --source-ref "refs/tags/$RELEASE_TAG" --source-digest "$EXPECTED_SHA" --deny-self-hosted-runners \
-              --bundle provenance.sigstore.json
+              --bundle provenance.sigstore.json --format json > verified-provenance.json
+            python3 - <<'PYTHON'
+          import json
+          import os
+          from pathlib import Path
+
+          results = json.loads(Path('verified-provenance.json').read_text())
+          expected = {'workflow': {
+              'repository': 'https://github.com/' + os.environ['REPOSITORY'],
+              'ref': 'refs/tags/' + os.environ['RELEASE_TAG'],
+              'path': '.github/workflows/release.yml',
+          }}
+          if not results or any(
+              item['verificationResult']['statement']['predicate']['buildDefinition']['externalParameters'] != expected
+              for item in results
+          ):
+              raise SystemExit('Unexpected source workflow or external build parameters')
+          expected_uri = 'https://github.com/' + os.environ['REPOSITORY'] + '/.github/workflows/release.yml@refs/tags/' + os.environ['RELEASE_TAG']
+          for item in results:
+              certificate = item['verificationResult']['signature']['certificate']
+              if certificate['buildConfigURI'] != expected_uri or certificate['buildConfigDigest'] != os.environ['EXPECTED_SHA']:
+                  raise SystemExit('Unexpected authenticated source workflow')
+          PYTHON
           done
       - name: 3. Verify PyPI's publisher attestations
         run: |
@@ -121,15 +166,30 @@ jobs:
           exec > >(tee "$RUNNER_TEMP/release-verification/4-sboms.log") 2>&1
           cd "$RUNNER_TEMP/release-verification/assets"
           gh attestation verify "$WHEEL" --repo "$REPOSITORY" \
-            --signer-workflow "$REPOSITORY/.github/workflows/release.yml" \
+            --signer-workflow "$SIGNER_WORKFLOW" --signer-digest "$SIGNER_COMMIT" \
             --cert-oidc-issuer https://token.actions.githubusercontent.com \
             --source-ref "refs/tags/$RELEASE_TAG" --source-digest "$EXPECTED_SHA" --deny-self-hosted-runners \
-            --predicate-type https://cyclonedx.org/bom --bundle runtime-wheel.sigstore.json
+            --predicate-type https://cyclonedx.org/bom --bundle runtime-wheel.sigstore.json --format json > verified-wheel-sbom.json
           gh attestation verify "$SDIST" --repo "$REPOSITORY" \
-            --signer-workflow "$REPOSITORY/.github/workflows/release.yml" \
+            --signer-workflow "$SIGNER_WORKFLOW" --signer-digest "$SIGNER_COMMIT" \
             --cert-oidc-issuer https://token.actions.githubusercontent.com \
             --source-ref "refs/tags/$RELEASE_TAG" --source-digest "$EXPECTED_SHA" --deny-self-hosted-runners \
-            --predicate-type https://cyclonedx.org/bom --bundle runtime-sdist.sigstore.json
+            --predicate-type https://cyclonedx.org/bom --bundle runtime-sdist.sigstore.json --format json > verified-sdist-sbom.json
+          python3 - <<'PYTHON'
+          import json
+          import os
+          from pathlib import Path
+
+          expected_uri = 'https://github.com/' + os.environ['REPOSITORY'] + '/.github/workflows/release.yml@refs/tags/' + os.environ['RELEASE_TAG']
+          for name in ('verified-wheel-sbom.json', 'verified-sdist-sbom.json'):
+              results = json.loads(Path(name).read_text())
+              if not results:
+                  raise SystemExit('No verified attestation')
+              for item in results:
+                  certificate = item['verificationResult']['signature']['certificate']
+                  if certificate['buildConfigURI'] != expected_uri or certificate['buildConfigDigest'] != os.environ['EXPECTED_SHA']:
+                      raise SystemExit('Unexpected authenticated source workflow')
+          PYTHON
       - name: Retain command output for troubleshooting
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

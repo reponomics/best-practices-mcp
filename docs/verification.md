@@ -2,6 +2,8 @@
 
 This guide explains how to verify the integrity and authenticity of Best Practices MCP release assets before installing or relying on them. It covers the evidence published starting with **0.2.0-beta.3**; do not assume earlier releases have the same evidence. Maintainer operations belong in the [release procedure](releasing.md).
 
+Releases through **0.5.0** use the source-local signing workflow. The prepared shared-signer transition changes the expected signer for later releases; see [the signer policy below](#shared-signer-signer-policy). The historical worked examples remain valid for their stated release.
+
 The [Verify published release workflow](../.github/workflows/verify-release.yml) is a convenience for running the commands in sections 1–4 after publication. It retains command output for troubleshooting for 30 days. Instructions to inspect publisher metadata, workflow jobs, SBOM contents and scan reports remain manual. A green run means the automated commands succeeded; it adds no independent provenance or security assurance and does not replace verifying your own downloads. Its scope and manual rerun instructions are in the [maintainer runbook](releasing.md#verify-the-published-beta-and-advance-to-stable).
 
 ## Claims and evidence
@@ -73,6 +75,16 @@ gh attestation trusted-root
 ```
 
 This prints trusted-root JSON for the supported Sigstore instances; it is not a project private key or a substitute for checking the expected signer. Follow the [CLI reference](https://cli.github.com/manual/gh_attestation_trusted-root) and the offline guide linked above to save and use it. Do not replace trust roots with an unauthenticated file from the release. Verifiers check that signing occurred during the certificate's validity using authenticated timestamp/transparency evidence, so expiry of a short-lived certificate does not by itself invalidate an old release signature.
+
+### Shared signer policy
+
+For releases after `0.5.0`, require `reponomics/release-infrastructure/.github/workflows/attest.yml` as the signing workflow and its reviewed commit `4f684c645ece1c84caaf2868df5b146670219683` as the signer digest. For every provenance and SBOM command in this guide, replace the historical `--signer-workflow` value with that path and add `--signer-digest 4f684c645ece1c84caaf2868df5b146670219683`. Keep `--repo reponomics/best-practices-mcp`, the expected source tag/commit, OIDC issuer, hosted-runner constraint and applicable predicate/bundle flags unchanged. The caller repository remains the attestation lookup location even though the signer is external. See [GitHub's cross-repository verification guidance](https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/increase-security-rating).
+
+For releases through `0.5.0`, retain `reponomics/best-practices-mcp/.github/workflows/release.yml` and optionally constrain `--signer-digest` to the expected source commit. The automatic verifier selects between these two policies using a reviewed version cutoff, never a signer claimed by downloaded `release.json` or an unverified bundle. If the external signer pin changes, update the reviewed version-to-signer policy while retaining the historical mapping for releases already published.
+
+For the shared signer, also verify the certificate’s `buildConfigURI` and `buildConfigDigest` against the expected source workflow at its release ref and commit, for both provenance and SBOM signatures. Verify that the authenticated provenance identifies `.github/workflows/release.yml` as the source workflow, rather than another workflow in the same repository. Retain the exact source tag/commit and signer pin constraints. `--deny-self-hosted-runners` checks the attestation-generating job; it does not establish the runner environment of preceding build jobs. Inspect the source release workflow's hosted build and cache policy separately.
+
+A signing qualification with positive and negative verification cases does not establish that a production release completed. A prepared workflow or a successful local test is not evidence that a published artifact meets SLSA Build Level 3. Build and upload remain in the source workflow, so PyPI publisher identity continues to be the source repository's `release.yml` and `pypi` environment.
 
 ## 3. Verify PyPI's publisher attestation
 

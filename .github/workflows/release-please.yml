@@ -70,6 +70,6 @@ jobs:
               raise SystemExit('Invalid release tag')
           subprocess.run([
               'gh', 'workflow', 'run', 'release.yml', '--repo', os.environ['GITHUB_REPOSITORY'],
-              '--ref', tag, '-f', 'tag=' + tag,
+              '--ref', tag,
           ], check=True, timeout=60)
           PYTHON

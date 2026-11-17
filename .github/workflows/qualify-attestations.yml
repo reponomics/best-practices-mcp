@@ -1,0 +1,170 @@
+name: Qualify shared attestations
+
+on:
+  push:
+    branches: [codex/slsa-release-integration]
+    paths:
+      - .github/workflows/qualify-attestations.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# This fixture exercises signing and verification only; it cannot publish a package.
+jobs:
+  build:
+    if: github.repository == 'reponomics/best-practices-mcp'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      candidate: ${{ steps.upload.outputs.artifact-id }}
+    steps:
+      - name: Create explicit qualification fixtures
+        run: |
+          mkdir -p fixture/dist fixture/reports
+          printf 'Shared signer qualification fixture\n' > fixture/dist/qualification.txt
+          cat > fixture/reports/qualification.cdx.json <<'JSON'
+          {"bomFormat":"CycloneDX","specVersion":"1.6","serialNumber":"urn:uuid:9ee4d672-98bf-4b69-a181-7ea8906ae66e","version":1,"metadata":{"component":{"type":"file","name":"qualification.txt","version":"fixture"}}}
+          JSON
+      - name: Retain fixture for signing and verification
+        id: upload
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: qualification-fixture-${{ github.run_id }}-${{ github.run_attempt }}
+          path: fixture/
+          if-no-files-found: error
+          retention-days: 14
+
+  provenance:
+    needs: build
+    uses: reponomics/release-infrastructure/.github/workflows/attest.yml@4f684c645ece1c84caaf2868df5b146670219683
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    with:
+      artifact-id: ${{ needs.build.outputs.candidate }}
+      subject-path: dist/qualification.txt
+      attestation-name: qualification-provenance
+
+  sbom:
+    needs: build
+    uses: reponomics/release-infrastructure/.github/workflows/attest.yml@4f684c645ece1c84caaf2868df5b146670219683
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    with:
+      artifact-id: ${{ needs.build.outputs.candidate }}
+      subject-path: dist/qualification.txt
+      sbom-path: reports/qualification.cdx.json
+      attestation-name: qualification-sbom
+
+  verify:
+    needs: [build, provenance, sbom]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SIGNER_WORKFLOW: reponomics/release-infrastructure/.github/workflows/attest.yml
+      SIGNER_COMMIT: '4f684c645ece1c84caaf2868df5b146670219683'
+    steps:
+      - name: Download exact fixture
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.build.outputs.candidate }}
+          path: fixture
+          merge-multiple: true
+      - name: Download exact signatures
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.provenance.outputs.attestations }},${{ needs.sbom.outputs.attestations }}
+          path: signatures
+          merge-multiple: true
+      - name: Qualify successful verification and expected rejections
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir evidence
+          artifact=fixture/dist/qualification.txt
+          provenance=signatures/qualification-provenance.sigstore.json
+          common=(--repo "$GITHUB_REPOSITORY"
+            --cert-oidc-issuer https://token.actions.githubusercontent.com
+            --source-ref "$GITHUB_REF" --source-digest "$GITHUB_SHA"
+            --deny-self-hosted-runners)
+          signer=(--signer-workflow "$SIGNER_WORKFLOW" --signer-digest "$SIGNER_COMMIT")
+          gh attestation verify "$artifact" "${common[@]}" "${signer[@]}" \
+            --bundle "$provenance" --format json > evidence/verified-provenance.json
+          gh attestation verify "$artifact" "${common[@]}" "${signer[@]}" \
+            --bundle signatures/qualification-sbom.sigstore.json \
+            --predicate-type https://cyclonedx.org/bom --format json > evidence/verified-sbom.json
+          printf 'PASS original artifact and SBOM\n' > evidence/results.txt
+          reject() {
+            local label="$1"
+            shift
+            if "$@" > "evidence/$label.txt" 2>&1; then
+              echo "FAIL accepted $label" | tee -a evidence/results.txt
+              return 1
+            fi
+            echo "PASS rejected $label" | tee -a evidence/results.txt
+          }
+          cp "$artifact" fixture/dist/modified.txt
+          printf 'modified\n' >> fixture/dist/modified.txt
+          reject modified-artifact gh attestation verify fixture/dist/modified.txt \
+            "${common[@]}" "${signer[@]}" --bundle "$provenance"
+          reject unexpected-source gh attestation verify "$artifact" \
+            --repo "$GITHUB_REPOSITORY" "${signer[@]}" --bundle "$provenance" \
+            --source-digest 0000000000000000000000000000000000000000
+          reject unexpected-repository gh attestation verify "$artifact" \
+            --repo reponomics/release-infrastructure "${signer[@]}" --bundle "$provenance"
+          reject unexpected-signer gh attestation verify "$artifact" \
+            "${common[@]}" --bundle "$provenance" \
+            --signer-workflow reponomics/release-infrastructure/.github/workflows/unexpected.yml
+          reject unexpected-signer-commit gh attestation verify "$artifact" \
+            "${common[@]}" --bundle "$provenance" --signer-workflow "$SIGNER_WORKFLOW" \
+            --signer-digest 0000000000000000000000000000000000000000
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          results = json.loads(Path('evidence/verified-provenance.json').read_text())
+          expected = {'workflow': {
+              'repository': 'https://github.com/' + os.environ['GITHUB_REPOSITORY'],
+              'ref': os.environ['GITHUB_REF'],
+              'path': '.github/workflows/qualify-attestations.yml',
+          }}
+          observed = [item['verificationResult']['statement']['predicate']['buildDefinition']['externalParameters'] for item in results]
+          if not observed or any(value != expected for value in observed):
+              raise SystemExit('Unexpected source workflow or external parameters')
+          unexpected = {'workflow': {**expected['workflow'], 'path': '.github/workflows/unexpected.yml'}}
+          if any(value == unexpected for value in observed):
+              raise SystemExit('Accepted an unexpected source workflow')
+          expected_uri = 'https://github.com/' + os.environ['GITHUB_REPOSITORY'] + '/.github/workflows/qualify-attestations.yml@' + os.environ['GITHUB_REF']
+          for name in ('verified-provenance.json', 'verified-sbom.json'):
+              verified = json.loads((Path('evidence') / name).read_text())
+              if not verified:
+                  raise SystemExit('No verified attestation')
+              for item in verified:
+                  certificate = item['verificationResult']['signature']['certificate']
+                  if certificate['buildConfigURI'] != expected_uri or certificate['buildConfigDigest'] != os.environ['GITHUB_SHA']:
+                      raise SystemExit('Unexpected authenticated source workflow')
+          with Path('evidence/results.txt').open('a') as output:
+              output.write('PASS caller workflow identity and unexpected workflow rejection\n')
+              output.write('PASS source workflow certificate identity for provenance and SBOM\n')
+          PY
+          # Confirm the negative cases did not merely encounter an unavailable verifier.
+          gh attestation verify "$artifact" "${common[@]}" "${signer[@]}" \
+            --bundle "$provenance" > evidence/final-positive.txt 2>&1
+          cat evidence/results.txt >> "$GITHUB_STEP_SUMMARY"
+      - name: Retain qualification evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: signer-qualification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            evidence/
+            signatures/
+            fixture/
+          if-no-files-found: error
+          retention-days: 30

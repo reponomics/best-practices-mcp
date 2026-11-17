@@ -3,6 +3,8 @@
 import ast
 import hashlib
 import json
+import re
+import sys
 from pathlib import Path
 
 import pytest
@@ -193,36 +195,220 @@ def test_draft_preflight_rejects_published_or_mismatched_release(monkeypatch, tm
         run_draft_preflight(monkeypatch, tmp_path, **changes)
 
 
-def test_read_only_build_and_project_free_privileged_jobs():
+def test_source_build_is_read_only_and_shared_signers_are_pinned():
     assert WORKFLOW["permissions"] == {"contents": "read"}
-    assert "permissions" not in JOBS["build"]
-    assert JOBS["publish"]["permissions"] == {
-        "contents": "read",
-        "id-token": "write",
-        "attestations": "write",
-    }
+    build = JOBS["build"]
+    assert "uses" not in build
+    assert build["permissions"] == {"contents": "read"}
+    assert build["runs-on"] == "ubuntu-24.04"
+    checkout = next(item for item in build["steps"] if "actions/checkout@" in item.get("uses", ""))
+    assert checkout["with"]["ref"] == "${{ github.sha }}"
+    assert checkout["with"]["persist-credentials"] is False
+    assert any("make validate" in item.get("run", "") for item in build["steps"])
+    assert any(
+        "make release-build release-qualify RELEASE_SBOM=1" in item.get("run", "")
+        for item in build["steps"]
+    )
+    assert not any("actions/attest@" in item.get("uses", "") for item in build["steps"])
+    for item in build["steps"]:
+        if "astral-sh/setup-uv@" in item.get("uses", ""):
+            assert item["with"]["enable-cache"] is False
+        if "actions/setup-go@" in item.get("uses", ""):
+            assert item["with"]["cache"] is False
+
+    for job, name, subject, sbom in (
+        ("provenance", "provenance", "dist/*", None),
+        (
+            "wheel-sbom",
+            "runtime-wheel",
+            "${{ needs.build.outputs.wheel }}",
+            "reports/runtime-wheel.cdx.json",
+        ),
+        (
+            "sdist-sbom",
+            "runtime-sdist",
+            "${{ needs.build.outputs.sdist }}",
+            "reports/runtime-sdist.cdx.json",
+        ),
+    ):
+        signer = JOBS[job]
+        workflow, commit = signer["uses"].split("@")
+        assert workflow == "reponomics/release-infrastructure/.github/workflows/attest.yml"
+        assert re.fullmatch(r"[0-9a-f]{40}", commit)
+        assert WORKFLOW["env"]["BUILDER_WORKFLOW"] == workflow
+        assert WORKFLOW["env"]["BUILDER_COMMIT"] == commit
+        assert signer["permissions"] == {
+            "contents": "read",
+            "id-token": "write",
+            "attestations": "write",
+        }
+        assert signer["with"]["artifact-id"] == "${{ needs.build.outputs.candidate }}"
+        assert signer["with"]["attestation-name"] == name
+        assert signer["with"]["subject-path"] == subject
+        assert signer["with"].get("sbom-path") == sbom
+        assert "secrets" not in signer
+
+
+def test_privileged_publication_jobs_do_not_execute_project_code():
+    assert JOBS["publish"]["permissions"] == {"contents": "read", "id-token": "write"}
     for name in ("preflight", "publish", "github-release"):
         assert not any("actions/checkout@" in item.get("uses", "") for item in JOBS[name]["steps"])
         assert not any("make " in item.get("run", "") for item in JOBS[name]["steps"])
+        assert not any("actions/attest@" in item.get("uses", "") for item in JOBS[name]["steps"])
     assert JOBS["publish"]["environment"]["name"] == "pypi"
-    assert JOBS["github-release"]["needs"] == ["build", "publish"]
-    assert JOBS["build"]["outputs"]["release_id"] == "${{ needs.preflight.outputs.release_id }}"
-    assert JOBS["github-release"]["env"]["RELEASE_ID"] == "${{ needs.build.outputs.release_id }}"
+    assert {"preflight", "build", "publish", "provenance", "wheel-sbom", "sdist-sbom"} <= set(
+        JOBS["github-release"]["needs"]
+    )
+    assert {"build", "provenance", "wheel-sbom", "sdist-sbom"} <= set(JOBS["publish"]["needs"])
+    assert (
+        JOBS["github-release"]["env"]["RELEASE_ID"] == "${{ needs.preflight.outputs.release_id }}"
+    )
 
 
-def test_scan_failure_blocks_bundle_and_pypi_gets_only_archives():
-    bundle = step("build", "Assemble the successful release bundle")
-    assert "if" not in bundle
+def test_exact_external_artifacts_verified_before_pypi_upload():
     publish = step("publish", "Publish unchanged distributions with PyPI attestations")
     assert publish["with"]["packages-dir"] == "bundle/dist/"
     assert publish["with"]["attestations"] is True
-    vulnerability = step("build", "Scan candidate and tooling dependencies for vulnerabilities")
-    licenses = step("build", "Check candidate and tooling licenses")
-    assert "stdlib-inventory.json" in vulnerability["with"]["scan-args"]
-    assert "stdlib-inventory.json" not in licenses["with"]["scan-args"]
-    for kind in ("wheel", "sdist"):
-        assert f"runtime-{kind}.inventory.json" in vulnerability["with"]["scan-args"]
-        assert f"runtime-{kind}.inventory.json" in licenses["with"]["scan-args"]
+    assert step("publish", "Download this run's exact candidate")["with"]["artifact-ids"] == (
+        "${{ needs.build.outputs.candidate }}"
+    )
+    for job in ("publish", "github-release"):
+        download = step(job, "Download this run's signed bundles")["with"]
+        ids = download["artifact-ids"]
+        assert set(re.findall(r"needs\.([a-z-]+)\.outputs\.attestations", ids)) == {
+            "provenance",
+            "wheel-sbom",
+            "sdist-sbom",
+        }
+        assert download["merge-multiple"] is True
+    names = [item["name"] for item in JOBS["publish"]["steps"]]
+    assert names.index("Verify reviewed builder signatures before publication") < names.index(
+        "Publish unchanged distributions with PyPI attestations"
+    )
+    assert (
+        step("publish", "Verify reviewed builder signatures before publication")["run"]
+        == (step("github-release", "Verify signatures before release attachment")["run"])
+    )
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Release verification runs in bash on Linux")
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        None,
+        "workflow",
+        "repository",
+        "ref",
+        "parameters",
+        "provenance_certificate_workflow",
+        "provenance_certificate_digest",
+        "sbom_certificate_workflow",
+        "sbom_certificate_digest",
+    ],
+)
+def test_signature_verification_binds_builder_and_source(
+    candidate, monkeypatch, tmp_path, mutation
+):
+    import subprocess
+
+    gh = tmp_path / "gh"
+    gh.write_text(
+        '#!/bin/sh\nprintf "%s\\n" "$@" >> "$GH_CALLS"\n'
+        'case " $* " in\n'
+        '  *" --predicate-type https://cyclonedx.org/bom "*) cat "$GH_SBOM_RESULT" ;;\n'
+        '  *) cat "$GH_RESULT" ;;\n'
+        "esac\n"
+    )
+    gh.chmod(0o755)
+    import os
+
+    monkeypatch.setenv("PATH", str(tmp_path) + os.pathsep + os.environ["PATH"])
+    monkeypatch.setenv("GH_CALLS", str(tmp_path / "calls"))
+    monkeypatch.setenv("GITHUB_REPOSITORY", "reponomics/best-practices-mcp")
+    monkeypatch.setenv("BUILDER_WORKFLOW", WORKFLOW["env"]["BUILDER_WORKFLOW"])
+    monkeypatch.setenv("BUILDER_COMMIT", WORKFLOW["env"]["BUILDER_COMMIT"])
+    parameters = {
+        "workflow": {
+            "repository": "https://github.com/reponomics/best-practices-mcp",
+            "ref": "refs/tags/v0.2.0-beta.1",
+            "path": ".github/workflows/release.yml",
+        }
+    }
+    mutations = {
+        "workflow": {"path": ".github/workflows/unexpected.yml"},
+        "repository": {"repository": "https://github.com/another/project"},
+        "ref": {"ref": "refs/heads/main"},
+    }
+    parameters["workflow"].update(mutations.get(mutation, {}))
+    if mutation == "parameters":
+        parameters["inputs"] = {"compiler-flags": "unrecorded-build-control"}
+    certificate = {
+        "buildConfigURI": "https://github.com/reponomics/best-practices-mcp/.github/workflows/release.yml@refs/tags/v0.2.0-beta.1",
+        "buildConfigDigest": "a" * 40,
+    }
+    certificate_mutations = {
+        "provenance_certificate_workflow": {
+            "buildConfigURI": "https://github.com/reponomics/best-practices-mcp/.github/workflows/unexpected.yml@refs/tags/v0.2.0-beta.1"
+        },
+        "provenance_certificate_digest": {"buildConfigDigest": "b" * 40},
+    }
+    provenance_certificate = {**certificate, **certificate_mutations.get(mutation, {})}
+    sbom_mutations = {
+        "sbom_certificate_workflow": {
+            "buildConfigURI": "https://github.com/reponomics/best-practices-mcp/.github/workflows/unexpected.yml@refs/tags/v0.2.0-beta.1"
+        },
+        "sbom_certificate_digest": {"buildConfigDigest": "b" * 40},
+    }
+    sbom_certificate = {**certificate, **sbom_mutations.get(mutation, {})}
+    sbom_result = tmp_path / "gh-sbom-result.json"
+    sbom_result.write_text(
+        json.dumps(
+            [
+                {
+                    "verificationResult": {"signature": {"certificate": sbom_certificate}},
+                }
+            ]
+        )
+    )
+    monkeypatch.setenv("GH_SBOM_RESULT", str(sbom_result))
+    result = tmp_path / "gh-result.json"
+    result.write_text(
+        json.dumps(
+            [
+                {
+                    "verificationResult": {
+                        "signature": {"certificate": provenance_certificate},
+                        "statement": {
+                            "predicate": {"buildDefinition": {"externalParameters": parameters}}
+                        },
+                    }
+                }
+            ]
+        )
+    )
+    monkeypatch.setenv("GH_RESULT", str(result))
+    source = step("publish", "Verify reviewed builder signatures before publication")["run"]
+    if mutation:
+        failed = subprocess.run(["bash", "-eo", "pipefail", "-c", source], cwd=candidate.parent)
+        assert failed.returncode != 0
+        return
+    subprocess.run(["bash", "-eo", "pipefail", "-c", source], cwd=candidate.parent, check=True)
+    args = (tmp_path / "calls").read_text().splitlines()
+    assert args.count("verify") == 4
+    for flag, value in {
+        "--signer-workflow": WORKFLOW["env"]["BUILDER_WORKFLOW"],
+        "--signer-digest": WORKFLOW["env"]["BUILDER_COMMIT"],
+        "--repo": "reponomics/best-practices-mcp",
+        "--source-ref": "refs/tags/v0.2.0-beta.1",
+        "--source-digest": "a" * 40,
+        "--cert-oidc-issuer": "https://token.actions.githubusercontent.com",
+    }.items():
+        assert args.count(flag) == 4
+        assert all(args[i + 1] == value for i, arg in enumerate(args) if arg == flag)
+    assert args.count("--deny-self-hosted-runners") == 4
+    gh.write_text("#!/bin/sh\nexit 1\n")
+    failed = subprocess.run(["bash", "-eo", "pipefail", "-c", source], cwd=candidate.parent)
+    assert failed.returncode == 1
 
 
 def test_draft_dispatch_runs_at_tag_and_does_not_publish_from_main():
@@ -233,7 +419,11 @@ def test_draft_dispatch_runs_at_tag_and_does_not_publish_from_main():
     dispatch = release_please["jobs"]["dispatch"]
     assert dispatch["permissions"] == {"contents": "read", "actions": "write"}
     assert "'--ref', tag" in dispatch["steps"][0]["run"]
-    assert "github.ref == format('refs/tags/{0}', inputs.tag)" in JOBS["preflight"]["if"]
+    assert "startsWith(github.ref, 'refs/tags/')" in JOBS["preflight"]["if"]
+    triggers = WORKFLOW.get("on", WORKFLOW.get(True))
+    assert not (triggers["workflow_dispatch"] or {}).get("inputs")
+    assert WORKFLOW["env"]["RELEASE_TAG"] == "${{ github.ref_name }}"
+    assert "tag=" not in dispatch["steps"][0]["run"]
 
 
 @pytest.mark.parametrize("mutation", [None, "extra_asset", "changed_digest", "moved_tag"])
