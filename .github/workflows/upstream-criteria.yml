@@ -33,10 +33,13 @@ jobs:
         with:
           ref: main
           persist-credentials: false
-      - name: Install catalog generation dependency
-        run: |
-          python3 -m venv venv
-          venv/bin/python -m pip install 'PyYAML==6.0.3'
+      - name: Set up the pinned environment manager
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version-file: pyproject.toml
+          enable-cache: false
+      - name: Install locked catalog generation dependency
+        run: make setup-upstream VENV=venv BOOTSTRAP_PYTHON=python3
       - name: Prepare upstream sources, catalog and documentation pins
         id: prepare
         env:
