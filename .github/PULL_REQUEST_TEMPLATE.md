@@ -15,4 +15,4 @@
 <!-- This PR will not pass CI unless the following fields are checked. -->
 - [ ] I have read and agreed to the project's [Code of Conduct](https://raw.githubusercontent.com/reponomics/best-practices-mcp/refs/heads/main/CODE_OF_CONDUCT.md).
 - [ ] I have read the project's [CONTRIBUTING.md guidelines](https://raw.githubusercontent.com/reponomics/best-practices-mcp/refs/heads/main/CONTRIBUTING.md).
-- [ ] I have read and agree with the [Developer Certificate of Origin](https://raw.githubusercontent.com/reponomics/best-practices-mcp/refs/heads/main/docs/DCO.txt).
+- [ ] I certify that my contribution complies with the [Developer Certificate of Origin](https://raw.githubusercontent.com/reponomics/best-practices-mcp/refs/heads/main/docs/DCO.txt).

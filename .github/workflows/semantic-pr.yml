@@ -51,7 +51,7 @@ jobs:
           REQUIRED_CHECKBOXES: |
             I have read and agreed to the project's [Code of Conduct](https://raw.githubusercontent.com/reponomics/best-practices-mcp/refs/heads/main/CODE_OF_CONDUCT.md).
             I have read the project's [CONTRIBUTING.md guidelines](https://raw.githubusercontent.com/reponomics/best-practices-mcp/refs/heads/main/CONTRIBUTING.md).
-            I have read and agree with the [Developer Certificate of Origin](https://raw.githubusercontent.com/reponomics/best-practices-mcp/refs/heads/main/docs/DCO.txt).
+            I certify that my contribution complies with the [Developer Certificate of Origin](https://raw.githubusercontent.com/reponomics/best-practices-mcp/refs/heads/main/docs/DCO.txt).
         run: |
           python3 - <<'PYTHON'
           import json
@@ -82,11 +82,32 @@ jobs:
                       states[checkbox[2]].append(checkbox[1].lower())
               return [label for label, values in states.items() if values != ["x"]]
 
+          def is_maintenance_pr(pr):
+              author = pr["user"]
+              if author.get("type") != "Bot":
+                  return False
+              if author.get("login") == "dependabot[bot]":
+                  return True
+              if author.get("login") != "best-practices-mcp-releases[bot]":
+                  return False
+              # This App also must use one of our reserved maintenance branches.
+              branches = {
+                  "automation/upstream-criteria",
+                  "release-please--branches--main--components--best-practices-mcp",
+              }
+              head = pr["head"]
+              repository = (head.get("repo") or {}).get("full_name")
+              return (
+                  repository == os.environ["GITHUB_REPOSITORY"]
+                  and pr["base"]["ref"] == "main"
+                  and head["ref"] in branches
+              )
+
           def main():
               event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8"))
               pr = event["pull_request"]
-              if pr["user"].get("type") == "Bot":
-                  print("Bot-authored PR: contributor acknowledgments are not required.")
+              if is_maintenance_pr(pr):
+                  print("Approved maintenance PR: contributor acknowledgments are not required.")
                   return 0
               required = os.environ["REQUIRED_CHECKBOXES"].splitlines()
               missing = missing_acknowledgments(pr.get("body") or "", required)
