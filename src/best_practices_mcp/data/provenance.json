@@ -1686,13 +1686,13 @@
     "config/locales/en.yml": "2dec2815dafb6444e2213ea224dab22633164f618c6297c3d511bcd6c4a8b5e8",
     "criteria/baseline_criteria.yml": "e6225fc05b8e58f6aaa5cd6d0f39bd050c6ba9bef8c8a8b40adaf42e2ff37b91",
     "criteria/criteria.yml": "ca39078ee02032152210f0816add8b096a78d5c6d2f31f90e1de948ec190b1b9",
-    "docs/api.md": "e5ed9ebe6d3226b98f2f73af00f87ea1315fe9e881a20f625c8e6319088939ab",
+    "docs/api.md": "c3a2d67efb4e5513eaa284df6a1b15fc5356b13669a99ee4c12b09d736c37d3c",
     "docs/automation-approach.md": "608c87b9db6becacbef3af3d0d60be7bb0347e01e7f60a98353a65588e955182",
-    "docs/automation-proposals.md": "2f73be53349300e26b4aed38c303e8167e92389c3f4fd2f2edb4adc34f66d89f",
+    "docs/automation-proposals.md": "3ab652c0aab80ae37969eb21fffad5ee4d997bdd75ff3a264120f4e0cd73b4c9",
     "docs/bestpractices-json.md": "645f9e111597a2c98ef02c1174d5c8f6488f5a8a6aaa281d975ae7140dd9ba6f"
   },
   "flag_policy": "Explicit requirements include upstream entailments: met_url_required implies met_justification_required; na_justification_required implies na_allowed.",
-  "generated_at": "2026-11-09T22:34:03Z",
+  "generated_at": "2026-11-13T20:11:24Z",
   "generated_at_policy": "Source-manifest generation timestamp preserved on regeneration",
   "generator": {
     "format_version": 2,
@@ -1701,6 +1701,6 @@
   },
   "license_file": "BADGEAPP-LICENSE.txt",
   "repository": "https://github.com/ossf/best-practices-badge",
-  "revision": "868e1677339a3fdb48851b0c2ae8862c553115eb",
+  "revision": "31325acd7963e0c9203da0ff798802a766237517",
   "text_policy": "English locale descriptions; upstream rank-bounded details inheritance"
 }
