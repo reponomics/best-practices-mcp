@@ -1,4 +1,4 @@
-# Every compatibility job enforces statement and branch coverage through Make.
+# Every compatibility job enforces coverage.py's combined 95% total through Make.
 # Codecov reports trends; its percentage statuses remain informational.
 coverage:
   status:

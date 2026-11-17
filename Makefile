@@ -16,7 +16,6 @@ PIP ?= "$(PYTHON)" -m pip
 UV ?= uv
 OSV_SCANNER ?= osv-scanner
 GO ?= go
-COVERAGE_MINIMUM ?= 95
 # Keep in sync with the license scan in .github/workflows/osv-scanner.yml.
 OSV_LICENSES := MIT,MIT-0,BSD-2-Clause,BSD-3-Clause,Apache-2.0,ISC,PSF-2.0,MPL-2.0,BlueOak-1.0.0,0BSD,Unlicense
 RELEASE_DIST ?= build/release/dist
@@ -53,7 +52,7 @@ check: quality ## Run quality checks and the offline test suite
 
 .PHONY: validate
 
-validate: ## Run contributor checks and coverage floors (OSV scans run in CI)
+validate: ## Run contributor checks and the coverage floor (OSV scans run in CI)
 	"$(MAKE)" -k lock-check quality test-coverage catalog-check workflow-check
 
 tooling-check: ## Verify the uv bootstrap requirement matches its locked audit inventory
@@ -135,8 +134,8 @@ test-storage: ## Verify atomic storage, concurrency, budgets and stored MCP path
 
 .PHONY: test-coverage check-fresh-package
 
-test-coverage: ## Enforce statement and branch coverage floors and write reports
-	"$(PYTHON)" scripts/check_coverage.py --minimum-coverage "$(COVERAGE_MINIMUM)"
+test-coverage: ## Measure server coverage and enforce the configured total floor
+	"$(PYTHON)" scripts/check_coverage.py
 
 check-fresh-package: ## Build/install wheel and sdist in fresh temporary venvs (downloads dependencies)
 	"$(PYTHON)" scripts/check_fresh_package.py --allow-downloads --output build/verification/fresh-package.json

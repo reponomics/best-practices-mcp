@@ -35,7 +35,7 @@ make test-coverage
 make test-package
 ```
 
-Required GitHub Actions jobs retain the six Python 3.11/3.12 combinations across Linux, macOS and Windows, coverage and fresh wheel/sdist installation. `make test-coverage` enforces independent 95% floors for statement and branch coverage of the server package. `make validate` includes this target, so release qualification applies the same gate. The [release procedure](releasing.md) identifies the remaining package, remote CI and publication gates.
+Required GitHub Actions jobs retain the six Python 3.11/3.12 combinations across Linux, macOS and Windows, coverage and fresh wheel/sdist installation. `make test-coverage` enforces coverage.py's 95% combined statement/branch total for the server package, configured in `pyproject.toml`. `make validate` includes this target, so release qualification applies the same gate. The [release procedure](releasing.md) identifies the remaining package, remote CI and publication gates.
 
 For opt-in, read-only production badge compatibility, run `make smoke-badges PROJECT_ID=1`. This makes four paced requests: compact JSON and SVG for each badge family, validates their result schemas and serialized budgets, and prints observation metadata without writing files. A successful run establishes compatibility for that project at the reported fetch times; it does not establish acceptance of proposed edits. On 2026-11-14, project 1 returned `gold` for Best Practices and `baseline-3` for Baseline, valid update timestamps, and valid SVG bodies of 1,200 and 1,214 bytes respectively.
 

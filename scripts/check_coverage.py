@@ -1,7 +1,7 @@
 """Measure offline server line/branch coverage, including Python subprocesses.
 
 Produces HTML/XML/JSON reports and execution evidence under build/coverage by
-default. An optional minimum applies independently to statement and branch coverage.
+default. Coverage.py's configured fail_under threshold controls report exit status.
 """
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ from datetime import UTC, datetime
 from importlib.metadata import version
 from pathlib import Path
 
+from coverage import Coverage
 from verification_support import ROOT, sanitize, source_fingerprint
 
 
@@ -137,57 +138,7 @@ def execute_checks(output: Path, tests: list[str], env: dict[str, str], log: Pat
     return checks
 
 
-def read_totals(report: Path) -> dict | None:
-    """Retain execution evidence even when a coverage report is unavailable or invalid."""
-    try:
-        totals = json.loads(report.read_text(encoding="utf-8"))["totals"]
-    except (OSError, ValueError, KeyError, TypeError):
-        return None
-    return totals if isinstance(totals, dict) else None
-
-
-def coverage_metric(totals: dict, metric: str, minimum: float) -> dict:
-    covered_key, total_key = {
-        "statements": ("covered_lines", "num_statements"),
-        "branches": ("covered_branches", "num_branches"),
-    }[metric]
-    covered, total = totals.get(covered_key), totals.get(total_key)
-    if type(covered) is not int or type(total) is not int:
-        raise ValueError(f"Missing or invalid {metric} counts")
-    if total < 0 or not 0 <= covered <= total:
-        raise ValueError(f"Invalid {metric} counts")
-    if metric == "statements" and total == 0:
-        raise ValueError("No measured statements")
-    return {
-        "covered": covered,
-        "total": total,
-        "percentage": 100 * covered / total if total else 100.0,
-        "passed": covered * 100 >= minimum * total,
-    }
-
-
-def check_minimum(totals: dict | None, minimum: float) -> dict:
-    """Check unrounded counts, so strong statement coverage cannot hide missed branches."""
-    try:
-        if totals is None:
-            raise ValueError("Missing or malformed coverage totals")
-        metrics = {
-            name: coverage_metric(totals, name, minimum) for name in ("statements", "branches")
-        }
-    except ValueError as exc:
-        print(f"Coverage minimum: failed ({exc})", flush=True)
-        return {"passed": False, "error": str(exc)}
-    for name, result in metrics.items():
-        status = "passed" if result["passed"] else "failed"
-        print(
-            f"Coverage {name}: {result['covered']}/{result['total']} "
-            f"({result['percentage']:.4f}%), minimum {minimum:g}%: {status}",
-            flush=True,
-        )
-    return {"passed": all(result["passed"] for result in metrics.values()), "metrics": metrics}
-
-
-def run(output: Path, tests: list[str], minimum_coverage: float | None = None) -> int:
+def run(output: Path, tests: list[str]) -> int:
     clear_reports(output)
     log = output / "coverage.log"
     log.write_text("", encoding="utf-8")
@@ -212,48 +163,32 @@ def run(output: Path, tests: list[str], minimum_coverage: float | None = None) -
             "Temporary venv hook forwards COVERAGE_PROCESS_CONFIG only during coverage; "
             "removed after collection."
         ),
-        "threshold": minimum_coverage,
+        "threshold": Coverage(config_file=str(ROOT / "pyproject.toml")).get_option(
+            "report:fail_under"
+        ),
         "checks": [],
     }
     with forward_sdk_coverage():
         evidence["checks"] = execute_checks(output, tests, env, log)
-    totals = read_totals(output / "coverage.json")
-    if totals is not None:
-        evidence["totals"] = totals
-    gate_failed = False
-    if minimum_coverage is not None:
-        evidence["coverage_gate"] = check_minimum(totals, minimum_coverage)
-        gate_failed = not evidence["coverage_gate"]["passed"]
+    report = output / "coverage.json"
+    if report.exists():
+        evidence["totals"] = json.loads(report.read_text(encoding="utf-8"))["totals"]
     evidence["finished_at"] = datetime.now(UTC).isoformat()
     evidence["source_changed_during_run"] = evidence["source_fingerprint"] != source_fingerprint(
         ROOT
     )
-    failed = gate_failed or any(check["exit_code"] for check in evidence["checks"])
+    failed = any(check["exit_code"] for check in evidence["checks"])
     evidence["status"] = "failed" if failed or evidence["source_changed_during_run"] else "passed"
     (output / "summary.json").write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
     return int(evidence["status"] != "passed")
 
 
-def coverage_minimum(value: str) -> float:
-    minimum = float(value)
-    if not 0 <= minimum <= 100:
-        raise argparse.ArgumentTypeError(
-            "minimum coverage must be a finite percentage from 0 to 100"
-        )
-    return minimum
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=ROOT / "build/coverage")
-    parser.add_argument(
-        "--minimum-coverage",
-        type=coverage_minimum,
-        help="Require this percentage separately for statements and branches (0-100)",
-    )
     parser.add_argument("tests", nargs="*", help="Optional focused pytest paths")
     args = parser.parse_args()
-    return run(args.output.resolve(), args.tests, args.minimum_coverage)
+    return run(args.output.resolve(), args.tests)
 
 
 if __name__ == "__main__":

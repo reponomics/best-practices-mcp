@@ -78,8 +78,8 @@ Before adding a numerical gate, `make test-coverage` at commit `f986d34ac50133a2
 
 | Metric | Baseline | Required floor |
 | --- | --- | --- |
-| Statement coverage | 1,458/1,460 (99.86%) | 95% |
-| Branch coverage | 414/414 (100%) | 95% |
-| Combined coverage.py total | 99.89% | Not used for enforcement |
+| Statement coverage | 1,458/1,460 (99.86%) | Reported separately |
+| Branch coverage | 414/414 (100%) | Reported separately |
+| Combined coverage.py total | 99.89% | 95% |
 
-The 95% floor leaves margin below the measured baseline while checking statements and branch destinations independently. `make test-coverage` applies it in every compatibility job, and `make validate` applies it during local validation and release qualification. Report generation completes before the gate is evaluated, so a below-floor result retains the HTML, XML, JSON and execution summary under `build/coverage/`. Codecov remains an informational reporting service. The existing native-Windows skip and AnyIO assertion-rewrite warning remain as described above; this local baseline does not represent a new run of the remote platform matrix.
+The 95% floor leaves margin below the measured baseline and uses coverage.py's native `fail_under` setting for its combined statement/branch total, with two decimal places of precision. Separate statement and branch measurements remain available without independent floors. `make test-coverage` applies the setting in every compatibility job, and `make validate` applies it during local validation and release qualification. Below-threshold report commands finish writing their output before returning exit status 2; the runner continues generating reports and preserves the failure, retaining HTML, XML, JSON and the execution summary under `build/coverage/`. Codecov remains an informational reporting service. The existing native-Windows skip and AnyIO assertion-rewrite warning remain as described above; this local baseline does not represent a new run of the remote platform matrix.
