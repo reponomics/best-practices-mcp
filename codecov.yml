@@ -1,5 +1,5 @@
-# Coverage is measured by every compatibility job. Codecov reports trends;
-# behavioral tests remain required, without introducing an arbitrary percentage gate.
+# Every compatibility job enforces coverage.py's combined 95% total through Make.
+# Codecov reports trends; its percentage statuses remain informational.
 coverage:
   status:
     project:

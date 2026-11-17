@@ -1,7 +1,7 @@
 """Measure offline server line/branch coverage, including Python subprocesses.
 
 Produces HTML/XML/JSON reports and execution evidence under build/coverage by
-default. This is an observed baseline, not an arbitrary percentage gate.
+default. Coverage.py's configured fail_under threshold controls report exit status.
 """
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ from datetime import UTC, datetime
 from importlib.metadata import version
 from pathlib import Path
 
+from coverage import Coverage
 from verification_support import ROOT, sanitize, source_fingerprint
 
 
@@ -162,7 +163,9 @@ def run(output: Path, tests: list[str]) -> int:
             "Temporary venv hook forwards COVERAGE_PROCESS_CONFIG only during coverage; "
             "removed after collection."
         ),
-        "threshold": None,
+        "threshold": Coverage(config_file=str(ROOT / "pyproject.toml")).get_option(
+            "report:fail_under"
+        ),
         "checks": [],
     }
     with forward_sdk_coverage():

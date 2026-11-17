@@ -33,15 +33,18 @@ jobs:
         with:
           ref: main
           persist-credentials: false
-      - name: Install catalog generation dependency
-        run: |
-          python3 -m venv venv
-          venv/bin/python -m pip install 'PyYAML==6.0.3'
-      - name: Prepare upstream sources, catalog and provenance
+      - name: Set up the pinned environment manager
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version-file: pyproject.toml
+          enable-cache: false
+      - name: Install the locked development environment
+        run: make setup
+      - name: Prepare upstream sources, catalog and documentation pins
         id: prepare
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: venv/bin/python scripts/check_upstream.py --prepare-update | tee "$GITHUB_STEP_SUMMARY"
+        run: .venv/bin/python scripts/check_upstream.py --prepare-update | tee "$GITHUB_STEP_SUMMARY"
       - name: Create repository-scoped maintenance App token
         id: app-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
@@ -56,7 +59,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
-        run: venv/bin/python scripts/upstream_pr.py --app-slug "$APP_SLUG"
+        run: .venv/bin/python scripts/upstream_pr.py --app-slug "$APP_SLUG"
       - name: Create or update the source refresh PR
         id: pr
         uses: peter-evans/create-pull-request@3ffccacd46053766916f087ce41d627c0b8cf2d1 # v8.1.3
@@ -91,7 +94,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_NUMBER: ${{ steps.pr.outputs.pull-request-number }}
-        run: venv/bin/python scripts/upstream_pr.py --pr-number "$PR_NUMBER"
+        run: .venv/bin/python scripts/upstream_pr.py --pr-number "$PR_NUMBER"
       - name: Report generation failure after publishing the reviewable patch
         if: steps.prepare.outputs.generation-failed == 'true'
         run: |

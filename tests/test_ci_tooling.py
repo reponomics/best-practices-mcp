@@ -96,7 +96,7 @@ def test_report_failure_cannot_be_overridden_by_successful_tests(tmp_path, monke
     assert summary["status"] == "failed"
 
 
-def test_coverage_measures_read_dispatch_inside_sdk_stdio_children(tmp_path):
+def test_subprocess_coverage_preserves_reports_when_native_threshold_fails(tmp_path):
     import os
     import subprocess
 
@@ -117,7 +117,23 @@ def test_coverage_measures_read_dispatch_inside_sdk_stdio_children(tmp_path):
         encoding="utf-8",
         timeout=90,
     )
-    assert completed.returncode == 0, completed.stdout + completed.stderr
+    # This focused suite passes, but its coverage is below the full-suite floor.
+    assert completed.returncode == 1, completed.stdout + completed.stderr
+    summary = json.loads((report / "summary.json").read_text(encoding="utf-8"))
+    stages = {check["stage"]: check["exit_code"] for check in summary["checks"]}
+    assert stages == {
+        "erase": 0,
+        "run": 0,
+        "combine": 0,
+        "report": 2,
+        "html": 2,
+        "xml": 2,
+        "json": 2,
+    }
+    assert summary["threshold"] == 95
+    assert summary["status"] == "failed"
+    for artifact in ("html/index.html", "coverage.xml", "coverage.json", "junit.xml"):
+        assert (report / artifact).is_file()
     coverage = json.loads((report / "coverage.json").read_text(encoding="utf-8"))
     server = ROOT / "src/best_practices_mcp/server.py"
     files = {name.replace("\\", "/"): data for name, data in coverage["files"].items()}

@@ -52,8 +52,8 @@ check: quality ## Run quality checks and the offline test suite
 
 .PHONY: validate
 
-validate: ## Run contributor checks (OSV scans run in CI)
-	"$(MAKE)" -k lock-check quality test catalog-check workflow-check
+validate: ## Run contributor checks and the coverage floor (OSV scans run in CI)
+	"$(MAKE)" -k lock-check quality test-coverage catalog-check workflow-check
 
 tooling-check: ## Verify the uv bootstrap requirement matches its locked audit inventory
 	"$(UV)" run --no-project $(UV_PYTHON_ARG) python scripts/dev_tools.py tooling-check
@@ -134,7 +134,7 @@ test-storage: ## Verify atomic storage, concurrency, budgets and stored MCP path
 
 .PHONY: test-coverage check-fresh-package
 
-test-coverage: ## Measure server coverage including MCP subprocesses and write HTML/XML reports
+test-coverage: ## Measure server coverage and enforce the configured total floor
 	"$(PYTHON)" scripts/check_coverage.py
 
 check-fresh-package: ## Build/install wheel and sdist in fresh temporary venvs (downloads dependencies)

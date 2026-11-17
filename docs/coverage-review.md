@@ -71,3 +71,15 @@ The latest server coverage is **99.88% combined**, with **1,344/1,346 statements
 The `PytestAssertRewriteWarning` for AnyIO originates in `scripts/check_coverage.py`: its temporary startup hook imports the MCP SDK, and therefore AnyIO, before pytest installs assertion rewriting. Potential remediation is to defer SDK setup in the pytest process to `pytest_configure`, retaining startup forwarding for measured descendants; a disposable macOS prototype passed 56 read-tool and host tests with the warning treated as an error and subprocess coverage preserved. Defer this change until the planned reference-host deprecation and possible replacement by the MCP Inspector, when the testing infrastructure should be reassessed together. Removing the host may allow explicit coverage-environment forwarding in a shared test helper instead of the startup hook, although direct SDK subprocess tests still need forwarding. The current warning affects assertion diagnostics in already-imported AnyIO code, not whether assertions execute.
 
 Reference-host removal follow-up (2026-11-15): [ADR 0004](adr/0004-remove-reference-host.md) retires the terminal host but retains real SDK subprocess tests and installed-package probes. Their filtered child environments still require coverage forwarding, so the existing instrumentation remains. The AnyIO assertion-rewrite warning is a separate deferred cleanup. Two server-relevant host scenarios move into the document/storage MCP tests; host-only interface behavior retires.
+
+## Coverage floor (2026-11-17)
+
+Before adding a numerical gate, `make test-coverage` at commit `f986d34ac50133a21f6a773ae79876c947e19a7d` passed 1,040 tests with one native-Windows skip on macOS, Python 3.11.11 and coverage.py 7.17.3. All report stages passed, and the production-source fingerprint remained unchanged during collection. Measurement includes the server package and Python subprocesses; no source exclusions or production code changed for the gate.
+
+| Metric | Baseline | Required floor |
+| --- | --- | --- |
+| Statement coverage | 1,458/1,460 (99.86%) | Reported separately |
+| Branch coverage | 414/414 (100%) | Reported separately |
+| Combined coverage.py total | 99.89% | 95% |
+
+The 95% floor leaves margin below the measured baseline and uses coverage.py's native `fail_under` setting for its combined statement/branch total, with two decimal places of precision. Separate statement and branch measurements remain available without independent floors. `make test-coverage` applies the setting in every compatibility job, and `make validate` applies it during local validation and release qualification. Below-threshold report commands finish writing their output before returning exit status 2; the runner continues generating reports and preserves the failure, retaining HTML, XML, JSON and the execution summary under `build/coverage/`. Codecov remains an informational reporting service. The existing native-Windows skip and AnyIO assertion-rewrite warning remain as described above; this local baseline does not represent a new run of the remote platform matrix.
