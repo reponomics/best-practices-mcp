@@ -78,3 +78,10 @@ version = "0.23"
 ecosystem = "PyPI"
 license.ignore = true
 reason = "Approved development-only exception: Twine uses Docutils to render release descriptions; it is not a runtime dependency or bundled with this server. Release COPYING.rst documents public-domain files, BSD-2-Clause/BSD-3-Clause components, and the GPL-3.0-or-later Emacs integration. See https://docutils.sourceforge.io/COPYING.html. Reassess if the version or use changes; vulnerability scanning remains enabled."
+
+[[PackageOverrides]]
+name = "atheris"
+version = "3.1.0"
+ecosystem = "PyPI"
+license.override = ["Apache-2.0"]
+reason = "Optional fuzz tooling: deps.dev has no license metadata; verified Apache License 2.0 in the published PyPI 3.1.0 wheel's atheris-3.1.0.dist-info/licenses/LICENSE. This exact-version metadata correction does not suppress vulnerability findings."

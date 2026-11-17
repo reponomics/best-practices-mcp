@@ -109,6 +109,8 @@ For live-form QA, follow the brief [PolicyChecks browser runbook](docs/live-brow
 
 `make upstream-check` compares all retained BadgeApp sources against `production` using public network reads, without editing files or GitHub. `make upstream-prepare` prepares source, catalog and documentation-reference changes locally. The weekly/manual workflow maintains one regular update PR; labels are advisory and every update requires review and passing CI. Follow the [upstream update procedure](docs/upstream-compatibility.md#checking-for-upstream-changes), including pausing automation before making manual fixes on its reserved branch.
 
+For optional Linux fuzzing of document parsing and proposal URLs, see the [fuzzing guide](docs/fuzzing.md).
+
 ## Dependencies
 
 Any proposed change that introduces or updates a direct or transitive dependency must use a license compatible with this project's MIT-licensed distribution and intended use, and must pass the OSV vulnerability and license checks in CI. This applies to runtime, development, build and audit dependencies in `uv.lock`, plus actionlint and the modules imported by its executable, derived from the pinned hook revision in CI. Include the dependency's purpose and available license evidence in the pull request. Contributors may use their preferred tools to assess a dependency or wait for the PR workflow results; installing or running OSV-Scanner locally is not required. Routine contributor validation does not recheck dependency licenses.
