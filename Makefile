@@ -42,11 +42,6 @@ help: ## Show available development commands (no project environment required)
 setup: ## Sync the locked development group into .venv (Python 3.11 by default)
 	"$(UV)" sync --locked --group dev --no-group audit-tools $(UV_PYTHON_ARG)
 
-.PHONY: setup-upstream
-
-setup-upstream: ## Install hash-locked PyYAML tooling for upstream maintenance
-	"$(UV)" sync --locked --only-group inventory-tools --no-install-project --no-build $(UV_PYTHON_ARG)
-
 quality: tooling-check ## Check formatting, lint and installed dependency consistency
 	"$(PYTHON)" -m ruff format --check src tests scripts
 	"$(PYTHON)" -m ruff check src tests scripts
