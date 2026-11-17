@@ -18,12 +18,12 @@ The transfer report contains one row per supplied normalized field. It identifie
 | --- | --- | --- |
 | Missing field | No answer supplied | No field encoded |
 | Eligible value equal to saved answer | Preserve supplied value | Encode supplied value |
-| Status `?` | Preserve unknown answer | Unsupported by this MCP |
-| `?` plus justification | Preserve both | Encode eligible justification independently |
+| Status `?` | Preserve unknown answer | Encode with an observed-reset-failure warning |
+| `?` plus justification | Preserve both | Encode both; evaluate justification independently |
 | Justification alone | Valid partial draft | Encode only supplied justification |
 | Empty justification | Preserve intentional empty text | Encode empty string |
 | Whitespace or control characters | Preserve exact text | Percent-encode exact text |
-| Explicit override | Not an answer field | Encode requested eligible field names |
+| Override intent | Not an answer field | Encode no override, all supplied eligible fields, or selected eligible fields |
 | Patch value `null` | Remove local field | Does not request remote deletion |
 
 Values in encoded artifacts remain exact strings. How BadgeApp parses a URL value or a browser represents a control value is verified in the actual interface, not simulated from upstream implementation details.
@@ -32,11 +32,15 @@ BadgeApp's [justification-value documentation](../vendor/badgeapp/docs/automatio
 
 ## Explicit overrides
 
-Default URLs contain unforced proposals. `override_fields` accepts exact canonical supplied in-scope field names, not aliases, globs or a blanket `*`. The result's `requested_overrides` is the validated sorted, deduplicated request. `effective_overrides` contains only explicitly requested fields actually included in the URL's `overrides` parameter. Each row's `override` flag reports membership in that encoded list.
+Default URLs contain unforced proposals. `overrides` is an intent object: `{"mode":"none"}` (default), `{"mode":"all"}`, or `{"mode":"fields","fields":["canonical_supplied_field"]}`. `all` generates the wildcard override for supplied eligible fields; it does not change unspecified answers. `fields` requires a nonempty list of canonical supplied in-scope names, sorted and deduplicated in the returned `overrides` object. Reject contradictory combinations and invalid field selections. `effective_overrides` lists encoded fields covered by the selected mode, and each row’s `override` flag reports membership in that list.
 
 The MCP does not expand a status override into an additional justification override. It preserves the supplied status and justification along with the explicit override, so BadgeApp can apply its documented implication. It also preserves unforced supplied pairs even when an existing answer differs. The site decides whether their proposals apply.
 
 For host guidance, BadgeApp documents that an unforced differing status can retain the existing answer and block its supplied justification, including when only the justification is forced. A status override also applies to a supplied paired justification. These are website procedures to consider when choosing overrides and reviewing the form; they are not per-field predictions returned by the MCP. See the upstream decision matrix for the complete rules.
+
+## Section selection
+
+Both validation and preparation require `section`: a supported badge level or `choose_section`. The latter produces the documented `/choose/edit` entry point and leaves section selection to the human. A chooser proposal retains fields eligible at any applicable level; the transfer report records `applicable_levels` and per-level `restrictions`. Validation checks supplied criteria independently at each applicable level and qualifies findings and checked/skipped scope by level.
 
 ## URL boundaries
 
@@ -46,6 +50,6 @@ Repository publishing and import acceptance belong to the host and BadgeApp. Loc
 
 ## Unknown-status limitation
 
-The public proposal guide describes URL `?` as an explicit reset, while the automation-approach decision matrix discards it. This MCP makes no reset promise: preserve unknown answers locally, omit them from artifacts with an explicit unsupported-field reason, and evaluate any accompanying justification independently. [Public guide](../vendor/badgeapp/docs/automation-proposals.md#status-value-semantics-query-strings-vs-json), [decision matrix](../vendor/badgeapp/docs/automation-approach.md#the-decision-matrix).
+URL proposals to reset a status to `?` are observed not to work, even with overrides, despite conflicting BadgeApp documentation. Ordinary overrides work. The MCP encodes `?` and returns the nonblocking `unknown_status_reset_unsupported` warning from both preparation and validation, with affected fields and observation date/scope. Unknown-only proposals still produce an artifact, and accompanying justification is evaluated independently. If a reset is intended, change the status manually in BadgeApp. The warning reflects the [recorded live previews](adr/0005-proposal-intent-and-compatibility-warnings.md#context-and-observations), not a per-call probe. [Public guide](../vendor/badgeapp/docs/automation-proposals.md#status-value-semantics-query-strings-vs-json), [decision matrix](../vendor/badgeapp/docs/automation-approach.md#the-decision-matrix).
 
 Required checks and live compatibility verification are mapped in the [testing policy](testing-policy.md).

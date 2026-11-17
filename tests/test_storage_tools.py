@@ -63,14 +63,14 @@ def test_stored_workflow_restart_explicit_precedence_and_stable_discovery(tmp_pa
                 assert read["identity"]["association"] == "storage_key"
                 assert read["location"] == str(path.resolve())
                 for name in ("validate_draft", "prepare_update_url"):
-                    result = await call(client, name, project_id=123, level="passing")
+                    result = await call(client, name, project_id=123, section="passing")
                     assert not result.is_error
                     assert result.structured_content["draft_source"] == {
                         "kind": "stored",
                         "location": str(path.resolve()),
                     }
                     assert result.structured_content["identity"]["association"] == "storage_key"
-                    empty = await call(client, name, project_id=123, level="passing", draft={})
+                    empty = await call(client, name, project_id=123, section="passing", draft={})
                     assert not empty.is_error
                     assert empty.structured_content["draft_source"] == {
                         "kind": "explicit",
@@ -94,12 +94,12 @@ def test_stored_workflow_restart_explicit_precedence_and_stable_discovery(tmp_pa
                 # Explicit input bypasses malformed stored bytes, not merely a missing file.
                 path.write_text('{"name":')
                 for name in ("validate_draft", "prepare_update_url"):
-                    result = await call(client, name, project_id=123, level="passing", draft={})
+                    result = await call(client, name, project_id=123, section="passing", draft={})
                     assert not result.is_error
-                    stored = await call(client, name, project_id=123, level="passing")
+                    stored = await call(client, name, project_id=123, section="passing")
                     assert stored.structured_content["error"]["code"] == "invalid_document"
                 null = await client.call_tool(
-                    "validate_draft", {"project_id": 123, "level": "passing", "draft": None}
+                    "validate_draft", {"project_id": 123, "section": "passing", "draft": None}
                 )
                 assert null.is_error
                 assert path.read_text(encoding="utf-8") == '{"name":'
@@ -134,7 +134,7 @@ def test_stored_snapshot_subset_is_explicit_and_preserves_complete_document(tmp_
             assert snapshot == draft
             subset = {field: snapshot[field] for field in ("id", "repo_url", "name")}
             result = await call(
-                client, "prepare_update_url", project_id=123, level="passing", draft=subset
+                client, "prepare_update_url", project_id=123, section="passing", draft=subset
             )
             assert not result.is_error
             proposal = result.structured_content
@@ -170,14 +170,14 @@ def test_offline_storage_validation_and_identity_before_network(tmp_path):
                 "update_draft", {"project_id": 123, "changes": {"description_good_status": "N/A"}}
             )
         ).is_error
-        result = await server.call_tool("validate_draft", {"project_id": 123, "level": "passing"})
+        result = await server.call_tool("validate_draft", {"project_id": 123, "section": "passing"})
         assert not result.is_error and result.structured_content["findings"]
         path = tmp_path / "projects/123/.bestpractices.json"
         path.write_text('{"id":456,"name":"wrong source"}')
         for name, arguments in (
             ("read_draft", {"project_id": 123}),
             ("update_draft", {"project_id": 123, "changes": {"id": None}}),
-            ("prepare_update_url", {"project_id": 123, "level": "passing"}),
+            ("prepare_update_url", {"project_id": 123, "section": "passing"}),
         ):
             result = await server.call_tool(name, arguments)
             assert result.structured_content["error"]["code"] == "project_mismatch"
@@ -206,7 +206,9 @@ def test_generator_uses_one_stored_snapshot_during_concurrent_update(tmp_path):
         context = SimpleNamespace(request_context=SimpleNamespace(lifespan_context=PublicRead()))
         await server.storage.update(123, {"name": "First snapshot"})
         pending = asyncio.create_task(
-            server.call_tool("prepare_update_url", {"project_id": 123, "level": "passing"}, context)
+            server.call_tool(
+                "prepare_update_url", {"project_id": 123, "section": "passing"}, context
+            )
         )
         await asyncio.wait_for(started.wait(), 5)
         await server.storage.update(123, {"name": "Later snapshot"})

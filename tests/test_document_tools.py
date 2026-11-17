@@ -39,19 +39,22 @@ def test_document_workflow_wire_results_with_missing_storage_root(tmp_path):
                     "prepare_update_url",
                     {
                         "project_id": 123,
-                        "level": "passing",
+                        "section": "passing",
                         "draft": {
                             "description_good_status": "Met",
                             "description_good_justification": explanation,
                         },
-                        "override_fields": ["description_good_justification"],
+                        "overrides": {
+                            "mode": "fields",
+                            "fields": ["description_good_justification"],
+                        },
                     },
                 ),
                 (
                     "validate_draft",
                     {
                         "project_id": 123,
-                        "level": "passing",
+                        "section": "passing",
                         "draft": {"description_good_status": "N/A"},
                     },
                 ),
@@ -68,7 +71,10 @@ def test_document_workflow_wire_results_with_missing_storage_root(tmp_path):
             assert results[2]["findings"]
             proposal = results[1]
             assert all(row["disposition"] == "encoded" for row in proposal["transfer"])
-            assert proposal["requested_overrides"] == ["description_good_justification"]
+            assert proposal["overrides"] == {
+                "mode": "fields",
+                "fields": ["description_good_justification"],
+            }
             assert proposal["effective_overrides"] == ["description_good_justification"]
             assert parse_qs(urlsplit(proposal["artifact"]["url"]).query) == {
                 "description_good_status": ["Met"],
@@ -76,11 +82,12 @@ def test_document_workflow_wire_results_with_missing_storage_root(tmp_path):
                 "overrides": ["description_good_justification"],
             }
             for name in ("validate_draft", "prepare_update_url"):
-                result = await client.call_tool(name, {"project_id": 123, "level": "passing"})
+                result = await client.call_tool(name, {"project_id": 123, "section": "passing"})
                 assert result.is_error
                 assert result.structured_content["error"]["code"] == "draft_not_found"
             mismatch = await client.call_tool(
-                "prepare_update_url", {"project_id": 123, "level": "passing", "draft": {"id": 456}}
+                "prepare_update_url",
+                {"project_id": 123, "section": "passing", "draft": {"id": 456}},
             )
             assert mismatch.structured_content["error"]["code"] == "project_mismatch"
 
@@ -99,11 +106,11 @@ def test_pure_handlers_and_missing_drafts_do_not_need_http(tmp_path):
         )
         for name, arguments in (
             ("build_draft", {"draft": {}, "changes": {"name": "Example"}}),
-            ("validate_draft", {"project_id": 123, "level": "passing", "draft": {}}),
+            ("validate_draft", {"project_id": 123, "section": "passing", "draft": {}}),
         ):
             assert not (await server.call_tool(name, arguments)).is_error
         for name in ("validate_draft", "prepare_update_url"):
-            result = await server.call_tool(name, {"project_id": 123, "level": "passing"})
+            result = await server.call_tool(name, {"project_id": 123, "section": "passing"})
             assert result.structured_content["error"]["code"] == "draft_not_found"
 
     asyncio.run(exercise())
@@ -114,7 +121,7 @@ def test_pure_handlers_and_missing_drafts_do_not_need_http(tmp_path):
     [
         ("find_project", {"query": "example"}),
         ("get_project_progress", {"project_id": 123}),
-        ("prepare_update_url", {"project_id": 123, "level": "passing", "draft": {}}),
+        ("prepare_update_url", {"project_id": 123, "section": "passing", "draft": {}}),
     ],
 )
 def test_network_handlers_without_lifespan_return_safe_errors(tmp_path, name, arguments):
@@ -133,3 +140,42 @@ def test_network_handlers_without_lifespan_return_safe_errors(tmp_path, name, ar
     assert "lifespan" not in json.dumps(payload)
     assert json.loads(result.content[0].text) == payload
     assert not list(tmp_path.iterdir())
+
+
+def test_chooser_override_all_and_unknown_warning_over_mcp(tmp_path):
+    async def exercise():
+        parameters = StdioServerParameters(
+            command=sys.executable, args=[str(FIXTURE.resolve())], cwd=tmp_path
+        )
+        async with asyncio.timeout(20), Client(parameters) as client:
+            arguments = {
+                "project_id": 123,
+                "section": "choose_section",
+                "draft": {"code_of_conduct_status": "?", "osps_br_04_01_status": "Met"},
+            }
+            validation = await client.call_tool("validate_draft", arguments)
+            proposal = await client.call_tool(
+                "prepare_update_url", arguments | {"overrides": {"mode": "all"}}
+            )
+            for name, result in [("validate_draft", validation), ("prepare_update_url", proposal)]:
+                assert not result.is_error, result
+                Draft202012Validator(output_schema(name)).validate(result.structured_content)
+                assert json.loads(result.content[0].text) == result.structured_content
+                assert result.structured_content["schema_version"] == 2
+            prepared = proposal.structured_content
+            assert prepared["warnings"] == validation.structured_content["warnings"]
+            assert prepared["warnings"][0]["fields"] == ["code_of_conduct_status"]
+            url = urlsplit(prepared["artifact"]["url"])
+            assert url.path == "/en/projects/123/choose/edit"
+            assert parse_qs(url.query) == {
+                "code_of_conduct_status": ["?"],
+                "osps_br_04_01_status": ["Met"],
+                "overrides": ["*"],
+            }
+            for name in ("validate_draft", "prepare_update_url"):
+                invalid = await client.call_tool(name, {"project_id": 123, "draft": {}})
+                assert invalid.is_error
+                assert "section" in invalid.content[0].text
+                assert "Invalid arguments" in invalid.content[0].text
+
+    asyncio.run(exercise())

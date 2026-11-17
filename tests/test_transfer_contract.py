@@ -22,7 +22,7 @@ OBSERVATION = {
 @pytest.mark.parametrize("forced", [False, True])
 def test_standalone_values_are_identical_across_observed_records(field, value, forced):
     draft = {field: value}
-    overrides = [field] if forced else []
+    overrides = {"mode": "fields", "fields": [field]} if forced else {"mode": "none"}
     records = [{}, {field: None}, {field: ""}, {field: value}, {field: "other"}, {field: [1]}]
     results = [
         prepare_update_url(123, "passing", draft, record, OBSERVATION, overrides)
@@ -35,7 +35,8 @@ def test_standalone_values_are_identical_across_observed_records(field, value, f
     assert result["outcome"] == "complete"
     assert [row["field"] for row in result["transfer"]] == [field]
     assert result["transfer"][0]["disposition"] == "encoded"
-    assert result["requested_overrides"] == result["effective_overrides"] == overrides
+    assert result["overrides"] == overrides
+    assert result["effective_overrides"] == ([field] if forced else [])
 
 
 @pytest.mark.parametrize("overrides", [[], [STATUS], [JUST], [STATUS, JUST]])
@@ -51,7 +52,14 @@ def test_status_and_justification_payloads_preserve_exact_explicit_override_scop
         {STATUS: True, JUST: {"unexpected": "value"}},
     ]
     results = [
-        prepare_update_url(123, "passing", draft, record, OBSERVATION, overrides)
+        prepare_update_url(
+            123,
+            "passing",
+            draft,
+            record,
+            OBSERVATION,
+            {"mode": "fields", "fields": overrides} if overrides else {"mode": "none"},
+        )
         for record in records
     ]
     assert all(result == results[0] for result in results)
@@ -66,7 +74,10 @@ def test_status_and_justification_payloads_preserve_exact_explicit_override_scop
     assert set(rows) == set(draft)
     assert all(row["disposition"] == "encoded" for row in rows.values())
     assert {field for field, row in rows.items() if row["override"]} == set(overrides)
-    assert result["requested_overrides"] == result["effective_overrides"] == sorted(overrides)
+    assert result["overrides"] == (
+        {"mode": "fields", "fields": sorted(overrides)} if overrides else {"mode": "none"}
+    )
+    assert result["effective_overrides"] == sorted(overrides)
 
 
 @pytest.mark.parametrize(

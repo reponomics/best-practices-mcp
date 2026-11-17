@@ -24,6 +24,9 @@ from best_practices_mcp.documents import validate_document
 from best_practices_mcp.errors import DomainError
 
 Level = Literal["passing", "silver", "gold", "baseline-1", "baseline-2", "baseline-3"]
+Section = Literal[
+    "passing", "silver", "gold", "baseline-1", "baseline-2", "baseline-3", "choose_section"
+]
 BadgeFamily = Literal["best_practices", "baseline"]
 LEVELS: tuple[Level, ...] = ("passing", "silver", "gold", "baseline-1", "baseline-2", "baseline-3")
 PositiveInt = Annotated[int, Field(strict=True, gt=0)]
@@ -121,12 +124,33 @@ class UpdateDraftInput(ProjectInput):
 
 
 class DraftSourceInput(ProjectInput):
-    level: Level
+    section: Section = Field(
+        description="Badge level, or choose_section for human selection in BadgeApp."
+    )
     draft: Draft | MISSING = MISSING
 
 
+class NoOverrides(Model):
+    mode: Literal["none"]
+
+
+class AllOverrides(Model):
+    mode: Literal["all"]
+
+
+class FieldOverrides(Model):
+    mode: Literal["fields"]
+    fields: list[str] = Field(min_length=1, description="Canonical supplied field names.")
+
+
+Overrides = NoOverrides | AllOverrides | FieldOverrides
+
+
 class PrepareURLInput(DraftSourceInput):
-    override_fields: list[str] = Field(default_factory=list)
+    overrides: Overrides = Field(
+        default_factory=lambda: NoOverrides(mode="none"),
+        description="none fills unknown answers; all or fields overrides supplied answers.",
+    )
 
 
 def _schema_version(value: object) -> object:
@@ -383,6 +407,7 @@ FindingCode = Literal[
 
 
 class Finding(Model):
+    level: Level | None
     criterion_id: str | None
     field: str
     code: FindingCode
@@ -391,20 +416,44 @@ class Finding(Model):
 
 
 class Skipped(Model):
+    level: Level
     criterion_id: str
     reason: Literal["status_absent", "status_unknown", "status_invalid", "other_level"]
     checks: list[str]
 
 
-class ValidateDraftResult(Result):
-    project_id: PositiveInt
+class CompatibilityWarning(Model):
+    code: Literal["unknown_status_reset_unsupported"]
+    fields: list[str]
+    message: str
+    observed_on: str
+    scope: str
+
+
+class CriterionRef(Model):
     level: Level
+    criterion_id: str
+
+
+class ProposalResult(Model):
+    schema_version: Annotated[Literal[2], BeforeValidator(_schema_version)]
+
+
+class ValidateDraftResult(ProposalResult):
+    project_id: PositiveInt
+    section: Section
     draft_source: DraftSource
     identity: Identity
     catalog: CatalogRef
     findings: list[Finding]
-    checked_criteria: list[str]
+    checked_criteria: list[CriterionRef]
     skipped_criteria: list[Skipped]
+    warnings: list[CompatibilityWarning]
+
+
+class LevelRestriction(Model):
+    level: Level
+    reason: str
 
 
 class TransferField(Model):
@@ -412,6 +461,8 @@ class TransferField(Model):
     disposition: Literal["encoded", "outside_level", "unsupported", "invalid", "omitted"]
     reason: str
     override: bool
+    applicable_levels: list[Level]
+    restrictions: list[LevelRestriction]
 
 
 Outcome = Literal[
@@ -422,13 +473,14 @@ Outcome = Literal[
 ]
 
 
-class ArtifactResult(Result):
+class ArtifactResult(ProposalResult):
     project_id: PositiveInt
-    level: Level
+    section: Section
     catalog: CatalogRef
     draft_source: DraftSource
     observation: Observation
     identity: Identity
+    warnings: list[CompatibilityWarning]
     outcome: Outcome
     no_artifact_reason: str | None
     transfer: list[TransferField]
@@ -440,6 +492,6 @@ class URLArtifact(Model):
 
 
 class PrepareURLResult(ArtifactResult):
-    requested_overrides: list[str]
+    overrides: Overrides
     effective_overrides: list[str]
     artifact: URLArtifact | None

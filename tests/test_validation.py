@@ -51,7 +51,7 @@ def test_represented_shape_checks_and_conditional_skips_overlap(
         draft["contribution_status"] = status
     result = validate_draft(8, "passing", draft)
     validate_output("validate_draft", result)
-    assert result["checked_criteria"] == ["contribution"]
+    assert result["checked_criteria"] == [{"level": "passing", "criterion_id": "contribution"}]
     assert result["skipped_criteria"][0]["reason"] == reason
     assert not any(f["code"].startswith("missing") for f in result["findings"])
 
@@ -71,6 +71,7 @@ def test_other_level_invalid_values_are_not_selected_level_findings() -> None:
     assert result["skipped_criteria"] == [
         {
             "criterion_id": "osps_ac_01_01",
+            "level": "baseline-1",
             "reason": "other_level",
             "checks": ["field_shape", "conditional_requirements"],
         }
@@ -157,7 +158,7 @@ def test_alias_normalization_and_preserved_unknown_field_diagnostics() -> None:
         "baseline-1",
         {"OSPS-AC-01.01_status": "Unmet", "extra": "secret", "id": 8, "repo_url": "not a URL"},
     )
-    assert result["checked_criteria"] == ["osps_ac_01_01"]
+    assert result["checked_criteria"] == [{"level": "baseline-1", "criterion_id": "osps_ac_01_01"}]
     assert len(result["findings"]) == 1
     assert result["identity"] == {
         "association": "document_provenance",
@@ -182,7 +183,83 @@ def test_unreadable_or_mismatched_input_prevents_validation(draft: dict, code: s
 
 
 @pytest.mark.parametrize("level", [None, "unknown"])
-def test_invalid_level_remains_operational_error(level) -> None:
+def test_invalid_section_remains_operational_error(level) -> None:
     with pytest.raises(DomainError) as error:
         validate_draft(8, level, {})
     assert error.value.code == "invalid_level"
+
+
+def test_chooser_checks_shared_fields_at_each_applicable_level() -> None:
+    result = validate_draft(
+        8,
+        "choose_section",
+        {
+            "dynamic_analysis_status": "N/A",
+            "dynamic_analysis_justification": "No unsafe code is used.",
+            "osps_ac_01_01_status": "?",
+        },
+    )
+    validate_output("validate_draft", result)
+    assert result["schema_version"] == 2
+    assert result["section"] == "choose_section"
+    assert result["checked_criteria"] == [
+        {"level": "baseline-1", "criterion_id": "osps_ac_01_01"},
+        {"level": "gold", "criterion_id": "dynamic_analysis"},
+        {"level": "passing", "criterion_id": "dynamic_analysis"},
+    ]
+    assert [(f["level"], f["field"], f["code"]) for f in result["findings"]] == [
+        ("passing", "dynamic_analysis_status", "na_not_allowed")
+    ]
+    assert result["skipped_criteria"] == [
+        {
+            "level": "baseline-1",
+            "criterion_id": "osps_ac_01_01",
+            "reason": "status_unknown",
+            "checks": ["conditional_requirements"],
+        }
+    ]
+    assert result["warnings"][0]["fields"] == ["osps_ac_01_01_status"]
+
+
+def test_chooser_qualifies_shared_shape_findings_and_skips() -> None:
+    result = validate_draft(8, "choose_section", {"dynamic_analysis_status": False, "name": False})
+    validate_output("validate_draft", result)
+    assert [(f["level"], f["field"], f["code"]) for f in result["findings"]] == [
+        ("gold", "dynamic_analysis_status", "invalid_type"),
+        ("passing", "dynamic_analysis_status", "invalid_type"),
+        (None, "name", "invalid_type"),
+    ]
+    assert [(s["level"], s["criterion_id"], s["reason"]) for s in result["skipped_criteria"]] == [
+        ("gold", "dynamic_analysis", "status_invalid"),
+        ("passing", "dynamic_analysis", "status_invalid"),
+    ]
+    assert result["warnings"] == []
+
+
+def test_other_level_skips_identify_each_actual_level() -> None:
+    result = validate_draft(8, "baseline-1", {"dynamic_analysis_status": "?"})
+    validate_output("validate_draft", result)
+    assert [(s["level"], s["reason"]) for s in result["skipped_criteria"]] == [
+        ("gold", "other_level"),
+        ("passing", "other_level"),
+    ]
+    assert result["checked_criteria"] == result["findings"] == result["warnings"] == []
+
+
+def test_chooser_empty_document_has_no_completeness_or_compatibility_findings() -> None:
+    result = validate_draft(8, "choose_section", {})
+    validate_output("validate_draft", result)
+    assert result["checked_criteria"] == result["skipped_criteria"] == []
+    assert result["findings"] == result["warnings"] == []
+
+
+def test_unknown_answer_is_valid_with_nonblocking_compatibility_warning() -> None:
+    result = validate_draft(8, "passing", {"contribution_status": "?"})
+    validate_output("validate_draft", result)
+    assert result["findings"] == []
+    assert result["skipped_criteria"][0]["reason"] == "status_unknown"
+    warning = result["warnings"][0]
+    assert warning["code"] == "unknown_status_reset_unsupported"
+    assert warning["fields"] == ["contribution_status"]
+    assert "observed not to work" in warning["message"]
+    assert "overrides" in warning["message"]
