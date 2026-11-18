@@ -67,6 +67,7 @@ def test_modern_discovery_without_initialize_and_stable_lists(tmp_path: Path) ->
     instructions = replies[0]["result"]["instructions"]
     assert '"<criterion_id>_status", one of "Met", "Unmet", "N/A", "?"' in instructions
     assert "never saves to BadgeApp" in instructions
+    assert "metal (passing, silver, gold) and baseline (baseline-1" in instructions
     assert "guide://repository-file" in instructions
     assert "For a project's status alone: get_project_status." in instructions
     assert "criteria://{level}/{criterion_id}" in instructions

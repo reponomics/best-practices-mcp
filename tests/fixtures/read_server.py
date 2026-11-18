@@ -8,6 +8,7 @@ import re
 
 import httpx2
 
+from best_practices_mcp.criteria import catalog_levels, criterion_definitions
 from best_practices_mcp.http import BadgeAppHTTP
 from best_practices_mcp.server import create_server
 
@@ -39,6 +40,30 @@ PROJECTS = {
         "project_entry_license": "CC-BY-3.0+",
     },
 }
+
+
+def started_project() -> dict:
+    """A record shaped like BadgeApp's: every criterion has a status and a few are answered."""
+    record = {
+        "id": 789,
+        "name": "Fixture Gamma",
+        "repo_url": "https://code.example.org/gamma",
+        "homepage_url": "https://example.org/gamma",
+        "project_entry_attribution": "Synthetic fixture; no real project data.",
+        "project_entry_license": "CC-BY-3.0+",
+    }
+    for level in catalog_levels():
+        for criterion in criterion_definitions(level):
+            record[criterion["status_field"]] = "?"
+    answered = criterion_definitions("passing")[:6]
+    for criterion in answered:
+        record[criterion["status_field"]] = "Met"
+    for criterion in answered[:5]:
+        record[criterion["justification_field"]] = "See https://example.org/gamma/docs."
+    return record
+
+
+PROJECTS[789] = started_project()
 
 
 class FakeClock:

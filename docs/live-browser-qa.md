@@ -1,43 +1,69 @@
 # Local live browser QA
 
-Exercise the installed candidate before promoting a beta to stable, and repeat for subsequent release candidates. Use [MCP Inspector](inspector-qa.md) connected to the exact installed candidate, an authenticated Chrome session, and the [PolicyChecks silver form](https://www.bestpractices.dev/en/projects/14356/silver/edit). This is a short supervised integration check, not an automated production save. Discard the previews when finished.
+Exercise the installed candidate before promoting a beta to stable, and repeat for subsequent release candidates. The check has two halves. `scripts/qa_live.py` drives the candidate's tools and resources against a project's current saved answers and prints proposal URLs. A person then opens those URLs in an authenticated Chrome session and compares the edit form with the report. This is a short supervised integration check, not an automated production save. Discard the previews when finished.
 
-## Preparation
+## Project, level and roles
 
-Follow the [published-package checks](releasing.md#verify-the-published-beta-and-advance-to-stable) first. Start with the setup and offline catalog/document checks in [Inspector qualification](inspector-qa.md); the live-browser matrix below completes its proposal-application checks. Record the server version, distribution identity, Inspector/Node versions, OS, browser and date in `INTERNAL/live-qa/<version>/`. Keep generated tool arguments/results, exact URLs and screenshots there; do not capture credentials or authentication cookies. The existing [Chrome record](live-qa/2026-11-09/README.md) illustrates useful evidence but does not replace a fresh check.
+Use any project the tester can edit; [PolicyChecks](https://www.bestpractices.dev/en/projects/14356) (project 14356) has been used so far. The script assigns the roles below to whichever criteria of the chosen level meet their conditions when it runs, so no application has to be kept partly complete. A role that no criterion can fill is reported as unexercised.
 
-Through Inspector, call `get_project_answers` with `{"project_id":14356,"level":"silver"}` and `get_criteria` with `{"level":"silver","detail":"full"}`. Verify the returned project is `reponomics/PolicyChecks`. Open the plain edit page and record the actual starting values with screenshots of every selected case, including neighboring controls. Public JSON is not a substitute for this browser baseline. If page automation changes a value relative to the public response, choose another field for that condition or record the discrepancy and investigate. The MCP does not predict form state; the table below derives browser checks from upstream's documented proposal procedures and the actual baseline.
-
-Choose distinct silver criteria with the baseline conditions below, using canonical field names returned by `get_criteria`. Selection is deliberate because a project's answers change over time. Possible candidates include `contribution_requirements`, `crypto_weaknesses`, `external_dependencies`, `dco` and `documentation_architecture`; inspect their current states before assigning roles. If a required condition is unavailable, mark that case unexercised and select another authorized application before claiming complete coverage.
-
-| Role | Baseline and supplied fields | Browser check after opening URL A |
+| Role | Saved condition and supplied fields | Browser check after opening URL A |
 | --- | --- | --- |
-| A: blocked pair | Existing known status; propose a different known status and new justification; override only the justification | Existing status and justification retained; justification is blocked by the unforced differing status |
-| B: status override | Existing known status and nonblank justification; supply the same status and new justification; override the status | Both fields remain in the URL. BadgeApp retains the same status and replaces the justification through its documented status-override implication |
-| C: blank pair | Blank or unknown status and blank justification; supply `Unmet` and new justification, no override | Both supplied values fill |
-| D: retained wording | Existing nonblank justification; supply different text without a status or override | Existing wording retained |
-| E: clear wording | Existing nonblank justification; supply an empty string and override that justification | Justification cleared |
-| F: matching values | Supply a known status and justification exactly equal to their current values, without overrides | Both fields remain in the URL; displayed values stay the same |
+| A: blocked pair | Saved status and justification; propose a different known status and new justification; override only the justification | Saved status and justification retained; the justification is blocked by the unforced differing status |
+| B: status override | Saved status and justification; supply the same status and new justification; override the status | Both fields remain in the URL. BadgeApp retains the same status and replaces the justification through its documented status-override implication |
+| C: blank pair | Status `?` and blank justification; supply `Unmet` and new justification, no override | Both supplied values fill |
+| D: retained wording | Saved justification; supply different text without a status or override | Saved wording retained |
+| E: clear wording | Saved justification; supply an empty string and override that justification | Justification cleared |
+| F: matching values | Supply the saved status and justification exactly, without overrides | Both fields remain in the URL; displayed values stay the same |
 
-Use unmistakable preview text, for example the exact string `  QA preview only — not saved. https://github.com/reponomics/PolicyChecks?q=a&x=2#qa  `, for each new nonempty justification. Explain this test text before opening previews: the `?q=a&x=2#qa` fragment is deliberately part of a justification URL, not a leaked proposal parameter. It should appear only in fields where the proposal applies and should disappear when the preview is discarded. This combines Unicode, URL punctuation, and leading/trailing ASCII spaces. The six roles supply at least ten fields in the same artifact. Additional silver standalone justifications may be included with explicit overrides. They are temporary test values, not criterion assessments.
+Roles A, B, D, E and F each take a different criterion that has a saved status and justification, in catalog order. A level with five such criteria and one unanswered criterion exercises every role in one run. A completed level leaves role C unexercised, and a level that has not been started exercises only role C; run the script once against each to cover all six. Do not change a saved answer to create a condition.
 
-## 1. Two combined proposal URLs
+Each new justification is the string `  QA preview only — not saved. <repository URL>?q=a&x=2#qa  `. The `?q=a&x=2#qa` part belongs to the justification's URL; it is not a leaked proposal parameter. The text combines Unicode, URL punctuation, and leading and trailing ASCII spaces. It should appear only in fields where the proposal applies and should disappear when the preview is discarded. These are temporary test values, not criterion assessments.
 
-Build a flat document using `build_draft` with `draft: {}` and the chosen fields in `changes`; retain its returned `draft`. Call `prepare_update_url` with `project_id: 14356`, `section: "silver"`, that explicit `draft`, and `overrides: {"mode":"fields","fields":[...]}` containing A's justification, B's status, E's justification and any explicitly selected additional fields. Substitute actual canonical names; the role letters above are not tool arguments.
+## 1. Run the script
 
-Retain the returned field-level `transfer`, `overrides`, `effective_overrides` and exact `artifact.url`. Check that every eligible supplied field is marked `encoded` and represented exactly in the decoded query, including F's matching values and all whitespace. The `overrides` parameter must contain only the explicit requested names; B's justification must not be added automatically. The report must contain no expected-form classifications. Open URL A by clicking a link rendering the exact Inspector-returned URL and compare all selected controls with the table. If Inspector does not render a clickable link, use a local evidence document containing that exact link and record the actual delivery route; do not claim an Inspector link-click check. Verify BadgeApp's documented trimming of leading/trailing spaces in newly applied justification text, while interior text and punctuation survive. Distinguish the exact encoded value from the value displayed by the site. Check untouched neighboring controls as well. An unexpected `artifact: null`, exclusion, or browser result is a finding to resolve, not permission to hand-edit the generated URL.
+Follow the [published-package checks](releasing.md#verify-the-published-beta-and-advance-to-stable) first. Then run:
 
-Generate URL B from the same document, adding A's status to `overrides.fields`. Verify that the supplied field values are identical between URLs and only the explicit override list changes. BadgeApp's documented status-override behavior should now replace A's status and paired justification. Open the exact returned URL through a second delivery route, by copying the complete raw URL directly into Chrome's address bar; compare the copied string with `artifact.url` rather than reconstructing it from visible text. Compare the remaining fields again. Each URL starts from the site's saved baseline; do not save between cases. Record any automation notice separately from the proposed changes.
+```sh
+make qa-live PROJECT_ID=14356 LEVEL=silver QA_ARGS='--server /absolute/path/to/bestpractices-mcp --output-dir INTERNAL/live-qa/<version>'
+```
 
-## 2. Chooser, override-all and unknown reset
+`--server` names the executable of the exact installed candidate. Without it the script runs this checkout, which is useful during development but does not qualify a release. `--output-dir` writes `report.md` (results, the criteria chosen and every proposal URL) and `calls.json` (each tool call's arguments and result, and each resource read). `INTERNAL/` is ignored by git; the files hold the project's own answer text and no credentials. The report states the server version and negotiated protocol. Record the distribution identity, OS, browser and date beside it.
 
-These are required compatibility cases, including on subsequent release candidates. Use the candidate’s tool output without hand-editing the URL.
+The script makes about fifteen paced public GETs, stores one empty draft in a temporary directory that it deletes, opens no URL, and exits nonzero when a check fails. `unexercised` is not a failure. It checks:
 
-1. Prepare a mixed-level document with `section: "choose_section"` and `overrides: {"mode":"all"}`. Verify `/choose/edit`, wildcard override encoding, all eligible supplied fields, and per-level applicability/restrictions. Open the exact generated URL, choose each relevant badge section in separate unsaved previews, and verify the proposals and wildcard survive chooser forwarding. Confirm an ordinary known-status override applies and neighboring unspecified answers stay unchanged.
-2. Select two currently `Met` criteria: one with nonempty justification and one with empty justification. `contribution_requirements` and `code_of_conduct` supplied these conditions on 2026-11-16; inspect the actual baseline before using them. Prepare `?` proposals with explicit status overrides and with `all`. Include an unknown-only call. Verify the status remains in each URL and every call produces an artifact plus `unknown_status_reset_unsupported`. Call `validate_draft` for the same section/document and confirm the same warning fields/message and status-unknown skips, without treating unknown as invalid. Preserve any supplied justification independently.
-3. Open the exact URLs and record that the attempted resets retain the known status, including when the original justification is empty. The observed reset failure is expected compatibility behavior despite conflicting upstream documentation; ordinary overrides remain supported. Use generated `Unmet` override proposals on the same controls as positive controls, then discard them. A changed reset result is new evidence requiring review of the shared warning and this expectation, not a reason for the calling agent to probe routinely.
+| Area | Checks |
+| --- | --- |
+| Reads | `tools/list` returns the ten tools. `get_project_status` reports six levels. `get_project_answers` returns a status for every criterion of the level, with none unretrieved. An unknown level is refused with the allowed values. |
+| Proposal URLs A and B | `build_draft` returns the supplied fields unchanged. For each URL every supplied field is `encoded`, the decoded query equals the document exactly (including the spaces, the empty value and role F's matching values), and `overrides` holds only the requested names, so role B's justification is not added. URL B adds role A's status to the overrides and nothing else. |
+| Chooser and override-all | A document with one field from another level, sent with `section: "choose_section"` and `{"mode":"all"}`, produces `/choose/edit` with `overrides=*`, and the other level's field is reported with its level. |
+| Unknown reset | For a saved status with a justification and one without: `?` proposals with named overrides, with `all`, and with no override each produce a URL that keeps the status and carry `unknown_status_reset_unsupported`. `validate_draft` returns the same warning, skips the unknown statuses and reports no findings. An ordinary override of the same fields is generated as a control. |
+| Resources | `resources/list` holds the criteria documents and the repository-file guide, and no project document while no draft is stored. The three templates are listed. The level, category, criterion and guide documents are readable. The project document shows, for every criterion of the level, the status `get_project_answers` returned; the category document holds that category only. Two invalid URIs are refused. After `update_draft` creates a draft, the project's six level documents are listed. |
 
-## 3. Repository file (optional)
+The script does not cover `find_project` or the badge SVG, which `make smoke-live` and `make smoke-badges` exercise, or stored-draft and reconnect behavior, which [Inspector qualification](inspector-qa.md) covers. The resource list-change notification is checked by the automated tests.
+
+Resolve a failed check before the browser half. An unexpected `artifact: null`, exclusion or mismatch is a finding, not permission to hand-edit a generated URL.
+
+## 2. Browser checks
+
+Open the plain edit page for the level and record the starting values with screenshots of every chosen criterion, including neighboring controls. Public JSON is not a substitute for this browser baseline. If the page shows a value that differs from the report's saved status, record the discrepancy and investigate before continuing. The server does not predict form state, and the script does not observe it: the expectations printed in the report restate the role table, which derives from upstream's documented proposal procedures and the earlier browser records.
+
+Each URL starts from the site's saved baseline. Do not save between cases, and record any automation notice separately from the proposed changes.
+
+1. **URL A.** Open it by clicking the link in the rendered `report.md` and compare every chosen control with the role table. Verify BadgeApp's documented trimming of leading and trailing spaces in newly applied justification text, while interior text and punctuation survive. Distinguish the exact encoded value from the value the site displays. Check untouched neighboring controls as well.
+2. **URL B.** Use a second delivery route: copy the complete raw URL into Chrome's address bar, and compare the copied string with the one in the report rather than reconstructing it from visible text. BadgeApp's documented status-override behavior should now replace role A's status and paired justification. Compare the remaining roles again.
+3. **Chooser URL.** Choose each relevant badge section in separate unsaved previews and verify that the proposals and the wildcard survive chooser forwarding. Confirm that an ordinary known-status override applies and neighboring unspecified answers stay unchanged.
+4. **Reset URLs.** Record that each attempted reset retains the saved status, including where the saved justification is empty. This is expected compatibility behavior despite conflicting upstream documentation; ordinary overrides remain supported. A changed result is new evidence requiring review of the shared warning and this expectation, not a reason for a calling agent to probe routinely.
+5. **Control URL.** Confirm that the same controls change to the proposed status, then discard the preview.
+
+## 3. Resources in a host (optional)
+
+The script checks resources at the protocol level. Whether a host offers them to a person is a property of the host, so this case is not required for release. In Claude Code, connected to the candidate:
+
+1. Type `@` and select a listed criteria document, for example `criteria://silver/security`. Confirm that its Markdown is attached.
+2. Ask for an `update_draft` call for a project, then confirm that `project://<project_id>/<level>` appears in the picker and attaches with the saved answers.
+3. Mention a template URI that is not listed, such as `criteria://silver/dco`. In a maintainer's check with Claude Code desktop in November 2026, such a mention arrived without content and without an error, and the model could still read the URI with its resource-reading tool. Record a change in that behavior, because the server instructions describe it.
+
+## 4. Repository file (optional)
 
 This case is not required for release and has not yet been exercised. It checks the claims in the `guide://repository-file` resource, using a repository the tester controls and its registered BadgeApp project.
 
@@ -47,4 +73,6 @@ This case is not required for release and has not yet been exercised. It checks 
 
 ## Completion
 
-Record each case as passed, failed or unexercised, with brief actual-versus-expected notes and screenshots of the baseline and each preview. Discard the previews by opening the plain edit page, and capture the restored controls for each selected case. Confirm their statuses and displayed text match the baseline and that QA text is gone. Identify hidden or uninspected values explicitly. A subsequent `get_project_answers` read should match the earlier saved answers; it supplements rather than replaces the browser restoration check. Retain every exact proposal URL alongside its tool result, including chooser, wildcard and unknown-reset cases. Confirm that no Save/Submit action was performed. The result qualifies the tested candidate, PolicyChecks silver, selected conditions and delivery paths; it does not establish all-level coverage or saved-state behavior. Resolve failures before stable promotion and rerun affected cases after a candidate change.
+Record each case as passed, failed or unexercised, with brief actual-versus-expected notes and screenshots of the baseline and each preview. Do not capture credentials or authentication cookies. Discard the previews by opening the plain edit page, and capture the restored controls for each chosen criterion. Confirm that their statuses and displayed text match the baseline and that the QA text is gone. Identify hidden or uninspected values explicitly. Running the script again should choose the same criteria and report the same saved statuses; this supplements rather than replaces the browser restoration check. Confirm that no Save/Submit action was performed.
+
+The result qualifies the tested candidate, project, level, exercised roles and delivery paths; it does not establish all-level coverage or saved-state behavior. The [first scripted run](live-qa/2026-11-18/README.md) and the earlier [Chrome record](live-qa/2026-11-09/README.md) illustrate useful evidence but do not replace a fresh check. Resolve failures before stable promotion and rerun affected cases after a candidate change.

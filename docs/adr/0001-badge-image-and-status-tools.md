@@ -69,7 +69,7 @@ Reciprocal discovery text for existing `get_project_progress`:
 | “Were my proposed criterion answers saved?” | Detailed saved-answer readback, without a mandatory status preflight. |
 | “Add its badge to the README.” | `get_project_badge_svg`; the host handles the edit. |
 
-These cases informed a [bounded routing exercise](../planning/badge-tools-routing-review.md) on 2026-11-14: a fresh-context subagent chose the intended first tool and arguments for all ten supplied prompts. This single exercise is not a guarantee of routing across hosts or models. Detailed host workflow instructions belong outside the discovery descriptions.
+These cases informed a bounded routing exercise on 2026-11-14: a fresh-context subagent chose the intended first tool and arguments for all ten supplied prompts. Its prompts are kept, mapped to the current tools, in the [tool scenarios](../tool-scenarios.md#routing-prompts). This single exercise is not a guarantee of routing across hosts or models. Detailed host workflow instructions belong outside the discovery descriptions.
 
 ### Scorecard precedent and limits
 

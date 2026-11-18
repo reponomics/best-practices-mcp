@@ -36,11 +36,12 @@ In the web UI, connect over stdio and inspect the ten tools and their input/outp
 | Expected error | After project selection, `read_draft` for its ID in a fresh disposable root returns the structured `draft_not_found` error. Confirm the error code; a disconnected client or malformed request is not a successful negative test. |
 | Stored draft and reconnect | `update_draft` with the selected `project_id` and `changes: {"description_good_justification":"Inspector QA ✨"}` creates a synthetic local draft. Read it, disconnect/reconnect to the same root, and read it again. Confirm the complete draft is preserved. Do not run concurrent writers against that root. |
 | Omitted versus explicit document | Call `validate_draft` with the selected ID and `section: "passing"`, first omitting `draft`, then with `draft: {}`, then with a nonempty explicit document. Check `draft_source.kind` and validation results. `{}` bypasses storage; omitted `draft` reads it. Findings are not operational errors and do not prevent proposal generation. |
-| URL and explicit subset | For live QA, use the document and selected criteria from the [browser runbook](live-browser-qa.md). Supply the returned `draft` explicitly to `prepare_update_url`. For a stored subset, first read the complete draft, construct the desired explicit document while retaining relevant identity fields, generate, and read again to confirm the stored document was not replaced by the subset. |
+| URL and explicit subset | The [browser runbook](live-browser-qa.md)'s script generates the proposal URLs for live QA. Here, build a small document with `build_draft` and supply the returned `draft` explicitly to `prepare_update_url`. For a stored subset, first read the complete draft, construct the desired explicit document while retaining relevant identity fields, generate, and read again to confirm the stored document was not replaced by the subset. |
+| Resources | In the Resources view, the list holds `criteria://levels`, one document per level and per level category, and `guide://repository-file`; three templates are listed. Read `criteria://levels` and a category document as Markdown. After the stored-draft check, refresh the list and confirm that `project://<project_id>/<level>` appears for each of the six levels, then read one. A template URI such as `criteria://silver/dco` is readable without being listed. |
 
 Inspector retains earlier responses, so use the latest successful result for the selected project/document. After an uncertain write outcome, call `read_draft` before deciding whether another update is needed.
 
-Copy the complete `artifact.url` string without JSON quotes, escaping, or truncation. Check `transfer`, `overrides`, and `effective_overrides`; investigate unexpected exclusions or `artifact: null` before proceeding. The browser runbook checks delivery and actual form behavior without saving.
+When copying a URL from Inspector, take the complete `artifact.url` string without JSON quotes, escaping, or truncation. Check `transfer`, `overrides`, and `effective_overrides`; investigate unexpected exclusions or `artifact: null` before proceeding. The browser runbook checks delivery and actual form behavior without saving.
 
 ## Repeatable CLI checks
 
@@ -72,4 +73,4 @@ The pinned upstream [CLI smoke-testing guide](https://github.com/modelcontextpro
 
 ## Completion
 
-For qualification, record each check as passed, failed, or unexercised, with candidate identity and the platforms and interfaces tested. Complete the separate live-browser matrix for proposal application. Stop Inspector before deleting the disposable QA directory, and retain the qualification evidence.
+For qualification, record each check as passed, failed, or unexercised, with candidate identity and the platforms and interfaces tested. Complete the separate [live-browser runbook](live-browser-qa.md) for proposal application. Stop Inspector before deleting the disposable QA directory, and retain the qualification evidence.

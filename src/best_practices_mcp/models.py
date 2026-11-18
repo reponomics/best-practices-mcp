@@ -120,7 +120,7 @@ DistinctIds = Annotated[
 ]
 CRITERION_IDS = (
     "Criterion IDs within level, as listed by get_criteria. Omit to select every criterion "
-    "of the level."
+    "of the level. An ID the level does not define is refused with invalid_criterion."
 )
 
 
@@ -207,7 +207,10 @@ class AnswersInput(ProjectInput):
 
 class BadgeSVGInput(ProjectInput):
     family: BadgeFamily = Field(
-        description="Badge family whose SVG and README snippet to retrieve."
+        description=(
+            'Badge series whose SVG and README snippet to retrieve: "best_practices" is the '
+            'metal series (passing, silver, gold); "baseline" is the Baseline series.'
+        )
     )
 
 
@@ -232,13 +235,16 @@ class DraftSourceInput(ProjectInput):
     null_is_invalid: ClassVar[frozenset[str]] = frozenset({"draft"})
 
     section: Section = Field(
-        description="Badge level, or choose_section for human selection in BadgeApp."
+        description=(
+            "Badge level, with the same six values as level in the read tools, or "
+            "choose_section for human selection in BadgeApp."
+        )
     )
     draft: Draft | MISSING = Field(
         default=MISSING,
         description=(
             "A complete draft to use instead of the stored one. Omit it to use the draft "
-            "saved by update_draft. " + DRAFT_FORMAT
+            "stored by update_draft. " + DRAFT_FORMAT
         ),
     )
 

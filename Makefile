@@ -114,6 +114,13 @@ PROJECT_ID ?= 1
 smoke-live: ## Opt-in paced public GET compatibility check (PROJECT_ID=1)
 	"$(PYTHON)" scripts/smoke_live.py --project-id "$(PROJECT_ID)"
 
+.PHONY: qa-live
+
+LEVEL ?= passing
+QA_ARGS ?=
+qa-live: ## Opt-in live QA of tools and resources for a project's saved answers (PROJECT_ID=1 LEVEL=passing)
+	"$(PYTHON)" scripts/qa_live.py --project-id "$(PROJECT_ID)" --level "$(LEVEL)" $(QA_ARGS)
+
 .PHONY: smoke-badges
 
 smoke-badges: ## Opt-in paced SVG badge compatibility check (PROJECT_ID=1, read-only)

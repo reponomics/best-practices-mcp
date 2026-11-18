@@ -29,7 +29,7 @@
           "type": "string"
         },
         "criterion_ids": {
-          "description": "Criterion IDs within level, as listed by get_criteria. Omit to select every criterion of the level.",
+          "description": "Criterion IDs within level, as listed by get_criteria. Omit to select every criterion of the level. An ID the level does not define is refused with invalid_criterion.",
           "items": {
             "type": "string"
           },
@@ -1170,7 +1170,7 @@
           "type": "string"
         },
         "criterion_ids": {
-          "description": "Criterion IDs within level, as listed by get_criteria. Omit to select every criterion of the level.",
+          "description": "Criterion IDs within level, as listed by get_criteria. Omit to select every criterion of the level. An ID the level does not define is refused with invalid_criterion.",
           "items": {
             "type": "string"
           },
@@ -1555,7 +1555,7 @@
           "type": "integer"
         },
         "family": {
-          "description": "Badge family whose SVG and README snippet to retrieve.",
+          "description": "Badge series whose SVG and README snippet to retrieve: \"best_practices\" is the metal series (passing, silver, gold); \"baseline\" is the Baseline series.",
           "enum": [
             "best_practices",
             "baseline"
@@ -2695,7 +2695,7 @@
           "type": "integer"
         },
         "section": {
-          "description": "Badge level, or choose_section for human selection in BadgeApp.",
+          "description": "Badge level, with the same six values as level in the read tools, or choose_section for human selection in BadgeApp.",
           "enum": [
             "passing",
             "silver",
@@ -2732,7 +2732,7 @@
               }
             ]
           },
-          "description": "A complete draft to use instead of the stored one. Omit it to use the draft saved by update_draft. A flat JSON object in draft format: \"<criterion_id>_status\" is \"Met\", \"Unmet\", \"N/A\" or \"?\"; \"<criterion_id>_justification\" is text; name, description, license and implementation_languages are project metadata.",
+          "description": "A complete draft to use instead of the stored one. Omit it to use the draft stored by update_draft. A flat JSON object in draft format: \"<criterion_id>_status\" is \"Met\", \"Unmet\", \"N/A\" or \"?\"; \"<criterion_id>_justification\" is text; name, description, license and implementation_languages are project metadata.",
           "title": "Draft",
           "type": "object"
         }
@@ -3286,7 +3286,7 @@
           "type": "integer"
         },
         "section": {
-          "description": "Badge level, or choose_section for human selection in BadgeApp.",
+          "description": "Badge level, with the same six values as level in the read tools, or choose_section for human selection in BadgeApp.",
           "enum": [
             "passing",
             "silver",
@@ -3323,7 +3323,7 @@
               }
             ]
           },
-          "description": "A complete draft to use instead of the stored one. Omit it to use the draft saved by update_draft. A flat JSON object in draft format: \"<criterion_id>_status\" is \"Met\", \"Unmet\", \"N/A\" or \"?\"; \"<criterion_id>_justification\" is text; name, description, license and implementation_languages are project metadata.",
+          "description": "A complete draft to use instead of the stored one. Omit it to use the draft stored by update_draft. A flat JSON object in draft format: \"<criterion_id>_status\" is \"Met\", \"Unmet\", \"N/A\" or \"?\"; \"<criterion_id>_justification\" is text; name, description, license and implementation_languages are project metadata.",
           "title": "Draft",
           "type": "object"
         },

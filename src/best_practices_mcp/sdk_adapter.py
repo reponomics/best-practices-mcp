@@ -26,7 +26,7 @@ TITLES = {
     "find_project": "Find BadgeApp project",
     "get_project_status": "Get project status",
     "get_project_answers": "Get saved answers",
-    "get_project_badge_svg": "Get project badge SVG",
+    "get_project_badge_svg": "Get badge SVG and README Markdown",
     "build_draft": "Build draft document",
     "read_draft": "Read stored draft",
     "update_draft": "Update stored draft",
