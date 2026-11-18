@@ -10,11 +10,11 @@ Anyone can propose a change in an issue or a pull request. A decision that shape
 
 ## Roles
 
-| Role | Who | Responsibilities |
+| Role | Responsibilities |
 | --- | --- | --- |
-| Administrator | [@hesreallyhim](https://github.com/hesreallyhim) | Merges changes, publishes releases, handles security and conduct reports, and manages access and settings |
-| Member | [@BittuBarnwal7479](https://github.com/BittuBarnwal7479), [@costajohnt](https://github.com/costajohnt) | Contribute changes and review pull requests |
-| Contributor | Anyone who opens an issue or a pull request | Follows the contributing guide and the [Code of Conduct](../../CODE_OF_CONDUCT.md) |
+| Administrator (@hesreallyhim) | Merges changes, publishes releases, handles security and conduct reports, and manages access and settings |
+| Member | Contribute changes and review pull requests |
+| Contributor | Opens Pull Requests and contributes code and fixes |
 
 Every change reaches `main` through a pull request that passes the [required checks](ci.md#required-checks). Members often review pull requests, and the administrator merges them.
 
