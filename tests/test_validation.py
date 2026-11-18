@@ -1,7 +1,8 @@
-"""Required advisory-validation contract from docs/specification.md §4.
+"""Required advisory-validation contract.
 
-The human-readable predicate cases exercise the agreed minimum length, exact
-comment prefix, and URL-pattern rules independently of upstream implementation.
+The contract is the Validation section of docs/reference/specification.md. The human-readable
+predicate cases exercise the agreed minimum length, exact comment prefix, and URL-pattern rules
+independently of upstream implementation.
 """
 
 import json

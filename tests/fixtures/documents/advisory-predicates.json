@@ -1,5 +1,5 @@
 {
-  "authority": "docs/specification.md section 4: advisory-validation minimum length, exact comment prefix and URL-pattern rules",
+  "authority": "docs/reference/specification.md, Validation section: advisory-validation minimum length, exact comment prefix and URL-pattern rules",
   "cases": [
     {"text": null, "usable": false, "url": false},
     {"text": "", "usable": false, "url": false},

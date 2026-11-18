@@ -97,7 +97,7 @@ def check_archives(dist: Path) -> Path:
             "/.github/.release-please-manifest.json",
         ):
             assert any(name.endswith(suffix) for name in names), suffix
-        assert not any("/docs/live-qa/" in name for name in names)
+        assert not any("/live-qa/" in name for name in names)
         assert not any(name.endswith((".rb", ".erb", ".jbuilder")) for name in names)
     return wheel
 

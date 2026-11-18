@@ -1,5 +1,7 @@
 # Contributing
 
+We strongly invite contributions and there are many ways to support the project and to get involved. One way to do that is simply by using the MCP server to start a badge application. We try to make it easier for people to make progress towards certification; you do not have to wait until you can achieve 100% Passing status to start a badge. If you find this application useful, please [let us know](https://github.com/reponomics/best-practices-mcp/issues/new?template=usage_report).
+
 Report bugs and propose improvements through [GitHub Issues](https://github.com/reponomics/best-practices-mcp/issues). Discuss non-trivial changes in an issue before implementing them, and follow the [Code of Conduct](CODE_OF_CONDUCT.md). For installation and everyday use, see the [README](README.md).
 
 ## Local development
@@ -44,13 +46,13 @@ Use focused checks while developing and additional package checks when relevant:
 | `make test-package` | Build and inspect distributions and test an isolated installed wheel with existing dependencies |
 | `make check-fresh-package` | Install wheel and sdist in fresh environments; permits dependency downloads and writes results to `build/verification/` |
 
-Add or update tests for changed behavior. The [testing policy](docs/testing-policy.md) defines contract and compatibility expectations. CI runs the Python 3.11/3.12 matrix on Linux, macOS and Windows, plus dependency and security checks; see [CI documentation](docs/ci.md).
+Add or update tests for changed behavior. The [testing document](docs/testing/testing.md) defines contract and compatibility expectations. CI runs the Python 3.11/3.12 matrix on Linux, macOS and Windows, plus dependency and security checks; see [CI documentation](docs/maintenance/ci.md).
 
 For optional commit-time checks, run `make setup-hooks` once per clone. Hooks use the development environment; rerun `make setup` after dependency changes. The offline suite runs on every commit, including documentation changes. `make pre-commit-check` runs all hooks against tracked files.
 
-Inspector and live-browser checks are **not required for ordinary contributions**. Maintainers use the [Inspector guide](docs/inspector-qa.md) and [browser runbook](docs/live-browser-qa.md) for release qualification as described in the [release procedure](docs/releasing.md).
+Inspector and live-browser checks are **not required for ordinary contributions**. Maintainers use the [Inspector guide](docs/testing/inspector-qa.md) and [browser runbook](docs/testing/live-browser-qa.md) for release qualification as described in the [release procedure](docs/release/releasing.md).
 
-For optional Linux fuzzing of document parsing and proposal URLs, see the [fuzzing guide](docs/fuzzing.md).
+For optional Linux fuzzing of document parsing and proposal URLs, see the [fuzzing guide](docs/testing/fuzzing.md).
 
 ## Dependencies
 
@@ -64,7 +66,7 @@ make setup
 make validate
 ```
 
-Review and commit both the manifest and lockfile changes. The [dependency inventory](docs/ci.md#dependency-inventory) explains the scanned groups, policy, and tooling pins. OSV runs in CI; installing it locally is optional. See [local dependency scans](docs/ci.md#optional-local-dependency-scans) if you want to run it before pushing.
+Review and commit both the manifest and lockfile changes. [Dependencies](docs/maintenance/dependencies.md) explains the policy, the groups and the scans. OSV runs in CI; installing it locally is optional. See [scanning](docs/maintenance/dependencies.md#scanning) if you want to run it before pushing.
 
 ## Connect a host to a development checkout
 
@@ -82,7 +84,7 @@ After `make setup`, configure your MCP host to launch the checkout's absolute ex
 
 On Windows, use `.venv\Scripts\bestpractices-mcp.exe` and escape backslashes in JSON. Starting the executable without arguments waits for MCP messages; `--help` and `--version` provide CLI information. Keep stdout reserved for protocol traffic and send diagnostics to stderr.
 
-Use a disposable absolute `BESTPRACTICES_DATA_DIR` for manual storage tests. The [README](README.md#optional-draft-storage) describes storage configuration. For interactive debugging without an assistant, follow the optional [Inspector setup](docs/inspector-qa.md#launch-inspector).
+Use a disposable absolute `BESTPRACTICES_DATA_DIR` for manual storage tests. The [README](README.md#optional-draft-storage) describes storage configuration. For interactive debugging without an assistant, follow the optional [Inspector setup](docs/testing/inspector-qa.md#launch-inspector).
 
 ## Submit a pull request
 
@@ -94,7 +96,7 @@ Contributions must comply with the [Developer Certificate of Origin](docs/DCO.tx
 
 ## Specialized work
 
-- [Upstream maintenance](docs/upstream-compatibility.md#checking-for-upstream-changes): compare and refresh the bundled BadgeApp sources.
-- [CI and dependency tooling](docs/ci.md): workflow behavior, scanner policy and toolchain updates.
-- [Release procedure](docs/releasing.md): package qualification and publication.
+- [Upstream maintenance](docs/maintenance/upstream-updates.md): compare and refresh the bundled BadgeApp sources.
+- [CI and dependency tooling](docs/maintenance/ci.md): workflow behavior, scanner policy and toolchain updates.
+- [Release procedure](docs/release/releasing.md): package qualification and publication.
 - [Documentation index](docs/README.md): architecture, contracts and other reference material.

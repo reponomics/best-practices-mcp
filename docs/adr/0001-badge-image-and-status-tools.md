@@ -1,8 +1,8 @@
 # ADR 0001: Separate badge images from compact status observations
 
-- **Status:** Accepted for implementation by the user on 2026-11-14; implemented by the two badge tools. Superseded in part on 2026-11-18: `get_project_badge_status` was replaced by `get_project_status`, which reads the full project record, and `get_project_progress` became `get_project_answers`. The SVG decision stands. The text below is the original record; see the [contract](../contracts.md#read-selection-and-migration) for the current tools.
+- **Status:** Accepted for implementation by the user on 2026-11-14; implemented by the two badge tools. Superseded in part on 2026-11-18: `get_project_badge_status` was replaced by `get_project_status`, which reads the full project record, and `get_project_progress` became `get_project_answers`. The SVG decision stands. The text below is the original record; see the [contract](../reference/contracts.md#tools) for the current tools.
 - **Date:** 2026-11-13
-- **Related:** [Roadmap](../roadmap.md#priority-2-separate-badge-image-and-quick-status-tools), [human-review boundary](../design.md#prepare-changes-leave-the-final-save-to-the-human), [current tool specification](../specification.md).
+- **Related:** [Roadmap](../planning/api-coverage.md#priority-2-separate-badge-image-and-quick-status-tools), [human-review boundary](../reference/design.md#prepare-changes-leave-the-final-save-to-the-human), [current tool specification](../reference/specification.md).
 
 ## Context
 
@@ -42,7 +42,7 @@ Progress and update time belong together because they answer one question about 
 
 ### Reviewed discovery descriptions
 
-Here, “combined” means badge state, progress and update time in one status observation. SVG retrieval remains a separate tool. The reviewed descriptions below define the discovery boundaries; exact result schemas are in the [implementation contract](../contracts.md#project-status-and-svg-artifacts).
+Here, “combined” means badge state, progress and update time in one status observation. SVG retrieval remains a separate tool. The reviewed descriptions below define the discovery boundaries; exact result schemas are in the [implementation contract](../reference/contracts.md#tools).
 
 **Name:** `get_project_badge_status`. **Title:** Get project badge status.
 
@@ -69,7 +69,7 @@ Reciprocal discovery text for existing `get_project_progress`:
 | “Were my proposed criterion answers saved?” | Detailed saved-answer readback, without a mandatory status preflight. |
 | “Add its badge to the README.” | `get_project_badge_svg`; the host handles the edit. |
 
-These cases informed a bounded routing exercise on 2026-11-14: a fresh-context subagent chose the intended first tool and arguments for all ten supplied prompts. Its prompts are kept, mapped to the current tools, in the [tool scenarios](../tool-scenarios.md#routing-prompts). This single exercise is not a guarantee of routing across hosts or models. Detailed host workflow instructions belong outside the discovery descriptions.
+These cases informed a bounded routing exercise on 2026-11-14: a fresh-context subagent chose the intended first tool and arguments for all ten supplied prompts. Its prompts are kept, mapped to the current tools, in the [tool scenarios](../reference/tool-scenarios.md#routing-prompts). This single exercise is not a guarantee of routing across hosts or models. Detailed host workflow instructions belong outside the discovery descriptions.
 
 ### Scorecard precedent and limits
 

@@ -24,7 +24,7 @@ OSV-Scanner and Dependabot report known vulnerabilities in dependencies, and Cod
 
 No release is published while a critical or high finding is open. A finding that does not affect best-practices-mcp may be suppressed only with a recorded reason, given in the code scanning dismissal or the scanner's ignore entry.
 
-When a vulnerability in a dependency of the released package does not affect best-practices-mcp, the project records that in the OpenVEX document `vex/best-practices-mcp.openvex.json`, with the affected best-practices-mcp versions, the status `not_affected`, a justification, and an explanation, before suppressing the finding. [`vex/best-practices-mcp.openvex.example.json`](./vex/best-practices-mcp.openvex.example.json) shows the format.
+When a vulnerability in a dependency of the released package does not affect best-practices-mcp, the project records that in the OpenVEX document `vex/best-practices-mcp.openvex.json`, with the affected best-practices-mcp versions, the status `not_affected`, a justification, and an explanation, before suppressing the finding. [`vex/best-practices-mcp.openvex.example.json`](vex/best-practices-mcp.openvex.example.json) shows the format.
 
 ## Supported versions
 

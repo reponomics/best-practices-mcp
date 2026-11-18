@@ -80,7 +80,7 @@ jobs:
         run: |
           uv sync --locked --only-group verification-tools --no-install-project --python 3.11 \
             2>&1 | tee -a "$RUNNER_TEMP/release-verification/setup.log"
-      # Keep these commands aligned with docs/verification.md, sections 1–4.
+      # Keep these commands aligned with docs/release/verification.md, sections 1–4.
       # Human inspection of publisher metadata and scan reports remains manual.
       - name: 1. Download and authenticate release assets
         run: |

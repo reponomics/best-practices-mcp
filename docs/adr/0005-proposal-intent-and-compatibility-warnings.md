@@ -1,6 +1,6 @@
 # ADR 0005: Express proposal intent and report upstream limitations
 
-Status: Accepted and implemented. Date: 2026-11-16. See the [implementation qualification](../live-qa/2026-11-16/proposal-interface.md).
+Status: Accepted and implemented. Date: 2026-11-16. See the [implementation qualification](../testing/live-qa/2026-11-16/proposal-interface.md).
 
 ## Context and observations
 

@@ -165,8 +165,8 @@ def report_body(report: Report) -> str:
         [
             "",
             "Follow [the review and update procedure](https://github.com/"
-            "reponomics/best-practices-mcp/blob/main/docs/"
-            "upstream-compatibility.md#checking-for-upstream-changes).",
+            "reponomics/best-practices-mcp/blob/main/docs/maintenance/"
+            "upstream-updates.md#reviewing-an-update).",
         ]
     )
     return "\n".join(lines) + "\n"

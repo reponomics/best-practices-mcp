@@ -9,4 +9,4 @@ recursive-include scripts *.py
 recursive-include tests *.py *.json *.txt
 recursive-include vendor/badgeapp *
 recursive-include src/best_practices_mcp/data *.json *.txt
-prune docs/live-qa
+prune docs/testing/live-qa

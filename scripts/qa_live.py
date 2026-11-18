@@ -1,10 +1,10 @@
 """Opt-in live QA of the tools and resources against a project's current saved answers.
 
-This is the tool half of docs/live-browser-qa.md. It assigns the runbook's roles to whichever
-criteria meet their conditions when it runs, so it does not depend on an application staying
-partly complete; a condition that no criterion meets is reported as unexercised. It makes paced
-public GETs through the server, stores a draft only in a temporary directory, and opens no URL:
-the report lists each proposal URL with what a signed-in person should see on the form.
+This is the tool half of docs/testing/live-browser-qa.md. It assigns the runbook's roles to
+whichever criteria meet their conditions when it runs, so it does not depend on an application
+staying partly complete; a condition that no criterion meets is reported as unexercised. It makes
+paced public GETs through the server, stores a draft only in a temporary directory, and opens no
+URL: the report lists each proposal URL with what a signed-in person should see on the form.
 """
 
 import argparse

@@ -8,7 +8,7 @@ The product is a stdio MCP server. `examples/host.py` is a separate interactive 
 
 The MCP project's [Inspector](https://github.com/modelcontextprotocol/inspector/tree/4d3464cb3a6dde609d7b5ac24c440b947eb40f23) already provides an independent client for discovery and tool invocation. This repository already documents Inspector 2.14.0, tests real MCP subprocesses, and checks freshly installed wheels and source distributions directly through the SDK. Keeping a custom interactive host adds little value relative to these facilities.
 
-[ADR 0003](0003-remove-console-script-tool.md) deliberately preserved the host and its coverage during removal of the console-script tool. This decision addresses the deferred slice. The [surface and coverage audit](../reference-host-removal-audit.md) records the affected files, surviving guarantees, and implementation checks against `252b16e` on main. No new release is required to make this decision.
+[ADR 0003](0003-remove-console-script-tool.md) deliberately preserved the host and its coverage during removal of the console-script tool. This decision addresses the deferred slice. The [surface and coverage audit](../archive/reference-host-removal-audit.md) records the affected files, surviving guarantees, and implementation checks against `252b16e` on main. No new release is required to make this decision.
 
 ## Decision
 
@@ -39,7 +39,7 @@ No Python dependency exists solely for the host: it uses the standard library an
 
 Inspector remains an externally installed, exactly versioned maintainer tool, optional for ordinary contributors. It becomes the documented manual independent-client qualification route before promotion to stable and for relevant release candidates. This slice does not add Node/npm to standard setup, pre-commit, CI, package dependencies, or release inventories. A future mandatory Inspector CI job would require its own dependency/inventory and failure-policy decision. Manual Inspector results must not be represented as covered by this project's OSV scans or release attestations merely because Inspector was used.
 
-The deferred coverage-instrumentation question in [the coverage review](../coverage-review.md) must be reassessed, but removing the host does not remove the SDK's filtered subprocess environment. Retain working subprocess coverage instrumentation for this slice; do not fold an unrelated warning fix into the removal or silently reduce measured server coverage.
+The deferred coverage-instrumentation question in [the coverage review](../archive/coverage-review.md) must be reassessed, but removing the host does not remove the SDK's filtered subprocess environment. Retain working subprocess coverage instrumentation for this slice; do not fold an unrelated warning fix into the removal or silently reduce measured server coverage.
 
 ## Implementation acceptance
 

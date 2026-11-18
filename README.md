@@ -37,7 +37,7 @@ Reload the host's MCP connections, then try a request such as:
 
 > Find the BadgeApp project for https://github.com/reponomics/PolicyChecks and show its silver-level progress. Do not prepare any changes yet.
 
-Starting the executable directly in a terminal waits for MCP messages; it is not an interactive CLI. See [Contributing](CONTRIBUTING.md) for development setup or the [Inspector guide](docs/inspector-qa.md) for interactive debugging.
+Starting the executable directly in a terminal waits for MCP messages; it is not an interactive CLI. See [Contributing](CONTRIBUTING.md) for development setup or the [Inspector guide](docs/testing/inspector-qa.md) for interactive debugging.
 
 ## Tools
 
@@ -54,14 +54,14 @@ Starting the executable directly in a terminal waits for MCP messages; it is not
 | `validate_draft` | Check supplied answers against the bundled criteria's mechanical requirements. | Offline; may read a stored draft |
 | `prepare_update_url` | Generate a proposed edit-page URL and report included/excluded fields. | Public BadgeApp GETs; no remote write |
 
-See the [tool specification](docs/specification.md) and [payload contracts](docs/contracts.md) for arguments, results and errors.
+See the [tool specification](docs/reference/specification.md) and [payload contracts](docs/reference/contracts.md) for arguments, results and errors.
 
 ## Usage notes
 
 - **Compatibility:** Python 3.11 is the supported minimum. The CI compatibility matrix targets Python 3.11/3.12 on Linux, macOS and Windows. The protocol baseline is MCP `2026-07-28`; transport is stdio. Node and Ruby are not required to run the server.
-- **Catalog and language:** criteria are bundled from a pinned upstream revision, not fetched live. The current catalog is English and generated edit links use English paths. Translation support is [proposed](docs/roadmap.md#proposed).
+- **Catalog and language:** criteria are bundled from a pinned upstream revision, not fetched live. The current catalog is English and generated edit links use English paths. Translation support is [proposed](docs/planning/roadmap.md#proposed).
 - **Validation is advisory:** it checks mechanical requirements, not whether claims are true or evidence is sufficient. Validation is optional and does not gate artifact generation.
-- **Review in the browser:** artifacts include eligible supplied fields even when they match saved values. Reports describe what was included or excluded, not what BadgeApp will retain or save. BadgeApp documents trimming leading/trailing whitespace from URL-proposed justifications. See [transfer rules](docs/transfer-rules.md) for override behavior.
+- **Review in the browser:** artifacts include eligible supplied fields even when they match saved values. Reports describe what was included or excluded, not what BadgeApp will retain or save. BadgeApp documents trimming leading/trailing whitespace from URL-proposed justifications. See [transfer rules](docs/reference/transfer-rules.md) for override behavior.
 - **Authentication stays in your browser:** public reads need no BadgeApp credentials. Applying proposals requires your own authenticated session and appropriate project permissions.
 
 ### Project status and README images
@@ -82,7 +82,7 @@ Default storage locations are:
 | Linux | `$XDG_DATA_HOME/bestpractices-mcp` when XDG is absolute; otherwise `~/.local/share/bestpractices-mcp` |
 | Windows | `%LOCALAPPDATA%/bestpractices-mcp` |
 
-To choose another location, set `BESTPRACTICES_DATA_DIR` in the server's environment through your MCP host. Use an absolute path; `~` is not expanded. Avoid simultaneous writers from separate server processes or external editors to the same project draft. After an uncertain update result, use `read_draft` before deciding whether to issue another patch. See [persistence boundaries](docs/architecture.md#optional-local-persistence).
+To choose another location, set `BESTPRACTICES_DATA_DIR` in the server's environment through your MCP host. Use an absolute path; `~` is not expanded. Avoid simultaneous writers from separate server processes or external editors to the same project draft. After an uncertain update result, use `read_draft` before deciding whether to issue another patch. See [persistence boundaries](docs/reference/architecture.md#draft-store).
 
 If you prefer a dot directory in your home directory, add an `env` entry to the server configuration, for example `"env": {"BESTPRACTICES_DATA_DIR": "/home/yourname/.bestpractices-mcp"}`. Replace that example with your actual absolute home path (on macOS, typically `/Users/yourname/.bestpractices-mcp`). Changing the setting does not move existing drafts: either keep using their original directory or stop the server instances and move the existing `projects` directory into the new data directory, taking care not to overwrite drafts already there.
 
@@ -95,14 +95,14 @@ Reports are voluntary and self-reported. We may summarize them in the [interacti
 ## Documentation
 
 - [Documentation index](docs/README.md): the complete guide to maintained documentation and historical records.
-- [Design](docs/design.md) and [architecture](docs/architecture.md): responsibilities, data flow and the human-review boundary.
-- [Specification](docs/specification.md) and [contracts](docs/contracts.md): tool behavior, exact payloads and operational limits.
-- [Upstream compatibility](docs/upstream-compatibility.md), [transfer rules](docs/transfer-rules.md) and [schema compatibility](docs/schema-compatibility.md): supported procedures and interoperability details.
+- [Design](docs/reference/design.md) and [architecture](docs/reference/architecture.md): responsibilities, data flow and the human-review boundary.
+- [Specification](docs/reference/specification.md) and [contracts](docs/reference/contracts.md): tool behavior, exact payloads and operational limits.
+- [Upstream compatibility](docs/reference/upstream-compatibility.md), [transfer rules](docs/reference/transfer-rules.md) and [schema compatibility](docs/reference/schema-compatibility.md): supported procedures and interoperability details.
 - [Contributing](CONTRIBUTING.md): development setup, validation and submitting changes.
-- [Live browser QA](docs/live-browser-qa.md): a supervised check of generated artifacts against BadgeApp.
-- [Release procedure](docs/releasing.md): qualification, publication and release QA.
-- [Release verification](docs/verification.md): verify downloaded assets, publisher identity, provenance and SBOMs, and understand the limits of these claims.
-- [Roadmap](docs/roadmap.md): planned work and proposals under consideration.
+- [Live browser QA](docs/testing/live-browser-qa.md): a supervised check of generated artifacts against BadgeApp.
+- [Release procedure](docs/release/releasing.md): qualification, publication and release QA.
+- [Release verification](docs/release/verification.md): verify downloaded assets, publisher identity, provenance and SBOMs, and understand the limits of these claims.
+- [Roadmap](docs/planning/roadmap.md): planned work and proposals under consideration.
 
 ## License
 
