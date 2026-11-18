@@ -141,7 +141,7 @@ def test_subprocess_coverage_preserves_reports_when_native_threshold_fails(tmp_p
     expected = {
         "return get_criteria(**values)",
         "return await client.find_project(**values)",
-        "return await client.get_project_progress(**values)",
+        "return await client.get_project_answers(**values)",
     }
     dispatch_lines = {
         index

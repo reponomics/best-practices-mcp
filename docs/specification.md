@@ -93,7 +93,7 @@ Incomplete answers are allowed in storage. Invalid types and status values are e
 
 ### Project identity
 
-Every project-specific public read, stored-draft operation, and generator requires an explicit positive integer `project_id`. The host first resolves and verifies the registered project through `find_project` or `get_project_progress`, then passes the same ID throughout that application's workflow. A remembered numeric ID must be verified before beginning work in a new workflow. Local draft operations remain local: they validate the ID's representation but do not add a network lookup on every edit or require a server-side registration session. The host is responsible for satisfying the registration precondition.
+Every project-specific public read, stored-draft operation, and generator requires an explicit positive integer `project_id`. The host first resolves and verifies the registered project through `find_project` or `get_project_status`, then passes the same ID throughout that application's workflow. A remembered numeric ID must be verified before beginning work in a new workflow. Local draft operations remain local: they validate the ID's representation but do not add a network lookup on every edit or require a server-side registration session. The host is responsible for satisfying the registration precondition.
 
 For stored drafts, the project directory provides the association. No identity envelope is added to the flat document. Explicit documents use the supplied `project_id` as the target; they do not inherit an association from any stored file. `build_draft` remains a pure transformation without an ID argument, but the host's registration prerequisite still applies to application work using it.
 
@@ -111,8 +111,8 @@ The signatures below describe domain inputs and outputs, not raw MCP wire envelo
 | ----------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `get_criteria`          | `level?`, `criterion_ids?`, `category?`, `detail?`    | Level summaries when no level is supplied; otherwise an index of the level's criteria, or selected definitions, requirements, canonical fields, and catalog provenance. Local catalog read. |
 | `find_project`          | `query`, `page=1`                                     | Candidate IDs, names, repository/homepage URLs, match basis, and pagination. Public network read.                                                                      |
-| `get_project_progress`  | `project_id`, `level?`, `criterion_ids?`, `statuses?`, `include_justifications=true` | Saved answers and explanations for the matching criteria, summaries, public metadata, and observation provenance. Public network read. |
-| `get_project_badge_status` | `project_id`, `family="best_practices"` | Compact badge-family state/progress, project-record update time and observation metadata. One public JSON read. |
+| `get_project_status`    | `project_id`                                          | Badge level, per-level percentage and achievement dates, and project-record update time. Public network read. |
+| `get_project_answers`   | `project_id`, `level`, `criterion_ids?`, `statuses?`, `include_justifications=true` | Saved answers and explanations for the matching criteria of one level, with observation provenance. Public network read. |
 | `get_project_badge_svg` | `project_id`, `family` | SVG text artifact, dynamic image URL, project-page link and Markdown snippet. One public SVG read; no repository edit. |
 | `build_draft`           | `draft`, `changes={}`                                 | Updated document, structural validation issues, and serialized byte count. Pure transformation. Use `{}` to create a document.                                         |
 | `read_draft`            | `project_id`                                          | Complete project document, location, and structural validation issues. Local read.                                                                                     |
@@ -120,7 +120,7 @@ The signatures below describe domain inputs and outputs, not raw MCP wire envelo
 | `validate_draft`        | `project_id`, `section`, `draft?`                       | Structured findings from mechanical criterion checks, with checked/skipped scope and catalog provenance. Local catalog/document read; no network or writes.            |
 | `prepare_update_url`    | `project_id`, `section`, `draft?`, `overrides={"mode":"none"}` | One exact proposal URL with encoded byte length, or no artifact with an explicit reason, plus a field-level transfer report. Public network read; optional local read. |
 
-The two section-aware tools, `get_criteria` and `get_project_progress` return success schema version 2. Their shared error payloads and other tools remain version 1; see the [read](contracts.md#read-selection-and-migration) and [proposal](contracts.md#proposal-interface-migration) migration notes.
+The two section-aware tools and `get_criteria` return success schema version 2. Their shared error payloads and other tools remain version 1; see the [read](contracts.md#read-selection-and-migration) and [proposal](contracts.md#proposal-interface-migration) migration notes.
 
 The tool list does not depend on which projects have local files. Separate resource templates and draft-listing tools are not needed for initial completeness; hosts select projects through BadgeApp lookup rather than through local draft discovery.
 
@@ -130,17 +130,17 @@ The tool list does not depend on which projects have local files. Separate resou
 
 `find_project` treats an HTTP(S) URL as an exact repository/homepage URL query, a positive numeric identifier as an ID lookup, and other text as a textual search. Return candidates rather than selecting the first match. URL queries do not fetch the supplied URL itself. Do not restrict discovery to GitHub or claim that arbitrary URL spellings are equivalent. Preserve upstream pagination; return `next_page` when known and explicitly mark uncertainty instead of inventing a total or completeness claim. Zero matches is a normal empty result. The [BadgeApp API](https://github.com/ossf/best-practices-badge/blob/main/docs/api.md) documents `.json` resources, exact URL queries, textual search, and paginated results.
 
-`get_project_progress` without a level returns available level summaries and project metadata. With a level, it returns a flat `answers` object suitable for document operations and the IDs of the matching criteria. Optional criterion and status filters narrow the result and require a level; the `absent` status selects criteria with no saved status. Justification text can be left out. Include project identity separately so hosts need not parse prose. Read-only operations never initialize or modify a draft.
+`get_project_answers` requires a level and returns a flat `answers` object suitable for document operations. Optional criterion and status filters narrow the result. A status missing from the public record is reported separately as not retrieved; it is never treated as `?` or matched by a filter. Justification text can be left out. Include project identity separately so hosts need not parse prose. Read-only operations never initialize or modify a draft.
 
-### Badge status and image retrieval
+### Project status and badge image retrieval
 
-Both badge tools accept `family` as `best_practices` or `baseline`. `get_project_badge_status` defaults an omitted family to `best_practices` and returns the effective family; `get_project_badge_svg` requires a family. Each retrieves one representation from one allowlisted endpoint with no full-record lookup or automatic call to the other tool. [ADR 0001](adr/0001-badge-image-and-status-tools.md) records the action boundaries and reviewed discovery descriptions.
+`get_project_status` answers any question about where a project stands, with one read of the project's public record. It returns project identity, the Best Practices badge level as BadgeApp reports it, and for each of the six levels the reported percentage with the times BadgeApp recorded the level as achieved and, if ever, lost. It also returns the project-record update time. Every value is copied from the record: missing values are null, no state is derived from a percentage, and a field of an unexpected type is an invalid upstream response. The name states the question it answers so that it cannot be mistaken for `get_project_answers`, which returns saved answers and no status figures.
 
-`get_project_badge_status` returns compact project identity, the raw upstream badge value, a recognized/unknown state, the family-specific progress measure and the upstream project-record update time. Best Practices reports tiered progress; Baseline reports level-1 completion, even if a higher badge is earned. Missing values remain unknown and unrecognized badge strings remain visible. The result explicitly distinguishes a valid, missing or malformed timestamp string from the MCP fetch time. Badge endpoints do not supply project-entry attribution/license, so the observation identifies service credit separately and leaves those record fields null.
+The compact `badge.json` and `baseline.json` endpoints are not read. They carry one family's badge value and a single percentage, which the full record supersedes with per-level figures; the larger upstream response is a cost between this server and BadgeApp only, since the tool result stays small. [ADR 0001](adr/0001-badge-image-and-status-tools.md) records the earlier design that used them.
 
-`get_project_badge_svg` returns the original decoded SVG text as a bounded artifact with media type and UTF-8 byte count, together with the dynamic image URL, project-page URL and Markdown embed snippet. The server validates the content type, UTF-8 encoding and SVG XML root, rejects DTD/entity declarations, and neither renders nor sanitizes the image. The artifact is data in the structured response and JSON text fallback. The host decides whether to insert the snippet or save the SVG; downloaded SVG is a snapshot, while a dynamic URL can follow later badge changes. Neither badge tool touches drafts or repository files.
+`get_project_badge_svg` requires a `family` of `best_practices` or `baseline` and returns the original decoded SVG text as a bounded artifact with media type and UTF-8 byte count, together with the dynamic image URL, project-page URL and Markdown embed snippet. The server validates the content type, UTF-8 encoding and SVG XML root, rejects DTD/entity declarations, and neither renders nor sanitizes the image. The artifact is data in the structured response and JSON text fallback. The host decides whether to insert the snippet or save the SVG; downloaded SVG is a snapshot, while a dynamic URL can follow later badge changes. The SVG endpoint supplies no project-entry attribution or license, so its observation identifies service credit separately. The tool touches neither drafts nor repository files.
 
-Use `get_project_progress` for all-six-level percentages, individual-level progress such as silver or Baseline level 2/3, and saved criterion answers. `updated_at` reports the project-record update time and can help an agent decide when to inspect changes. Comparing specific proposed values requires the saved answers supplied by `get_project_progress`. This is a difference in available detail; no relative freshness ordering between the endpoints has been established.
+`updated_at` reports the project-record update time and can help an agent decide when to inspect changes. Comparing specific proposed values requires the saved answers supplied by `get_project_answers`.
 
 ### Document mutation details
 
@@ -250,7 +250,7 @@ Keep `read_draft(project_id)` as a complete-document read. A draft holds only wh
 ### Host-owned document
 
 1. `find_project(query="https://example.org/project")` returns candidate IDs. The host selects the correct registered entry. If there is no match, the user registers the project in BadgeApp and the host repeats lookup before proceeding.
-2. `get_project_progress(project_id=123, level="passing")` returns saved answers.
+2. `get_project_answers(project_id=123, level="passing")` returns saved answers.
 3. `get_criteria(level="passing", criterion_ids=["description_good"])` supplies official requirements.
 4. The host develops an answer with the user and calls `build_draft(draft={}, changes={...})`.
 5. `prepare_update_url(project_id=123, section="passing", draft={...})` returns proposals and any omissions.
@@ -264,7 +264,7 @@ No storage environment variable or local checkout is required.
 2. `read_draft(project_id=123)` optionally retrieves the existing document; a missing file returns `draft_not_found`.
 3. `update_draft(project_id=123, changes={...})` applies a small patch, creating the project draft if absent. Step 2 is not a prerequisite.
 4. `prepare_update_url(project_id=123, section="passing")` reads that file without retransmitting it through tool arguments.
-5. After any save performed by the host/user, `get_project_progress` can inspect the actual saved result. This does not synchronize the local draft automatically.
+5. After any save performed by the host/user, `get_project_answers` can inspect the actual saved result. This does not synchronize the local draft automatically.
 
 Restarting the server preserves each project's draft. After resolving the registered project, the host reads its draft by ID. Working on project 456 selects a different file without restarting or reconfiguring the server. There is no handle to reopen, active-project session to recover, or hidden draft copy.
 

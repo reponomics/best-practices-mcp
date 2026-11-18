@@ -86,18 +86,67 @@
       }
     }
   },
-  "get_project_progress": {
+  "get_project_status": {
+    "input": {
+      "project_id": 123
+    },
+    "success": {
+      "schema_version": 1,
+      "project": {
+        "project_id": 123,
+        "name": "Example",
+        "repo_url": "https://example.org/project",
+        "homepage_url": null
+      },
+      "badge_level": "passing",
+      "levels": [
+        {
+          "level": "passing",
+          "percentage": 100,
+          "achieved_at": "2026-10-01T09:00:00.000Z",
+          "lost_at": null
+        },
+        {
+          "level": "silver",
+          "percentage": 12.5,
+          "achieved_at": null,
+          "lost_at": null
+        }
+      ],
+      "updated_at": "2026-11-13T12:34:56.000Z",
+      "observation": {
+        "project_id": 123,
+        "source_url": "https://www.bestpractices.dev/en/projects/123.json",
+        "fetched_at": "2026-11-09T00:00:00Z",
+        "attribution": null,
+        "license": null
+      }
+    },
+    "error": {
+      "schema_version": 1,
+      "error": {
+        "code": "invalid_document",
+        "message": "Invalid document.",
+        "details": {
+          "field": "example_status"
+        },
+        "recovery": "Correct the input and try again.",
+        "retry_after_seconds": null
+      }
+    }
+  },
+  "get_project_answers": {
     "input": {
       "project_id": 123,
       "level": "passing",
       "statuses": [
         "Met",
-        "absent"
+        "?"
       ],
       "include_justifications": false
     },
     "success": {
-      "schema_version": 2,
+      "schema_version": 1,
       "project": {
         "project_id": 123,
         "name": "Example",
@@ -105,19 +154,10 @@
         "homepage_url": null
       },
       "level": "passing",
-      "summaries": [
-        {
-          "level": "passing",
-          "upstream_percentage": null
-        }
-      ],
       "answers": {
         "description_good_status": "Met"
       },
-      "criterion_ids": [
-        "contribution",
-        "description_good"
-      ],
+      "statuses_not_retrieved": [],
       "level_criterion_count": 67,
       "observation": {
         "project_id": 123,
@@ -131,8 +171,49 @@
         "source_url": "https://github.com/ossf/best-practices-badge",
         "generated_at": "2026-11-09T00:00:00Z",
         "format_version": 1
+      }
+    },
+    "error": {
+      "schema_version": 1,
+      "error": {
+        "code": "invalid_document",
+        "message": "Invalid document.",
+        "details": {
+          "field": "example_status"
+        },
+        "recovery": "Correct the input and try again.",
+        "retry_after_seconds": null
+      }
+    }
+  },
+  "get_project_badge_svg": {
+    "input": {
+      "project_id": 123,
+      "family": "best_practices"
+    },
+    "success": {
+      "schema_version": 1,
+      "project_id": 123,
+      "family": "best_practices",
+      "image_url": "https://www.bestpractices.dev/projects/123/badge.svg",
+      "project_url": "https://www.bestpractices.dev/en/projects/123/passing",
+      "markdown": "[![OpenSSF Best Practices — project 123](https://www.bestpractices.dev/projects/123/badge.svg)](https://www.bestpractices.dev/en/projects/123/passing)",
+      "artifact": {
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\"><text>Passing</text></svg>\n",
+        "media_type": "image/svg+xml",
+        "suggested_filename": "bestpractices-123-badge.svg",
+        "encoded_size_bytes": 67
       },
-      "summary_metadata": {}
+      "observation": {
+        "source_url": "https://www.bestpractices.dev/projects/123/badge.svg",
+        "fetched_at": "2026-11-14T00:00:00Z",
+        "service_attribution": "OpenSSF Best Practices badge contributors",
+        "project_entry_attribution": null,
+        "project_entry_license": null
+      },
+      "caveats": [
+        "Synthetic SVG snapshot; embed the dynamic URL for future badge changes."
+      ]
     },
     "error": {
       "schema_version": 1,
@@ -353,92 +434,6 @@
           "name"
         ]
       }
-    },
-    "error": {
-      "schema_version": 1,
-      "error": {
-        "code": "invalid_document",
-        "message": "Invalid document.",
-        "details": {
-          "field": "example_status"
-        },
-        "recovery": "Correct the input and try again.",
-        "retry_after_seconds": null
-      }
-    }
-  },
-  "get_project_badge_status": {
-    "input": {
-      "project_id": 123
-    },
-    "success": {
-      "schema_version": 1,
-      "project": {
-        "project_id": 123,
-        "name": "Synthetic project"
-      },
-      "family": "best_practices",
-      "badge_level": "passing",
-      "badge_state": "earned",
-      "progress": {
-        "field": "tiered_percentage",
-        "value": 120,
-        "level": null
-      },
-      "updated_at": "2026-11-13T12:34:56Z",
-      "updated_at_status": "valid",
-      "observation": {
-        "source_url": "https://www.bestpractices.dev/projects/123/badge.json",
-        "fetched_at": "2026-11-14T00:00:00Z",
-        "service_attribution": "OpenSSF Best Practices badge contributors",
-        "project_entry_attribution": null,
-        "project_entry_license": null
-      },
-      "caveats": [
-        "Synthetic fixture; update time does not prove saved-answer acceptance."
-      ]
-    },
-    "error": {
-      "schema_version": 1,
-      "error": {
-        "code": "invalid_document",
-        "message": "Invalid document.",
-        "details": {
-          "field": "example_status"
-        },
-        "recovery": "Correct the input and try again.",
-        "retry_after_seconds": null
-      }
-    }
-  },
-  "get_project_badge_svg": {
-    "input": {
-      "project_id": 123,
-      "family": "best_practices"
-    },
-    "success": {
-      "schema_version": 1,
-      "project_id": 123,
-      "family": "best_practices",
-      "image_url": "https://www.bestpractices.dev/projects/123/badge.svg",
-      "project_url": "https://www.bestpractices.dev/en/projects/123/passing",
-      "markdown": "[![OpenSSF Best Practices — project 123](https://www.bestpractices.dev/projects/123/badge.svg)](https://www.bestpractices.dev/en/projects/123/passing)",
-      "artifact": {
-        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\"><text>Passing</text></svg>\n",
-        "media_type": "image/svg+xml",
-        "suggested_filename": "bestpractices-123-badge.svg",
-        "encoded_size_bytes": 67
-      },
-      "observation": {
-        "source_url": "https://www.bestpractices.dev/projects/123/badge.svg",
-        "fetched_at": "2026-11-14T00:00:00Z",
-        "service_attribution": "OpenSSF Best Practices badge contributors",
-        "project_entry_attribution": null,
-        "project_entry_license": null
-      },
-      "caveats": [
-        "Synthetic SVG snapshot; embed the dynamic URL for future badge changes."
-      ]
     },
     "error": {
       "schema_version": 1,

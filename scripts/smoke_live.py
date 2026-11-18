@@ -34,7 +34,7 @@ async def check(project_id: int) -> dict:
             if not found["candidates"]:
                 raise RuntimeError("Project lookup returned no registered entry.")
             data = require_success(
-                await client.call_tool("get_project_progress", {"project_id": project_id})
+                await client.call_tool("get_project_status", {"project_id": project_id})
             )
         except RuntimeError as error:
             failure = error
@@ -44,7 +44,7 @@ async def check(project_id: int) -> dict:
         "result": "passed",
         "project_id": data["project"]["project_id"],
         "observation": data["observation"],
-        "available_summaries": len(data["summaries"]),
+        "levels_reported": len(data["levels"]),
         "note": "Public GET observation only; no deployed-source revision or save claim.",
     }
 

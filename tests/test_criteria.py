@@ -213,6 +213,59 @@ def test_generator_uses_code_categories_only_for_baseline(
     assert category == expected
 
 
+def flagged_source(tmp_path: Path, edits: dict[str, tuple[str, str]]) -> Path:
+    """Copy the vendored sources, add a line after a criterion's category, and re-hash."""
+    source = tmp_path / "source"
+    shutil.copytree(ROOT / "vendor/badgeapp", source)
+    manifest = json.loads((source / "source.json").read_text(encoding="utf-8"))
+    for name, (after, line) in edits.items():
+        text = (source / name).read_text(encoding="utf-8")
+        assert text.count(after) == 1
+        (source / name).write_text(text.replace(after, after + line), encoding="utf-8")
+        manifest["files"][name] = hashlib.sha256((source / name).read_bytes()).hexdigest()
+    (source / "source.json").write_text(json.dumps(manifest), encoding="utf-8")
+    return source
+
+
+def test_generator_leaves_out_criteria_marked_future_or_obsolete(tmp_path, catalog_generator):
+    assert provenance()["excluded_criteria"] == {}
+    source = flagged_source(
+        tmp_path,
+        {
+            "criteria/criteria.yml": (
+                "      - description_good:\n          category: MUST\n",
+                "          future: true\n",
+            ),
+            "criteria/baseline_criteria.yml": (
+                "      osps_ac_02_01:\n        category: MUST\n",
+                "        obsolete: true\n",
+            ),
+        },
+    )
+    content = catalog_generator.catalog_content(source)
+    catalog = json.loads(content["catalog.json"])
+    generated = json.loads(content["provenance.json"])
+    listed = {(row["level"], row["criterion_id"]) for row in catalog["criteria"]}
+    assert ("passing", "description_good") not in listed
+    assert ("baseline-1", "osps_ac_02_01") not in listed
+    assert ("passing", "interact") in listed and len(listed) == sum(COUNTS.values()) - 2
+    assert generated["excluded_criteria"] == {
+        "passing/description_good": "future",
+        "baseline-1/osps_ac_02_01": "obsolete",
+    }
+    assert generated["counts"]["passing"] == COUNTS["passing"] - 1
+    assert "passing/description_good" not in generated["criteria_metadata"]
+
+
+@pytest.mark.parametrize("flag", ["future", "obsolete"])
+def test_generator_rejects_non_boolean_lifecycle_flags(catalog_generator, flag):
+    assert catalog_generator.exclusion({}) is None
+    assert catalog_generator.exclusion({flag: False}) is None
+    assert catalog_generator.exclusion({flag: True}) == flag
+    with pytest.raises(ValueError, match=f"Non-boolean criterion flag: {flag}"):
+        catalog_generator.exclusion({flag: "true"})
+
+
 @pytest.mark.parametrize("criterion_id", ["osps_zz_01_01", "osps_ac_1_01", "interact"])
 def test_generator_rejects_baseline_ids_without_a_documented_code(catalog_generator, criterion_id):
     with pytest.raises(ValueError, match=f"No documented category code: baseline-1/{criterion_id}"):

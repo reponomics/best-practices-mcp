@@ -785,18 +785,370 @@
       "type": "object"
     }
   },
-  "get_project_progress": {
+  "get_project_status": {
     "input": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
-      "dependentRequired": {
-        "criterion_ids": [
-          "level"
-        ],
-        "statuses": [
-          "level"
-        ]
+      "properties": {
+        "project_id": {
+          "description": "BadgeApp project ID, as returned by find_project.",
+          "exclusiveMinimum": 0,
+          "title": "Project Id",
+          "type": "integer"
+        }
       },
+      "required": [
+        "project_id"
+      ],
+      "title": "ProjectInput",
+      "type": "object"
+    },
+    "output": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$defs": {
+        "Error": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "enum": [
+                "invalid_arguments",
+                "invalid_document",
+                "invalid_field",
+                "invalid_level",
+                "invalid_criterion",
+                "invalid_category",
+                "invalid_query",
+                "invalid_override",
+                "draft_not_found",
+                "draft_read_failed",
+                "draft_write_failed",
+                "document_too_large",
+                "response_too_large",
+                "project_not_found",
+                "project_mismatch",
+                "project_identity_unresolved",
+                "upstream_unavailable",
+                "upstream_invalid_response",
+                "rate_limited",
+                "internal_error"
+              ],
+              "title": "Code",
+              "type": "string"
+            },
+            "message": {
+              "title": "Message",
+              "type": "string"
+            },
+            "details": {
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array"
+                  },
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  }
+                ]
+              },
+              "title": "Details",
+              "type": "object"
+            },
+            "recovery": {
+              "title": "Recovery",
+              "type": "string"
+            },
+            "retry_after_seconds": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Retry After Seconds"
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "details",
+            "recovery",
+            "retry_after_seconds"
+          ],
+          "title": "Error",
+          "type": "object"
+        },
+        "ErrorResult": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": 1,
+              "title": "Schema Version",
+              "type": "integer"
+            },
+            "error": {
+              "$ref": "#/$defs/Error"
+            }
+          },
+          "required": [
+            "schema_version",
+            "error"
+          ],
+          "title": "ErrorResult",
+          "type": "object"
+        },
+        "GetProjectStatusResult": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": 1,
+              "title": "Schema Version",
+              "type": "integer"
+            },
+            "project": {
+              "$ref": "#/$defs/Project"
+            },
+            "badge_level": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The Best Practices badge level BadgeApp reports, such as in_progress.",
+              "title": "Badge Level"
+            },
+            "levels": {
+              "items": {
+                "$ref": "#/$defs/LevelStatus"
+              },
+              "title": "Levels",
+              "type": "array"
+            },
+            "updated_at": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "When the project entry was last updated.",
+              "title": "Updated At"
+            },
+            "observation": {
+              "$ref": "#/$defs/Observation"
+            }
+          },
+          "required": [
+            "schema_version",
+            "project",
+            "badge_level",
+            "levels",
+            "updated_at",
+            "observation"
+          ],
+          "title": "GetProjectStatusResult",
+          "type": "object"
+        },
+        "LevelStatus": {
+          "additionalProperties": false,
+          "properties": {
+            "level": {
+              "enum": [
+                "passing",
+                "silver",
+                "gold",
+                "baseline-1",
+                "baseline-2",
+                "baseline-3"
+              ],
+              "title": "Level",
+              "type": "string"
+            },
+            "percentage": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Percentage complete as BadgeApp reports it; null when it reports none.",
+              "title": "Percentage"
+            },
+            "achieved_at": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "When BadgeApp recorded the level as achieved; null if it has not.",
+              "title": "Achieved At"
+            },
+            "lost_at": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "When BadgeApp recorded the level as lost after achieving it, if ever.",
+              "title": "Lost At"
+            }
+          },
+          "required": [
+            "level",
+            "percentage",
+            "achieved_at",
+            "lost_at"
+          ],
+          "title": "LevelStatus",
+          "type": "object"
+        },
+        "Observation": {
+          "additionalProperties": false,
+          "properties": {
+            "project_id": {
+              "exclusiveMinimum": 0,
+              "title": "Project Id",
+              "type": "integer"
+            },
+            "source_url": {
+              "title": "Source Url",
+              "type": "string"
+            },
+            "fetched_at": {
+              "title": "Fetched At",
+              "type": "string"
+            },
+            "attribution": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Attribution"
+            },
+            "license": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "License"
+            }
+          },
+          "required": [
+            "project_id",
+            "source_url",
+            "fetched_at",
+            "attribution",
+            "license"
+          ],
+          "title": "Observation",
+          "type": "object"
+        },
+        "Project": {
+          "additionalProperties": false,
+          "properties": {
+            "project_id": {
+              "exclusiveMinimum": 0,
+              "title": "Project Id",
+              "type": "integer"
+            },
+            "name": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Name"
+            },
+            "repo_url": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Repo Url"
+            },
+            "homepage_url": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Homepage Url"
+            }
+          },
+          "required": [
+            "project_id",
+            "name",
+            "repo_url",
+            "homepage_url"
+          ],
+          "title": "Project",
+          "type": "object"
+        }
+      },
+      "anyOf": [
+        {
+          "$ref": "#/$defs/GetProjectStatusResult"
+        },
+        {
+          "$ref": "#/$defs/ErrorResult"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  "get_project_answers": {
+    "input": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
       "properties": {
         "project_id": {
           "description": "BadgeApp project ID, as returned by find_project.",
@@ -805,7 +1157,7 @@
           "type": "integer"
         },
         "level": {
-          "description": "Badge level whose criteria to select.",
+          "description": "Badge level whose saved answers to return.",
           "enum": [
             "passing",
             "silver",
@@ -827,14 +1179,13 @@
           "uniqueItems": true
         },
         "statuses": {
-          "description": "Return only criteria whose saved status is one of these. absent selects criteria with no saved status.",
+          "description": "Return only criteria whose saved status is one of these. BadgeApp saves ? for every criterion until an answer is chosen.",
           "items": {
             "enum": [
               "Met",
               "Unmet",
               "N/A",
-              "?",
-              "absent"
+              "?"
             ],
             "type": "string"
           },
@@ -850,9 +1201,10 @@
         }
       },
       "required": [
-        "project_id"
+        "project_id",
+        "level"
       ],
-      "title": "ProgressInput",
+      "title": "AnswersInput",
       "type": "object"
     },
     "output": {
@@ -994,11 +1346,11 @@
           "title": "ErrorResult",
           "type": "object"
         },
-        "GetProjectProgressResult": {
+        "GetProjectAnswersResult": {
           "additionalProperties": false,
           "properties": {
             "schema_version": {
-              "const": 2,
+              "const": 1,
               "title": "Schema Version",
               "type": "integer"
             },
@@ -1006,30 +1358,16 @@
               "$ref": "#/$defs/Project"
             },
             "level": {
-              "anyOf": [
-                {
-                  "enum": [
-                    "passing",
-                    "silver",
-                    "gold",
-                    "baseline-1",
-                    "baseline-2",
-                    "baseline-3"
-                  ],
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "enum": [
+                "passing",
+                "silver",
+                "gold",
+                "baseline-1",
+                "baseline-2",
+                "baseline-3"
               ],
-              "title": "Level"
-            },
-            "summaries": {
-              "items": {
-                "$ref": "#/$defs/Summary"
-              },
-              "title": "Summaries",
-              "type": "array"
+              "title": "Level",
+              "type": "string"
             },
             "answers": {
               "additionalProperties": {
@@ -1055,54 +1393,42 @@
                   }
                 ]
               },
-              "description": "Saved fields of the matching criteria, in draft format. A criterion with nothing saved has no fields here.",
+              "description": "Saved fields of the criteria that matched the filters, in draft format. Each has its status field; an empty justification has no field.",
               "title": "Answers",
               "type": "object"
             },
-            "criterion_ids": {
-              "description": "Criteria that matched the filters, including those with nothing saved.",
+            "statuses_not_retrieved": {
+              "description": "Selected criteria whose status was missing from BadgeApp's response. Normally empty; an entry is a retrieval failure, not an answer.",
               "items": {
                 "type": "string"
               },
-              "title": "Criterion Ids",
+              "title": "Statuses Not Retrieved",
               "type": "array"
             },
             "level_criterion_count": {
-              "anyOf": [
-                {
-                  "minimum": 0,
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Number of criteria in the selected level; null without a level.",
-              "title": "Level Criterion Count"
+              "description": "Number of criteria in the level.",
+              "minimum": 0,
+              "title": "Level Criterion Count",
+              "type": "integer"
             },
             "observation": {
               "$ref": "#/$defs/Observation"
             },
             "catalog": {
               "$ref": "#/$defs/CatalogRef"
-            },
-            "summary_metadata": {
-              "$ref": "#/$defs/SummaryMetadata"
             }
           },
           "required": [
             "schema_version",
             "project",
             "level",
-            "summaries",
             "answers",
-            "criterion_ids",
+            "statuses_not_retrieved",
             "level_criterion_count",
             "observation",
-            "catalog",
-            "summary_metadata"
+            "catalog"
           ],
-          "title": "GetProjectProgressResult",
+          "title": "GetProjectAnswersResult",
           "type": "object"
         },
         "Observation": {
@@ -1204,469 +1530,11 @@
           ],
           "title": "Project",
           "type": "object"
-        },
-        "Summary": {
-          "additionalProperties": false,
-          "properties": {
-            "level": {
-              "enum": [
-                "passing",
-                "silver",
-                "gold",
-                "baseline-1",
-                "baseline-2",
-                "baseline-3"
-              ],
-              "title": "Level",
-              "type": "string"
-            },
-            "upstream_percentage": {
-              "anyOf": [
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Upstream Percentage"
-            }
-          },
-          "required": [
-            "level",
-            "upstream_percentage"
-          ],
-          "title": "Summary",
-          "type": "object"
-        },
-        "SummaryMetadata": {
-          "additionalProperties": false,
-          "properties": {
-            "badge_level": {
-              "anyOf": [
-                {
-                  "type": "null"
-                },
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "array"
-                },
-                {
-                  "additionalProperties": true,
-                  "type": "object"
-                }
-              ]
-            },
-            "tiered_percentage": {
-              "anyOf": [
-                {
-                  "type": "null"
-                },
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "array"
-                },
-                {
-                  "additionalProperties": true,
-                  "type": "object"
-                }
-              ]
-            },
-            "baseline_tiered_percentage": {
-              "anyOf": [
-                {
-                  "type": "null"
-                },
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "array"
-                },
-                {
-                  "additionalProperties": true,
-                  "type": "object"
-                }
-              ]
-            }
-          },
-          "title": "SummaryMetadata",
-          "type": "object"
         }
       },
       "anyOf": [
         {
-          "$ref": "#/$defs/GetProjectProgressResult"
-        },
-        {
-          "$ref": "#/$defs/ErrorResult"
-        }
-      ],
-      "type": "object"
-    }
-  },
-  "get_project_badge_status": {
-    "input": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "additionalProperties": false,
-      "properties": {
-        "project_id": {
-          "description": "BadgeApp project ID, as returned by find_project.",
-          "exclusiveMinimum": 0,
-          "title": "Project Id",
-          "type": "integer"
-        },
-        "family": {
-          "default": "best_practices",
-          "description": "Badge family to observe; returned as effective family.",
-          "enum": [
-            "best_practices",
-            "baseline"
-          ],
-          "title": "Family",
-          "type": "string"
-        }
-      },
-      "required": [
-        "project_id"
-      ],
-      "title": "BadgeStatusInput",
-      "type": "object"
-    },
-    "output": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$defs": {
-        "BadgeObservation": {
-          "additionalProperties": false,
-          "properties": {
-            "source_url": {
-              "title": "Source Url",
-              "type": "string"
-            },
-            "fetched_at": {
-              "title": "Fetched At",
-              "type": "string"
-            },
-            "service_attribution": {
-              "title": "Service Attribution",
-              "type": "string"
-            },
-            "project_entry_attribution": {
-              "title": "Project Entry Attribution",
-              "type": "null"
-            },
-            "project_entry_license": {
-              "title": "Project Entry License",
-              "type": "null"
-            }
-          },
-          "required": [
-            "source_url",
-            "fetched_at",
-            "service_attribution",
-            "project_entry_attribution",
-            "project_entry_license"
-          ],
-          "title": "BadgeObservation",
-          "type": "object"
-        },
-        "BadgeProgress": {
-          "additionalProperties": false,
-          "properties": {
-            "field": {
-              "enum": [
-                "tiered_percentage",
-                "badge_percentage"
-              ],
-              "title": "Field",
-              "type": "string"
-            },
-            "value": {
-              "anyOf": [
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Value"
-            },
-            "level": {
-              "anyOf": [
-                {
-                  "const": "baseline-1",
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Level"
-            }
-          },
-          "required": [
-            "field",
-            "value",
-            "level"
-          ],
-          "title": "BadgeProgress",
-          "type": "object"
-        },
-        "BadgeProject": {
-          "additionalProperties": false,
-          "properties": {
-            "project_id": {
-              "exclusiveMinimum": 0,
-              "title": "Project Id",
-              "type": "integer"
-            },
-            "name": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Name"
-            }
-          },
-          "required": [
-            "project_id",
-            "name"
-          ],
-          "title": "BadgeProject",
-          "type": "object"
-        },
-        "Error": {
-          "additionalProperties": false,
-          "properties": {
-            "code": {
-              "enum": [
-                "invalid_arguments",
-                "invalid_document",
-                "invalid_field",
-                "invalid_level",
-                "invalid_criterion",
-                "invalid_category",
-                "invalid_query",
-                "invalid_override",
-                "draft_not_found",
-                "draft_read_failed",
-                "draft_write_failed",
-                "document_too_large",
-                "response_too_large",
-                "project_not_found",
-                "project_mismatch",
-                "project_identity_unresolved",
-                "upstream_unavailable",
-                "upstream_invalid_response",
-                "rate_limited",
-                "internal_error"
-              ],
-              "title": "Code",
-              "type": "string"
-            },
-            "message": {
-              "title": "Message",
-              "type": "string"
-            },
-            "details": {
-              "additionalProperties": {
-                "anyOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "type": "boolean"
-                  },
-                  {
-                    "type": "number"
-                  },
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "array"
-                  },
-                  {
-                    "additionalProperties": true,
-                    "type": "object"
-                  }
-                ]
-              },
-              "title": "Details",
-              "type": "object"
-            },
-            "recovery": {
-              "title": "Recovery",
-              "type": "string"
-            },
-            "retry_after_seconds": {
-              "anyOf": [
-                {
-                  "minimum": 0,
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Retry After Seconds"
-            }
-          },
-          "required": [
-            "code",
-            "message",
-            "details",
-            "recovery",
-            "retry_after_seconds"
-          ],
-          "title": "Error",
-          "type": "object"
-        },
-        "ErrorResult": {
-          "additionalProperties": false,
-          "properties": {
-            "schema_version": {
-              "const": 1,
-              "title": "Schema Version",
-              "type": "integer"
-            },
-            "error": {
-              "$ref": "#/$defs/Error"
-            }
-          },
-          "required": [
-            "schema_version",
-            "error"
-          ],
-          "title": "ErrorResult",
-          "type": "object"
-        },
-        "GetProjectBadgeStatusResult": {
-          "additionalProperties": false,
-          "properties": {
-            "schema_version": {
-              "const": 1,
-              "title": "Schema Version",
-              "type": "integer"
-            },
-            "project": {
-              "$ref": "#/$defs/BadgeProject"
-            },
-            "family": {
-              "enum": [
-                "best_practices",
-                "baseline"
-              ],
-              "title": "Family",
-              "type": "string"
-            },
-            "badge_level": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Badge Level"
-            },
-            "badge_state": {
-              "enum": [
-                "earned",
-                "in_progress",
-                "unrecognized",
-                "unknown"
-              ],
-              "title": "Badge State",
-              "type": "string"
-            },
-            "progress": {
-              "$ref": "#/$defs/BadgeProgress"
-            },
-            "updated_at": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Updated At"
-            },
-            "updated_at_status": {
-              "enum": [
-                "valid",
-                "missing",
-                "invalid"
-              ],
-              "title": "Updated At Status",
-              "type": "string"
-            },
-            "observation": {
-              "$ref": "#/$defs/BadgeObservation"
-            },
-            "caveats": {
-              "items": {
-                "type": "string"
-              },
-              "title": "Caveats",
-              "type": "array"
-            }
-          },
-          "required": [
-            "schema_version",
-            "project",
-            "family",
-            "badge_level",
-            "badge_state",
-            "progress",
-            "updated_at",
-            "updated_at_status",
-            "observation",
-            "caveats"
-          ],
-          "title": "GetProjectBadgeStatusResult",
-          "type": "object"
-        }
-      },
-      "anyOf": [
-        {
-          "$ref": "#/$defs/GetProjectBadgeStatusResult"
+          "$ref": "#/$defs/GetProjectAnswersResult"
         },
         {
           "$ref": "#/$defs/ErrorResult"

@@ -35,7 +35,6 @@ TRANSIENT_ERRORS = (
     httpx2.ReadTimeout,
 )
 PROJECT_PATH = re.compile(r"/projects/[1-9][0-9]*\.json\Z")
-BADGE_JSON_PATH = re.compile(r"/projects/[1-9][0-9]*/(?:badge|baseline)\.json\Z")
 BADGE_SVG_PATH = re.compile(r"/projects/[1-9][0-9]*/(?:badge|baseline)\.svg\Z")
 SVG_LIMIT_BYTES = 1_048_576
 SVG_ROOT = "{http://www.w3.org/2000/svg}svg"
@@ -102,11 +101,7 @@ def _validate_parameters(params: dict) -> None:
 
 
 def _validate_target(path: str, params: dict | None) -> None:
-    if (
-        path != "/projects.json"
-        and PROJECT_PATH.fullmatch(path) is None
-        and BADGE_JSON_PATH.fullmatch(path) is None
-    ):
+    if path != "/projects.json" and PROJECT_PATH.fullmatch(path) is None:
         raise DomainError("invalid_query", "Only documented public project JSON paths are allowed.")
     if params:
         if path != "/projects.json":
@@ -276,8 +271,7 @@ class BadgeAppHTTP:
         if status in RETRY_STATUSES:
             raise _Retryable(status, response.headers.get("retry-after"))
         if status == 404 and any(
-            pattern.fullmatch(response.url.path)
-            for pattern in (PROJECT_PATH, BADGE_JSON_PATH, BADGE_SVG_PATH)
+            pattern.fullmatch(response.url.path) for pattern in (PROJECT_PATH, BADGE_SVG_PATH)
         ):
             raise DomainError(
                 "project_not_found",

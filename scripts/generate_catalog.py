@@ -24,6 +24,9 @@ FLAGS = (
     "met_justification_required",
     "met_url_required",
 )
+# Upstream's lifecycle flags: a retired criterion, or one not yet in effect. Neither is
+# part of a badge application, so neither enters the catalog.
+EXCLUDING_FLAGS = ("obsolete", "future")
 INPUTS = ("criteria/criteria.yml", "criteria/baseline_criteria.yml", "config/locales/en.yml")
 # Baseline YAML files every control under one group; upstream documents the category
 # of a control as the two-letter code in its identifier.
@@ -109,6 +112,17 @@ def inherited_details(level: str, criterion_id: str, definitions: dict, english:
     return None, None
 
 
+def exclusion(raw: dict) -> str | None:
+    """Name the upstream lifecycle flag that keeps a criterion out of the catalog."""
+    for flag in EXCLUDING_FLAGS:
+        value = raw.get(flag, False)
+        if type(value) is not bool:
+            raise ValueError(f"Non-boolean criterion flag: {flag}")
+        if value:
+            return flag
+    return None
+
+
 def boolean_flags(raw: dict) -> dict[str, bool]:
     """Expand upstream's omitted entailed flags into explicit requirements."""
     result = {}
@@ -165,8 +179,12 @@ def catalog_content(source_dir: Path) -> dict[str, bytes]:
     baseline = baseline_categories(source_dir)
     criteria = []
     metadata = {}
+    excluded = {}
     for level, definitions_at_level in definitions.items():
         for criterion_id, raw in sorted(definitions_at_level.items()):
+            if reason := exclusion(raw):
+                excluded[f"{SOURCE_LEVELS[level]}/{criterion_id}"] = reason
+                continue
             record, criterion_metadata = criterion_record(
                 level, criterion_id, raw, definitions, english, baseline
             )
@@ -180,6 +198,7 @@ def catalog_content(source_dir: Path) -> dict[str, bytes]:
             "format_version": 2,
         },
         "criteria_metadata": metadata,
+        "excluded_criteria": excluded,
         "counts": {level: sum(c["level"] == level for c in criteria) for level in LEVELS},
         "license_file": "BADGEAPP-LICENSE.txt",
         "text_policy": "English locale descriptions; upstream rank-bounded details inheritance",
@@ -190,6 +209,10 @@ def catalog_content(source_dir: Path) -> dict[str, bytes]:
         "flag_policy": (
             "Explicit requirements include upstream entailments: met_url_required implies "
             "met_justification_required; na_justification_required implies na_allowed."
+        ),
+        "lifecycle_policy": (
+            "Criteria that upstream marks obsolete or future are left out of the catalog and "
+            "named in excluded_criteria."
         ),
         "generated_at_policy": "Source-manifest generation timestamp preserved on regeneration",
     }

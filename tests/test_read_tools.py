@@ -40,9 +40,9 @@ def test_read_workflow_wire_results_and_catalog_schemas(tmp_path: Path) -> None:
             calls = [
                 ("get_criteria", {}),
                 ("find_project", {"query": "ambiguous"}),
-                ("get_project_progress", {"project_id": 123, "level": "passing"}),
+                ("get_project_answers", {"project_id": 123, "level": "passing"}),
                 ("get_criteria", {"level": "passing", "criterion_ids": ["unknown"]}),
-                ("get_project_progress", {"project_id": 999}),
+                ("get_project_status", {"project_id": 999}),
                 ("find_project", {"query": "rate-limited"}),
             ]
             results = []
@@ -89,9 +89,20 @@ async def assert_filtered_reads(client) -> None:
     assert unknown["error"]["code"] == "invalid_category"
     assert "Basics" in unknown["error"]["details"]["allowed"]
     # A numeric string and null optional arguments are accepted at the tool boundary.
+    status = await call(client, "get_project_status", {"project_id": 123})
+    assert status["badge_level"] == "passing"
+    assert status["updated_at"] == "2026-11-13T12:34:56.000Z"
+    assert status["levels"][0] == {
+        "level": "passing",
+        "percentage": 100,
+        "achieved_at": "2026-10-01T09:00:00.000Z",
+        "lost_at": None,
+    }
+    assert [entry["percentage"] for entry in status["levels"][1:]] == [12, None, None, None, None]
+    assert "answers" not in status
     saved = await call(
         client,
-        "get_project_progress",
+        "get_project_answers",
         {
             "project_id": "123",
             "level": "passing",
@@ -100,29 +111,32 @@ async def assert_filtered_reads(client) -> None:
             "include_justifications": False,
         },
     )
-    assert saved["schema_version"] == 2
+    assert saved["schema_version"] == 1
     assert saved["answers"] == {"description_good_status": "Met"}
-    assert saved["criterion_ids"] == ["description_good"]
     assert saved["level_criterion_count"] == 67
-    remaining = await call(
+    # The synthetic record omits most statuses, which BadgeApp itself never does.
+    assert len(saved["statuses_not_retrieved"]) == 66
+    rejected = await call(
         client,
-        "get_project_progress",
+        "get_project_answers",
         {"project_id": 123, "level": "passing", "statuses": ["absent"]},
     )
-    assert len(remaining["criterion_ids"]) == 66 and remaining["answers"] == {}
+    assert rejected["error"]["details"]["issues"][0]["allowed"] == ["Met", "Unmet", "N/A", "?"]
+    unscoped = await call(client, "get_project_answers", {"project_id": 123})
+    assert unscoped["error"]["details"]["issues"] == [{"field": "level", "problem": "is required"}]
 
 
 async def assert_argument_errors(client) -> None:
     rejected = await call(
         client,
-        "get_project_progress",
+        "get_project_answers",
         {"project_id": True, "level": "bronze", "statuses": ["Met"], "format": "short"},
     )
     assert rejected == {
         "schema_version": 1,
         "error": {
             "code": "invalid_arguments",
-            "message": "Invalid arguments for get_project_progress.",
+            "message": "Invalid arguments for get_project_answers.",
             "details": {
                 "issues": [
                     {"field": "format", "problem": "is not an argument of this tool"},

@@ -19,8 +19,12 @@ PROJECTS = {
         "homepage_url": "https://example.org/alpha",
         "description_good_status": "Met",
         "description_good_justification": "https://example.org/alpha explains the project.",
-        "badge_percentage_0": 45,
+        "badge_percentage_0": 100,
         "badge_percentage_1": 12,
+        "badge_level": "passing",
+        "achieved_passing_at": "2026-10-01T09:00:00.000Z",
+        "lost_passing_at": None,
+        "updated_at": "2026-11-13T12:34:56.000Z",
         "project_entry_attribution": "Synthetic fixture; no real project data.",
         "project_entry_license": "CC-BY-3.0+",
     },
@@ -68,7 +72,7 @@ def respond(request):
     assert request.url.host == "www.bestpractices.dev"
     if request.url.path == "/projects.json":
         return search_response(request)
-    badge = re.fullmatch(r"/projects/([1-9][0-9]*)/(badge|baseline)\.(json|svg)", request.url.path)
+    badge = re.fullmatch(r"/projects/([1-9][0-9]*)/(badge|baseline)\.svg", request.url.path)
     if badge:
         return badge_response(*badge.groups())
     project_id = int(request.url.path.rsplit("/", 1)[-1].removesuffix(".json"))
@@ -77,24 +81,12 @@ def respond(request):
     return httpx2.Response(404, json={"error": "not found"})
 
 
-def badge_response(identifier, family, format):
-    """Synthetic compact views; only the five fields upstream's badge views emit."""
+def badge_response(identifier, family):
     project_id = int(identifier)
     if project_id not in PROJECTS:
         return httpx2.Response(404)
-    if format == "svg":
-        svg = f'<svg xmlns="http://www.w3.org/2000/svg"><text>{family} 雪</text></svg>\n'
-        return httpx2.Response(200, text=svg, headers={"Content-Type": "image/svg+xml"})
-    result = {
-        "id": project_id,
-        "name": PROJECTS[project_id]["name"],
-        "updated_at": "2026-11-13T12:34:56Z",
-    }
-    if family == "badge":
-        result.update(badge_level="silver", tiered_percentage=220)
-    else:
-        result.update(badge_level="baseline-pct-37", badge_percentage=37)
-    return httpx2.Response(200, json=result)
+    svg = f'<svg xmlns="http://www.w3.org/2000/svg"><text>{family} 雪</text></svg>\n'
+    return httpx2.Response(200, text=svg, headers={"Content-Type": "image/svg+xml"})
 
 
 def factory():

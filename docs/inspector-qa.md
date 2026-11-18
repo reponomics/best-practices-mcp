@@ -28,7 +28,7 @@ For release qualification, substitute the absolute executable from the exact ins
 
 ## Short tool walkthrough
 
-In the web UI, connect over stdio and inspect the ten tools and their input/output schemas. Confirm the server version and negotiated protocol (`2026-07-28` in modern mode). General catalog access and synthetic document checks below are offline. Before project-specific work, use `find_project` and explicitly select the intended existing entry; confirm its repository identity with `get_project_progress`. An empty search requires registration outside the server, not an invented project ID. The server has no active-project selection session.
+In the web UI, connect over stdio and inspect the ten tools and their input/output schemas. Confirm the server version and negotiated protocol (`2026-07-28` in modern mode). General catalog access and synthetic document checks below are offline. Before project-specific work, use `find_project` and explicitly select the intended existing entry; confirm its repository identity with `get_project_status`. An empty search requires registration outside the server, not an invented project ID. The server has no active-project selection session.
 
 | Check | Calls and expected observations |
 | --- | --- |

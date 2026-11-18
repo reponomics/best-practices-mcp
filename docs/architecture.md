@@ -10,7 +10,7 @@ The server is an installable Python package with a bounded ten-tool interface ov
 | `models.py`, `contracts.py`, `sdk_adapter.py` | Typed inputs/results, JSON Schema declarations, tool annotations, error and result-envelope adaptation |
 | `criteria.py`, `data/` | Offline six-level catalog, source revision and notices |
 | `documents.py`, `drafts.py` | Bounded JSON normalization, aliases, structural diagnostics and pure patches |
-| `http.py`, `badgeapp.py`, `badges.py` | Shared bounded JSON/SVG GET transport, pacing/retries, public-record mapping and compact badge observations |
+| `http.py`, `badgeapp.py`, `badges.py` | Shared bounded JSON/SVG GET transport, pacing/retries, public-record mapping for status and answers, and badge SVG artifacts |
 | `validation.py` | Optional mechanical checks using the selected level's catalog requirements |
 | `transfer.py`, `proposals.py` | Transfer eligibility, identity checks, field reports, exact proposal URLs |
 | `storage.py` | Project-keyed paths, process-local guards and atomic local draft replacement |

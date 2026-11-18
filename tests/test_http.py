@@ -674,45 +674,39 @@ def test_non_retryable_transport_errors_are_safe_and_not_retried(exception) -> N
 
 
 @pytest.mark.parametrize("family", ["badge", "baseline"])
-@pytest.mark.parametrize("format", ["json", "svg"])
-def test_badge_routes_return_exact_content_and_observation(family, format) -> None:
+def test_badge_svg_routes_return_exact_content_and_observation(family) -> None:
     requests = []
-    path = f"/projects/123/{family}.{format}"
+    path = f"/projects/123/{family}.svg"
 
     def handler(request):
         requests.append(request)
-        if format == "svg":
-            return httpx2.Response(
-                200, content=SVG.encode(), headers={"Content-Type": "image/svg+xml; charset=utf-8"}
-            )
-        return httpx2.Response(200, json={"id": 123, "badge_level": "passing"})
+        return httpx2.Response(
+            200, content=SVG.encode(), headers={"Content-Type": "image/svg+xml; charset=utf-8"}
+        )
 
     async def run():
         async with client(handler) as api:
-            return await getattr(api, f"get_{format}")(path)
+            return await api.get_svg(path)
 
     result = asyncio.run(run())
-    assert result.data == (SVG if format == "svg" else {"id": 123, "badge_level": "passing"})
+    assert result.data == SVG
     assert result.source_url == ORIGIN + path
     assert result.fetched_at == "2026-11-09T00:00:00+00:00"
     assert "content-type" in result.headers
     assert len(requests) == 1
     assert requests[0].method == "GET"
     assert requests[0].url.query == b""
-    assert requests[0].headers["accept"] == (
-        "image/svg+xml" if format == "svg" else "application/json"
-    )
+    assert requests[0].headers["accept"] == "image/svg+xml"
 
 
 @pytest.mark.parametrize("family", ["badge", "baseline"])
-@pytest.mark.parametrize("format", ["json", "svg"])
-def test_badge_not_found_preserves_project_error(family, format) -> None:
-    path = f"/projects/123/{family}.{format}"
+def test_badge_not_found_preserves_project_error(family) -> None:
+    path = f"/projects/123/{family}.svg"
 
     async def run():
         async with client(lambda _: httpx2.Response(404, text="secret")) as api:
             with pytest.raises(DomainError) as error:
-                await getattr(api, f"get_{format}")(path)
+                await api.get_svg(path)
             assert error.value.code == "project_not_found"
             assert error.value.details["source_url"] == ORIGIN + path
             assert "secret" not in json.dumps(error.value.to_payload())
@@ -749,11 +743,12 @@ def test_svg_rejects_noncanonical_or_wrong_format_target_without_dispatch(path) 
 
 
 @pytest.mark.parametrize("family", ["badge", "baseline"])
-def test_badge_json_rejects_parameters_and_svg_paths_without_dispatch(family) -> None:
+def test_json_reads_reject_badge_paths_without_dispatch(family) -> None:
+    # The compact badge JSON endpoints are no longer read; only the SVG routes remain.
     async def run():
         async with client(lambda _: pytest.fail("Request dispatched")) as api:
             for path, params in [
-                (f"/projects/123/{family}.json", {"page": 1}),
+                (f"/projects/123/{family}.json", None),
                 (f"/projects/123/{family}.svg", None),
             ]:
                 with pytest.raises(DomainError) as error:
@@ -854,7 +849,7 @@ def test_mixed_svg_json_calls_share_pacing_retries_and_block_cookies() -> None:
         async with client(handler, clock) as api:
             results = await asyncio.gather(
                 api.get_svg("/projects/123/badge.svg"),
-                api.get_json("/projects/123/baseline.json"),
+                api.get_json("/projects/456.json"),
                 api.get_json("/projects/123.json"),
             )
             assert results[0].data == SVG
@@ -881,7 +876,7 @@ def test_svg_retry_after_cooldown_applies_to_later_json_reads() -> None:
         async with client(handler) as api:
             for method, path in [
                 (api.get_svg, "/projects/123/badge.svg"),
-                (api.get_json, "/projects/123/badge.json"),
+                (api.get_json, "/projects/123.json"),
             ]:
                 with pytest.raises(DomainError) as error:
                     await method(path)

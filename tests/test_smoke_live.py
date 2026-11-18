@@ -39,7 +39,7 @@ def test_smoke_closes_client_before_reporting_domain_failure(monkeypatch, failur
             data = (
                 {"candidates": [] if failure == "empty" else [{"project_id": 1}]}
                 if name == "find_project"
-                else {"project": {"project_id": 1}, "observation": {}, "summaries": []}
+                else {"project": {"project_id": 1}, "observation": {}, "levels": []}
             )
             return SimpleNamespace(is_error=False, structured_content=data)
 
@@ -50,5 +50,5 @@ def test_smoke_closes_client_before_reporting_domain_failure(monkeypatch, failur
         assert calls == ["find_project"]
     else:
         assert asyncio.run(smoke.check(1))["result"] == "passed"
-        assert calls == ["find_project", "get_project_progress"]
+        assert calls == ["find_project", "get_project_status"]
     assert exits == [(None, None, None)]

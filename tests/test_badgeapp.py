@@ -12,6 +12,7 @@ import pytest
 
 from best_practices_mcp.badgeapp import ORIGIN, BadgeAppClient
 from best_practices_mcp.contracts import validate_output
+from best_practices_mcp.criteria import criterion_definitions
 from best_practices_mcp.documents import DOCUMENT_LIMIT_BYTES
 from best_practices_mcp.errors import DomainError
 
@@ -50,11 +51,19 @@ def find(data, query="example", page=1, **kwargs):
     return result, http
 
 
-def progress(data=None, level=None, ids=None, project_id=123, **filters):
+def progress(data=None, level="passing", ids=None, project_id=123, **filters):
+    """Read saved answers for a level from a synthetic record."""
     http = FakeHTTP(fixture() if data is None else data)
     client = BadgeAppClient(http)
-    result = asyncio.run(client.get_project_progress(project_id, level, ids, **filters))
-    validate_output("get_project_progress", result)
+    result = asyncio.run(client.get_project_answers(project_id, level, ids, **filters))
+    validate_output("get_project_answers", result)
+    return result, http
+
+
+def status(data=None, project_id=123):
+    http = FakeHTTP(fixture() if data is None else data)
+    result = asyncio.run(BadgeAppClient(http).get_project_status(project_id))
+    validate_output("get_project_status", result)
     return result, http
 
 
@@ -83,7 +92,7 @@ def test_numeric_404_is_normal_empty_but_progress_404_is_error():
     assert result["pagination_complete"] is True
     assert result["observation"]["fetched_at"] == STAMP
     with pytest.raises(DomainError) as caught:
-        asyncio.run(BadgeAppClient(FakeHTTP(None, error=error)).get_project_progress(123))
+        asyncio.run(BadgeAppClient(FakeHTTP(None, error=error)).get_project_status(123))
     assert caught.value.code == "project_not_found"
 
 
@@ -233,20 +242,88 @@ def test_ambiguous_multiple_next_links_are_not_chosen():
     assert result["next_page"] is None
 
 
-def test_progress_summaries_and_attribution_come_from_upstream():
-    result, http = progress()
-    assert http.calls == [("/projects/123.json", None)]
-    assert result["schema_version"] == 2
-    assert result["answers"] == {} and result["criterion_ids"] == []
-    assert result["level_criterion_count"] is None
-    assert [item["upstream_percentage"] for item in result["summaries"]] == [42, 10.5, 0, 75, 25, 5]
-    assert result["summary_metadata"] == {
-        "badge_level": "in_progress",
-        "tiered_percentage": 42,
-        "baseline_tiered_percentage": 75,
+def test_status_copies_level_figures_and_times_from_one_record_read():
+    record = fixture() | {
+        "updated_at": "2026-11-17T01:16:53.248Z",
+        "achieved_passing_at": "2026-08-29T16:42:55.187Z",
+        "lost_passing_at": None,
+        "achieved_baseline_1_at": "2026-09-03T21:51:25.521Z",
+        "lost_baseline_1_at": "2026-10-01T00:00:00.000Z",
     }
+    result, http = status(record)
+    assert http.calls == [("/projects/123.json", None)]
+    assert result["schema_version"] == 1
+    assert result["project"]["name"] == "Example Project"
+    assert result["badge_level"] == "in_progress"
+    assert result["updated_at"] == "2026-11-17T01:16:53.248Z"
+    assert [item["level"] for item in result["levels"]] == [
+        "passing",
+        "silver",
+        "gold",
+        "baseline-1",
+        "baseline-2",
+        "baseline-3",
+    ]
+    assert [item["percentage"] for item in result["levels"]] == [42, 10.5, 0, 75, 25, 5]
+    assert result["levels"][0] == {
+        "level": "passing",
+        "percentage": 42,
+        "achieved_at": "2026-08-29T16:42:55.187Z",
+        "lost_at": None,
+    }
+    assert result["levels"][3]["lost_at"] == "2026-10-01T00:00:00.000Z"
+    assert result["levels"][1]["achieved_at"] is None
+    assert not {"answers", "tiered_percentage", "catalog"} & set(result)
     assert result["observation"]["attribution"] == fixture()["project_entry_attribution"]
     assert result["observation"]["license"] == "CC-BY-3.0+"
+
+
+def test_status_reports_missing_fields_as_null_without_inventing_values():
+    result, _ = status({"id": 123})
+    assert result["badge_level"] is None and result["updated_at"] is None
+    assert result["levels"] == [
+        {"level": level, "percentage": None, "achieved_at": None, "lost_at": None}
+        for level in ("passing", "silver", "gold", "baseline-1", "baseline-2", "baseline-3")
+    ]
+    assert result["project"] == {
+        "project_id": 123,
+        "name": None,
+        "repo_url": None,
+        "homepage_url": None,
+    }
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("badge_percentage_1", "12"),
+        ("badge_percentage_baseline_2", True),
+        ("badge_percentage_0", float("inf")),
+        ("badge_level", 3),
+        ("updated_at", 1731800000),
+        ("achieved_gold_at", ["2026"]),
+        ("lost_baseline_3_at", {"at": None}),
+    ],
+)
+def test_status_rejects_fields_of_an_unexpected_type(field, value):
+    with pytest.raises(DomainError) as caught:
+        status(fixture() | {field: value})
+    assert caught.value.code == "upstream_invalid_response"
+    assert caught.value.details == {"field": field}
+
+
+def test_status_is_for_the_requested_project_only():
+    with pytest.raises(DomainError) as caught:
+        status(fixture() | {"id": 456})
+    assert caught.value.code == "project_mismatch"
+
+
+def test_answers_carry_no_status_figures():
+    result, http = progress()
+    assert http.calls == [("/projects/123.json", None)]
+    assert result["schema_version"] == 1 and result["level"] == "passing"
+    assert not {"summaries", "summary_metadata", "criterion_ids", "levels"} & set(result)
+    assert result["observation"]["attribution"] == fixture()["project_entry_attribution"]
 
 
 def test_level_filter_preserves_actual_justification_and_missing_fields():
@@ -262,22 +339,14 @@ def test_level_filter_preserves_actual_justification_and_missing_fields():
     )
     assert "contribution_justification" not in result["answers"]
     assert result["answers"]["contribution_status"] == "?"
-    assert result["criterion_ids"] == ["contribution", "description_good"]
     assert result["level_criterion_count"] == 67
 
 
 def test_missing_status_is_not_synthesized_and_missing_metadata_stays_null():
     result, _ = progress({"id": 123}, "passing", ["description_good"])
     assert result["answers"] == {}
-    assert result["criterion_ids"] == ["description_good"]
-    assert all(item["upstream_percentage"] is None for item in result["summaries"])
-    assert result["project"] == {
-        "project_id": 123,
-        "name": None,
-        "repo_url": None,
-        "homepage_url": None,
-    }
-    assert result["summary_metadata"] == {}
+    assert result["statuses_not_retrieved"] == ["description_good"]
+    assert result["project"]["name"] is None
 
 
 def test_baseline_status_and_justification_aliases_are_both_normalized():
@@ -310,42 +379,74 @@ def test_unexpected_saved_field_values_are_returned_without_guessing():
     }
 
 
-def test_status_filter_selects_saved_and_absent_criteria():
-    met, _ = progress(level="passing", statuses=["Met"])
-    assert met["criterion_ids"] == ["description_good"]
+def complete_record(level: str, status: str = "?") -> dict:
+    """A record shaped like BadgeApp's: every criterion of the level has a status."""
+    fields = {f"{criterion_id}_status": status for criterion_id in level_ids(level)}
+    return fixture() | fields
+
+
+def level_ids(level: str) -> list[str]:
+    return [criterion["criterion_id"] for criterion in criterion_definitions(level)]
+
+
+def answered(result: dict) -> list[str]:
+    """Criteria in a result, read from its status fields."""
+    suffix = "_status"
+    return [field.removesuffix(suffix) for field in result["answers"] if field.endswith(suffix)]
+
+
+def test_status_filter_selects_criteria_by_saved_status():
+    record = complete_record("passing") | {
+        "description_good_status": "Met",
+        "interact_status": "Unmet",
+        "build_status": "N/A",
+    }
+    met, _ = progress(record, "passing", statuses=["Met"])
     assert list(met["answers"]) == ["description_good_status", "description_good_justification"]
-    unknown, _ = progress(level="passing", statuses=["?"])
-    assert unknown["criterion_ids"] == ["contribution"]
-    assert unknown["answers"] == {"contribution_status": "?"}
-    remaining, _ = progress(level="passing", statuses=["Unmet", "?", "absent"])
-    assert len(remaining["criterion_ids"]) == 66
-    assert "description_good" not in remaining["criterion_ids"]
-    assert remaining["answers"] == {"contribution_status": "?"}
+    remaining, _ = progress(record, "passing", statuses=["Unmet", "?"])
+    assert len(answered(remaining)) == 65
+    assert not {"description_good", "build"} & set(answered(remaining))
+    assert remaining["answers"]["interact_status"] == "Unmet"
+    assert remaining["answers"]["contribution_status"] == "?"
     assert remaining["level_criterion_count"] == 67
-    none, _ = progress(level="passing", statuses=[])
-    assert none["criterion_ids"] == [] and none["answers"] == {}
+    assert remaining["statuses_not_retrieved"] == []
+    none, _ = progress(record, "passing", statuses=[])
+    assert none["answers"] == {}
 
 
 def test_status_filter_combines_with_criterion_ids():
     ids = ["contribution", "description_good", "interact"]
-    result, _ = progress(level="passing", ids=ids, statuses=["Met", "absent"])
-    assert result["criterion_ids"] == ["description_good", "interact"]
-    assert "interact_status" not in result["answers"]
+    record = complete_record("passing") | {"description_good_status": "Met"}
+    result, _ = progress(record, "passing", ids, statuses=["?"])
+    assert answered(result) == ["contribution", "interact"]
 
 
-def test_absent_criterion_keeps_a_saved_justification():
-    record = fixture() | {"interact_justification": "Saved without a status."}
-    result, _ = progress(record, "passing", ["interact"], statuses=["absent"])
-    assert result["criterion_ids"] == ["interact"]
-    assert result["answers"] == {"interact_justification": "Saved without a status."}
+def test_a_status_missing_from_the_record_is_reported_and_never_matched():
+    # The fixture record carries statuses for two passing criteria only.
+    unfiltered, _ = progress(level="passing")
+    missing = sorted(set(level_ids("passing")) - {"contribution", "description_good"})
+    assert unfiltered["statuses_not_retrieved"] == missing
+    assert set(unfiltered["answers"]) == {
+        "contribution_status",
+        "description_good_status",
+        "description_good_justification",
+    }
+    every = ["Met", "Unmet", "N/A", "?"]
+    filtered, _ = progress(level="passing", statuses=every)
+    assert answered(filtered) == ["contribution", "description_good"]
+    assert filtered["statuses_not_retrieved"] == missing
+    selected, _ = progress(level="passing", ids=["interact", "contribution"], statuses=["?"])
+    assert answered(selected) == ["contribution"]
+    assert selected["statuses_not_retrieved"] == ["interact"]
 
 
 @pytest.mark.parametrize("value", ["met", "absent", None, 1, {"future": "value"}])
 def test_unrecognized_saved_statuses_match_no_status_filter(value):
     record = fixture() | {"description_good_status": value}
-    every = ["Met", "Unmet", "N/A", "?", "absent"]
+    every = ["Met", "Unmet", "N/A", "?"]
     filtered, _ = progress(record, "passing", ["description_good"], statuses=every)
-    assert filtered["criterion_ids"] == [] and filtered["answers"] == {}
+    assert filtered["answers"] == {}
+    assert filtered["statuses_not_retrieved"] == []
     unfiltered, _ = progress(record, "passing", ["description_good"])
     assert unfiltered["answers"]["description_good_status"] == value
 
@@ -353,7 +454,6 @@ def test_unrecognized_saved_statuses_match_no_status_filter(value):
 def test_justifications_can_be_left_out():
     result, _ = progress(level="passing", include_justifications=False)
     assert result["answers"] == {"contribution_status": "?", "description_good_status": "Met"}
-    assert len(result["criterion_ids"]) == 67
     baseline, _ = progress(level="baseline-1", ids=["osps_ac_01_01"], include_justifications=False)
     assert baseline["answers"] == {"osps_ac_01_01_status": "Met"}
 
@@ -361,14 +461,14 @@ def test_justifications_can_be_left_out():
 def test_status_filter_requires_a_level_before_network():
     http = FakeHTTP(fixture())
     with pytest.raises(DomainError) as caught:
-        asyncio.run(BadgeAppClient(http).get_project_progress(123, statuses=["Met"]))
+        asyncio.run(BadgeAppClient(http).get_project_answers(123, None, statuses=["Met"]))
     assert caught.value.code == "invalid_level"
     assert http.calls == []
 
 
 def test_explicit_empty_filter_selects_no_saved_answers():
     result, _ = progress(level="passing", ids=[])
-    assert result["answers"] == {} and result["criterion_ids"] == []
+    assert result["answers"] == {} and result["statuses_not_retrieved"] == []
 
 
 @pytest.mark.parametrize(
@@ -383,7 +483,7 @@ def test_explicit_empty_filter_selects_no_saved_answers():
 def test_invalid_catalog_scope_is_rejected_before_network(level, ids):
     http = FakeHTTP(fixture())
     with pytest.raises(DomainError):
-        asyncio.run(BadgeAppClient(http).get_project_progress(123, level, ids))
+        asyncio.run(BadgeAppClient(http).get_project_answers(123, level, ids))
     assert http.calls == []
 
 
@@ -391,7 +491,9 @@ def test_invalid_catalog_scope_is_rejected_before_network(level, ids):
 def test_invalid_progress_id_is_local_error(project_id):
     http = FakeHTTP(fixture())
     with pytest.raises(DomainError):
-        asyncio.run(BadgeAppClient(http).get_project_progress(project_id))
+        asyncio.run(BadgeAppClient(http).get_project_status(project_id))
+    with pytest.raises(DomainError):
+        asyncio.run(BadgeAppClient(http).get_project_answers(project_id, "passing"))
     assert http.calls == []
 
 
@@ -424,16 +526,15 @@ def test_malformed_search_shape_is_not_an_empty_success(data):
     "field,value",
     [
         ("name", 42),
-        ("badge_percentage_0", True),
-        ("badge_percentage_0", float("nan")),
         ("project_entry_license", 3),
     ],
 )
-def test_invalid_public_metadata_is_an_upstream_error(field, value):
+@pytest.mark.parametrize("read", [progress, status])
+def test_invalid_public_metadata_is_an_upstream_error(read, field, value):
     record = fixture()
     record[field] = value
     with pytest.raises(DomainError) as caught:
-        progress(record)
+        read(record)
     assert caught.value.code == "upstream_invalid_response"
 
 
@@ -460,17 +561,17 @@ def test_excessively_nested_public_answers_are_upstream_errors():
 def test_large_json_integer_percentage_is_preserved_without_float_conversion():
     record = fixture()
     record["badge_percentage_0"] = 10**400
-    result, _ = progress(record)
-    assert result["summaries"][0]["upstream_percentage"] == 10**400
+    result, _ = status(record)
+    assert result["levels"][0]["percentage"] == 10**400
 
 
 def test_repeated_reads_make_fresh_requests_and_do_not_mutate_source():
     record = fixture()
     http = FakeHTTP(record)
     client = BadgeAppClient(http)
-    first = asyncio.run(client.get_project_progress(123, "passing", ["description_good"]))
+    first = asyncio.run(client.get_project_answers(123, "passing", ["description_good"]))
     first["answers"]["description_good_status"] = "Unmet"
-    second = asyncio.run(client.get_project_progress(123, "passing", ["description_good"]))
+    second = asyncio.run(client.get_project_answers(123, "passing", ["description_good"]))
     assert second["answers"]["description_good_status"] == "Met"
     assert len(http.calls) == 2
     assert record == fixture()

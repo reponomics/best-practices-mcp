@@ -70,11 +70,10 @@ def test_document_input_schemas_preserve_nested_unfamiliar_json(tool, field):
 
 @pytest.mark.parametrize("value", JSON_VALUES)
 def test_progress_preserves_unexpected_saved_values(value):
-    payload = copy.deepcopy(EXAMPLES["get_project_progress"]["success"])
-    payload["summary_metadata"] = {"badge_level": value}
+    payload = copy.deepcopy(EXAMPLES["get_project_answers"]["success"])
     payload["answers"] = {"description_good_status": value}
-    Draft202012Validator(output_schema("get_project_progress")).validate(payload)
-    assert validate_output("get_project_progress", payload).model_dump(mode="json") == payload
+    Draft202012Validator(output_schema("get_project_answers")).validate(payload)
+    assert validate_output("get_project_answers", payload).model_dump(mode="json") == payload
 
 
 @pytest.mark.parametrize("value", [float("nan"), float("inf"), b"bytes", (1,), {1: "bad key"}])

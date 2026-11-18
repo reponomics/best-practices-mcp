@@ -13,18 +13,19 @@ from best_practices_mcp.models import ErrorResult
 NETWORK_TOOLS = frozenset(
     {
         "find_project",
-        "get_project_progress",
-        "get_project_badge_status",
+        "get_project_status",
+        "get_project_answers",
         "get_project_badge_svg",
         "prepare_update_url",
     }
 )
-BADGE_TOOLS = frozenset({"get_project_badge_status", "get_project_badge_svg"})
+# Network reads that add no side effects when repeated, though their observations may change.
+REPEATABLE_READS = frozenset({"get_project_status", "get_project_badge_svg"})
 TITLES = {
     "get_criteria": "Get badge criteria",
     "find_project": "Find BadgeApp project",
-    "get_project_progress": "Get project progress",
-    "get_project_badge_status": "Get project badge status",
+    "get_project_status": "Get project status",
+    "get_project_answers": "Get saved answers",
     "get_project_badge_svg": "Get project badge SVG",
     "build_draft": "Build draft document",
     "read_draft": "Read stored draft",
@@ -46,9 +47,8 @@ def tool_definition(name: str, description: str) -> Tool:
         annotations=ToolAnnotations(
             read_only_hint=not mutation,
             destructive_hint=mutation,
-            # Badge reads have no additional side effects; their observations may change.
             # Preserve existing annotations on the previously published tools.
-            idempotent_hint=name not in NETWORK_TOOLS or name in BADGE_TOOLS,
+            idempotent_hint=name not in NETWORK_TOOLS or name in REPEATABLE_READS,
             open_world_hint=name in NETWORK_TOOLS,
         ),
     )
@@ -82,7 +82,7 @@ def tool_result(name: str, payload: dict) -> CallToolResult:
             details={"limit_bytes": RESPONSE_LIMIT_BYTES},
             recovery=(
                 "View the badge on BadgeApp's project page or report the oversized badge response."
-                if name in BADGE_TOOLS
+                if name == "get_project_badge_svg"
                 else "Request fewer criteria, index detail, or a smaller document."
             ),
         )

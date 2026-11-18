@@ -6,6 +6,7 @@ an update's outcome uncertain to its caller; read the draft rather than retrying
 
 import asyncio
 import os
+import re
 import stat
 import sys
 import tempfile
@@ -120,6 +121,30 @@ class DraftStore:
         _require_kind(path.parent.parent, directory=True)
         _require_kind(path.parent, directory=True)
         return _require_kind(path, directory=False)
+
+    def _stored_projects(self) -> list[int]:
+        projects = self.root / "projects"
+        try:
+            if _require_kind(projects, directory=True) is None:
+                return []
+            names = os.listdir(projects)
+        except OSError:
+            return []
+        found = []
+        for name in names:
+            # Only the canonical decimal directory that location() would use.
+            if not re.fullmatch(r"[1-9][0-9]{0,17}", name):
+                continue
+            try:
+                if self._check_layout(self.location(int(name))) is not None:
+                    found.append(int(name))
+            except OSError:
+                continue
+        return sorted(found)
+
+    async def project_ids(self) -> list[int]:
+        """List projects that have a draft file, without reading or creating anything."""
+        return await asyncio.to_thread(self._stored_projects)
 
     def _load(self, project_id: int) -> dict | None:
         path = self.location(project_id)

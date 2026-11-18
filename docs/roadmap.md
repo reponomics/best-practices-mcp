@@ -4,7 +4,7 @@ Planned items are accepted directions for future work, without a committed relea
 
 ## Implemented
 
-- **Badge SVG and compact status tools.** `get_project_badge_svg` and `get_project_badge_status` implement [ADR 0001](adr/0001-badge-image-and-status-tools.md), accepted on 2026-11-14. They cover both badge families while keeping image retrieval separate from progress/update-time observations.
+- **Badge SVG and project status tools.** `get_project_badge_svg` implements [ADR 0001](adr/0001-badge-image-and-status-tools.md), accepted on 2026-11-14, for both badge families. The compact status tool that ADR also introduced was replaced by `get_project_status`, which reports every level from the full project record.
 
 - **Reference terminal host removal.** [ADR 0004](adr/0004-remove-reference-host.md) removes the custom client, preserves two integration scenarios in existing MCP tests, and uses Inspector plus live-browser qualification.
 
@@ -26,14 +26,14 @@ Research baseline: **2026-11-13**, upstream revision [`31325acd7963e0c9203da0ff7
 
 #### Coverage and evidence
 
-Before this expansion, the nine-tool surface fetched only `/projects/{id}.json` and `/projects.json` with `q` or `url`, plus `page`. The current ten-tool surface also fetches the four badge JSON/SVG routes below. `get_project_progress` already returns all six level percentages and available overall progress fields; adding another full-record progress reader would duplicate it. The opportunity is to expose useful search controls and smaller or different datasets.
+Before this expansion, the nine-tool surface fetched only `/projects/{id}.json` and `/projects.json` with `q` or `url`, plus `page`. The current ten-tool surface also fetches the two badge SVG routes below. `get_project_status` returns all six level percentages with achievement times from the full record; adding another full-record status reader would duplicate it. The opportunity is to expose useful search controls and smaller or different datasets.
 
 | Upstream surface | Current coverage | Proposed disposition |
 | --- | --- | --- |
 | `/projects.json`: `q`, `url`, `page`, `pq`, `status`, `gteq`, `lteq` | Text/exact-URL discovery and pagination only | Extend `find_project` for cohort discovery; resolve filter semantics first. |
 | `/projects/{id}.json` | Identity, progress and artifact identity checks | Retain existing tools; reuse collection summaries rather than fetching every matching record. |
 | `/projects/{id}/badge.svg`, `/projects/{id}/baseline.svg` | Implemented by `get_project_badge_svg` | Bounded SVG artifact and dynamic README embedding for either badge family. |
-| `/projects/{id}/badge.json`, `/projects/{id}/baseline.json` | Implemented by `get_project_badge_status` | Compact progress and last-updated observation for either badge family; detailed criteria remain in `get_project_progress`. |
+| `/projects/{id}/badge.json`, `/projects/{id}/baseline.json` | None; read by the retired `get_project_badge_status` | One family's badge value and a single percentage. `get_project_status` supersedes them with per-level figures from the full record. |
 | `/project_stats/{total_projects,nontrivial_projects,silver,gold}.json` | None | Candidate aggregate reporting tool, subject to response-size and compatibility gates. |
 | `/en/project_stats/{activity_30,daily_activity,reminders,silver_and_gold,percent_earning,user_statistics}.json`; `/en/project_stats.json` and `.csv` | None | Inventory for later reporting needs; no separate tool per chart or unrestricted full-history export. |
 | `/en/feed` (Atom) | None | Defer a recent-project-activity tool until monitoring is a demonstrated need. |
@@ -59,12 +59,12 @@ Acceptance examples: repository-prefix search; a verified near-passing range; an
 
 #### Priority 2: separate badge image and quick-status tools
 
-**Implemented.** [ADR 0001](adr/0001-badge-image-and-status-tools.md) records the accepted tool boundaries, discovery descriptions, alternatives, timestamp semantics and acceptance criteria. Both tools take an explicitly selected `project_id` and a `family` of `best_practices` or `baseline`. SVG retrieval requires a family; compact status defaults an omitted family to `best_practices` and reports the effective family.
+**Implemented, then revised.** [ADR 0001](adr/0001-badge-image-and-status-tools.md) records the original tool boundaries, alternatives, timestamp semantics and acceptance criteria. SVG retrieval is unchanged: it takes an explicitly selected `project_id` and a required `family` of `best_practices` or `baseline`. The compact status tool was retired in favour of `get_project_status`; the [contract](contracts.md#read-selection-and-migration) records the migration.
 
 - **`get_project_badge_svg(project_id, family)` — “Add my project's badge to the README.”** Return a bounded SVG artifact, its dynamic image URL, project-page URL and Markdown embed snippet. The host handles repository edits. Prefer the dynamic URL for an evolving README badge; downloaded SVG is a snapshot.
-- **`get_project_badge_status(project_id, family="best_practices")` — “Quickly show progress and last updated.”** Return the compact JSON observation with project identity, effective family, family-specific badge/progress fields, upstream `updated_at`, source URL and fetch time. Identify service credit separately from per-record attribution, which this endpoint does not supply. Keep these fields together; separate update-time or percentage tools would repeat the same upstream request without serving a distinct task.
+- **`get_project_status(project_id)` — “Where does this project stand?”** Return project identity, the reported badge level, each level's percentage with achievement and loss times, upstream `updated_at`, source URL and fetch time, from one full-record read.
 
-Retain `get_project_progress` for detailed level progress and saved criterion answers. Each new tool fetches only its own representation. Update time can help a host follow up on changes; comparing specific proposed fields uses the saved answers available through `get_project_progress`. This choice reflects the fields returned, without assuming either endpoint is fresher. SVG media-type handling and family-specific JSON mappings preserve bounded transport and explicit timestamp uncertainty, without adding polling or automatic save retries.
+`get_project_answers` supplies saved criterion answers for one level. Update time can help a host follow up on changes; comparing specific proposed fields uses those saved answers. SVG media-type handling preserves bounded transport, without adding polling or automatic save retries.
 
 #### Priority 3: bounded ecosystem statistics
 

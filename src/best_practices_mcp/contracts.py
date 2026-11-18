@@ -9,8 +9,8 @@ from best_practices_mcp import models
 INPUT_MODELS: dict[str, type[models.Model]] = {
     "get_criteria": models.CriteriaInput,
     "find_project": models.FindProjectInput,
-    "get_project_progress": models.ProgressInput,
-    "get_project_badge_status": models.BadgeStatusInput,
+    "get_project_status": models.ProjectInput,
+    "get_project_answers": models.AnswersInput,
     "get_project_badge_svg": models.BadgeSVGInput,
     "build_draft": models.BuildDraftInput,
     "read_draft": models.ProjectInput,
@@ -21,8 +21,8 @@ INPUT_MODELS: dict[str, type[models.Model]] = {
 OUTPUT_MODELS: dict[str, type[models.Model]] = {
     "get_criteria": models.GetCriteriaResult,
     "find_project": models.FindProjectResult,
-    "get_project_progress": models.GetProjectProgressResult,
-    "get_project_badge_status": models.GetProjectBadgeStatusResult,
+    "get_project_status": models.GetProjectStatusResult,
+    "get_project_answers": models.GetProjectAnswersResult,
     "get_project_badge_svg": models.GetProjectBadgeSVGResult,
     "build_draft": models.BuildDraftResult,
     "read_draft": models.ReadDraftResult,

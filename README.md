@@ -45,8 +45,8 @@ Starting the executable directly in a terminal waits for MCP messages; it is not
 | --- | --- | --- |
 | `find_project` | Find public project candidates by ID, repository/homepage URL, or text; the host selects the intended project. | Public BadgeApp GETs |
 | `get_criteria` | List the bundled criteria of a badge level, or read the full text of selected criteria or a category. | Offline |
-| `get_project_progress` | Read all-level percentages or a level's saved answers, optionally filtered by criterion or status, with source and fetch time. | Public BadgeApp GETs |
-| `get_project_badge_status` | Quickly read one badge family's status, progress and project-record update time. | Public BadgeApp JSON GET |
+| `get_project_status` | Read a project's badge level, the percentage and achievement date at each of the six levels, and its last update time. | Public BadgeApp GET |
+| `get_project_answers` | Read the answers a project has saved for one badge level, optionally filtered by criterion or status, with source and fetch time. | Public BadgeApp GET |
 | `get_project_badge_svg` | Retrieve a badge SVG and dynamic README embed snippet for one badge family. | Public BadgeApp SVG GET |
 | `build_draft` | Create or patch a document supplied by the host. | Offline; no stored files changed |
 | `read_draft` | Read the complete locally stored draft for a project. | Local read |
@@ -64,11 +64,11 @@ See the [tool specification](docs/specification.md) and [payload contracts](docs
 - **Review in the browser:** artifacts include eligible supplied fields even when they match saved values. Reports describe what was included or excluded, not what BadgeApp will retain or save. BadgeApp documents trimming leading/trailing whitespace from URL-proposed justifications. See [transfer rules](docs/transfer-rules.md) for override behavior.
 - **Authentication stays in your browser:** public reads need no BadgeApp credentials. Applying proposals requires your own authenticated session and appropriate project permissions.
 
-### Badge status and README images
+### Project status and README images
 
-After selecting a project, `get_project_badge_status(project_id=123)` reads its compact Best Practices status; set `family="baseline"` for Baseline. Best Practices reports tiered progress, while the Baseline percentage refers only to level 1. Use `get_project_progress` for individual-level percentages, all-six-level summaries or saved criterion answers. The project's `updated_at` reports its record update time; `fetched_at` records when the response was retrieved.
+After selecting a project, `get_project_status(project_id=123)` reports the badge level it holds, the percentage complete and achievement date at each of the six levels, and when the entry was last updated; `fetched_at` records when the response was retrieved. It is the tool for any question about where a project stands. Use `get_project_answers` with a level for the answers saved to individual criteria.
 
-`get_project_badge_svg(project_id=123, family="best_practices")` returns SVG text, a dynamic image URL and a Markdown snippet. The host can insert the snippet in a README or save the SVG. Prefer the dynamic URL for a badge that follows future project changes; downloaded SVG is a snapshot. The server does not render SVG or modify repository files. Both tools support `best_practices` and `baseline`, and neither creates drafts.
+`get_project_badge_svg(project_id=123, family="best_practices")` returns SVG text, a dynamic image URL and a Markdown snippet. The host can insert the snippet in a README or save the SVG. Prefer the dynamic URL for a badge that follows future project changes; downloaded SVG is a snapshot. The server does not render SVG or modify repository files. The tool supports `best_practices` and `baseline` and creates no drafts.
 
 ### Optional draft storage
 

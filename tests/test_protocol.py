@@ -67,13 +67,17 @@ def test_modern_discovery_without_initialize_and_stable_lists(tmp_path: Path) ->
     instructions = replies[0]["result"]["instructions"]
     assert '"<criterion_id>_status", one of "Met", "Unmet", "N/A", "?"' in instructions
     assert "never saves to BadgeApp" in instructions
+    assert "guide://repository-file" in instructions
+    assert "For a project's status alone: get_project_status." in instructions
+    assert "criteria://{level}/{criterion_id}" in instructions
+    assert "project://{project_id}/{level}/{category}" in instructions
     assert [tool["name"] for tool in replies[1]["result"]["tools"]] == [
         "build_draft",
         "find_project",
         "get_criteria",
-        "get_project_badge_status",
+        "get_project_answers",
         "get_project_badge_svg",
-        "get_project_progress",
+        "get_project_status",
         "prepare_update_url",
         "read_draft",
         "update_draft",

@@ -20,25 +20,6 @@ EXAMPLES = json.loads(
 )
 
 
-async def assert_status_observation(client, family):
-    arguments = {"project_id": 123}
-    if family == "baseline":
-        arguments["family"] = family
-    status = await client.call_tool("get_project_badge_status", arguments)
-    payload = status.structured_content
-    assert not status.is_error
-    Draft202012Validator(output_schema("get_project_badge_status")).validate(payload)
-    assert json.loads(status.content[0].text) == payload
-    assert payload["family"] == family
-    assert payload["updated_at"] == "2026-11-13T12:34:56Z"
-    assert payload["updated_at_status"] == "valid"
-    assert payload["observation"]["project_entry_attribution"] is None
-    assert payload["observation"]["project_entry_license"] is None
-    expected_value = 220 if family == "best_practices" else 37
-    assert payload["progress"]["value"] == expected_value
-    assert payload["progress"]["level"] == (None if family == "best_practices" else "baseline-1")
-
-
 async def assert_svg_artifact(client, family):
     image = await client.call_tool("get_project_badge_svg", {"project_id": 123, "family": family})
     payload = image.structured_content
@@ -54,7 +35,7 @@ async def assert_svg_artifact(client, family):
     assert payload["image_url"] in payload["markdown"]
 
 
-def test_badge_tools_over_stdio_preserve_payloads_and_leave_storage_untouched(tmp_path: Path):
+def test_badge_svg_over_stdio_preserves_payloads_and_leaves_storage_untouched(tmp_path: Path):
     async def exercise():
         parameters = StdioServerParameters(
             command=sys.executable,
@@ -64,23 +45,24 @@ def test_badge_tools_over_stdio_preserve_payloads_and_leave_storage_untouched(tm
         )
         async with asyncio.timeout(15), Client(parameters, read_timeout_seconds=5) as client:
             tools = {tool.name: tool for tool in (await client.list_tools()).tools}
-            for name in ("get_project_badge_status", "get_project_badge_svg"):
-                tool = tools[name]
-                assert tool.title
-                assert tool.annotations.read_only_hint
-                assert tool.annotations.idempotent_hint
-                assert tool.annotations.open_world_hint
-                assert not tool.annotations.destructive_hint
+            assert "get_project_badge_status" not in tools
+            tool = tools["get_project_badge_svg"]
+            assert tool.title
+            assert tool.annotations.read_only_hint
+            assert tool.annotations.idempotent_hint
+            assert tool.annotations.open_world_hint
+            assert not tool.annotations.destructive_hint
             for family in ("best_practices", "baseline"):
-                await assert_status_observation(client, family)
                 await assert_svg_artifact(client, family)
-            for name in ("get_project_badge_status", "get_project_badge_svg"):
-                missing = await client.call_tool(name, {"project_id": 999, "family": "baseline"})
-                assert missing.is_error
-                assert missing.structured_content["error"]["code"] == "project_not_found"
-                invalid = await client.call_tool(name, {"project_id": True, "family": "baseline"})
-                assert invalid.is_error
-                assert "input_value" not in invalid.content[0].text
+            arguments = {"project_id": 999, "family": "baseline"}
+            missing = await client.call_tool("get_project_badge_svg", arguments)
+            assert missing.is_error
+            assert missing.structured_content["error"]["code"] == "project_not_found"
+            invalid = await client.call_tool(
+                "get_project_badge_svg", arguments | {"project_id": True}
+            )
+            assert invalid.is_error
+            assert "input_value" not in invalid.content[0].text
             omitted = await client.call_tool("get_project_badge_svg", {"project_id": 123})
             assert omitted.is_error
 

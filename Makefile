@@ -116,7 +116,7 @@ smoke-live: ## Opt-in paced public GET compatibility check (PROJECT_ID=1)
 
 .PHONY: smoke-badges
 
-smoke-badges: ## Opt-in paced JSON/SVG badge compatibility check (PROJECT_ID=1, read-only)
+smoke-badges: ## Opt-in paced SVG badge compatibility check (PROJECT_ID=1, read-only)
 	"$(PYTHON)" scripts/smoke_badges.py --project-id "$(PROJECT_ID)"
 
 .PHONY: test-upstream test-documents

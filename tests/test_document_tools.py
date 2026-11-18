@@ -120,7 +120,8 @@ def test_pure_handlers_and_missing_drafts_do_not_need_http(tmp_path):
     "name,arguments",
     [
         ("find_project", {"query": "example"}),
-        ("get_project_progress", {"project_id": 123}),
+        ("get_project_status", {"project_id": 123}),
+        ("get_project_answers", {"project_id": 123, "level": "passing"}),
         ("prepare_update_url", {"project_id": 123, "section": "passing", "draft": {}}),
     ],
 )

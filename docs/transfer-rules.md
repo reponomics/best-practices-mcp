@@ -48,6 +48,12 @@ Return one exact URL and its encoded UTF-8 byte length. Do not truncate, batch, 
 
 Repository publishing and import acceptance belong to the host and BadgeApp. Local drafts and artifact generation do not enforce internal importer limits or predict importer results. A fresh public read after a separately authorized save records observed saved state.
 
+## Repository file
+
+BadgeApp can also take answers from a `.bestpractices.json` committed to the project's repository. Drafts use that file's format, and the stored draft shares its name, but the server has no tool that reads, writes or sends the repository file: BadgeApp reads it from the pushed repository, which no tool here can cause. A host with file access can copy a stored draft from its `location`, or write out a `build_draft` result, and the user commits and pushes it.
+
+The server instructions mention the file in one sentence and point to the `guide://repository-file` resource, whose text is [repository-file.md](../src/best_practices_mcp/data/repository-file.md). That guide separates what upstream documents from what was read in upstream source at the pinned revision: file values fill unanswered criteria and do not replace saved answers, so replacing an answer remains a job for a proposal URL with overrides. The route is untested with this server; the [live browser runbook](live-browser-qa.md#3-repository-file-optional) has an optional case for it.
+
 ## Unknown-status limitation
 
 URL proposals to reset a status to `?` are observed not to work, even with overrides, despite conflicting BadgeApp documentation. Ordinary overrides work. The MCP encodes `?` and returns the nonblocking `unknown_status_reset_unsupported` warning from both preparation and validation, with affected fields and observation date. Unknown-only proposals still produce an artifact, and accompanying justification is evaluated independently. The warning reports the limitation without recommending an alternative update method. The warning reflects the [recorded live previews](adr/0005-proposal-intent-and-compatibility-warnings.md#context-and-observations), not a per-call probe. [Public guide](../vendor/badgeapp/docs/automation-proposals.md#status-value-semantics-query-strings-vs-json), [decision matrix](../vendor/badgeapp/docs/automation-approach.md#the-decision-matrix).

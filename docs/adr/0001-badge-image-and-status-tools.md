@@ -1,6 +1,6 @@
 # ADR 0001: Separate badge images from compact status observations
 
-- **Status:** Accepted for implementation by the user on 2026-11-14; implemented by the two badge tools.
+- **Status:** Accepted for implementation by the user on 2026-11-14; implemented by the two badge tools. Superseded in part on 2026-11-18: `get_project_badge_status` was replaced by `get_project_status`, which reads the full project record, and `get_project_progress` became `get_project_answers`. The SVG decision stands. The text below is the original record; see the [contract](../contracts.md#read-selection-and-migration) for the current tools.
 - **Date:** 2026-11-13
 - **Related:** [Roadmap](../roadmap.md#priority-2-separate-badge-image-and-quick-status-tools), [human-review boundary](../design.md#prepare-changes-leave-the-final-save-to-the-human), [current tool specification](../specification.md).
 
@@ -42,7 +42,7 @@ Progress and update time belong together because they answer one question about 
 
 ### Reviewed discovery descriptions
 
-Here, “combined” means badge state, progress and update time in one status observation. SVG retrieval remains a separate tool. The reviewed descriptions below define the discovery boundaries; exact result schemas are in the [implementation contract](../contracts.md#badge-observations-and-svg-artifacts).
+Here, “combined” means badge state, progress and update time in one status observation. SVG retrieval remains a separate tool. The reviewed descriptions below define the discovery boundaries; exact result schemas are in the [implementation contract](../contracts.md#project-status-and-svg-artifacts).
 
 **Name:** `get_project_badge_status`. **Title:** Get project badge status.
 

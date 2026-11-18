@@ -14,9 +14,9 @@ TOOLS = [
     "build_draft",
     "find_project",
     "get_criteria",
-    "get_project_badge_status",
+    "get_project_answers",
     "get_project_badge_svg",
-    "get_project_progress",
+    "get_project_status",
     "prepare_update_url",
     "read_draft",
     "update_draft",
@@ -74,8 +74,8 @@ async def synthetic_public_workflow(workspace: Path, env: dict) -> None:
     async with Client(params) as client:
         found = await call(client, "find_project", {"query": "123"})
         assert found["candidates"][0]["project"]["project_id"] == 123
-        progress = await call(client, "get_project_progress", {"project_id": 123})
-        assert progress["project"]["project_id"] == 123
+        status = await call(client, "get_project_status", {"project_id": 123})
+        assert status["project"]["project_id"] == 123
         result = await call(client, "prepare_update_url", {"project_id": 123, "section": "passing"})
         assert result["draft_source"]["kind"] == "stored" and result["artifact"]
         explicit = await call(

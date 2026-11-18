@@ -41,9 +41,6 @@ PERCENTAGES = dict(
         strict=True,
     )
 )
-SUMMARY_FIELDS = ("badge_level", "tiered_percentage", "baseline_tiered_percentage")
-# The status filter's name for a criterion whose status field is not in the record.
-ABSENT = "absent"
 
 
 def _upstream(message: str, field: str | None = None) -> DomainError:
@@ -205,29 +202,31 @@ def _matches(record: dict, definition: dict, statuses: list[str] | None) -> bool
     """Apply a status filter; values outside the known set match only without one."""
     if statuses is None:
         return True
-    field = definition["status_field"]
-    if field not in record:
-        return ABSENT in statuses
-    status = record[field]
+    status = record.get(definition["status_field"])
     return type(status) is str and status in VALID_STATUSES.intersection(statuses)
 
 
 def _saved_answers(
     record: dict, definitions: list[dict], statuses: list[str] | None, justifications: bool
 ) -> tuple[dict, list[str]]:
-    """Copy the supplied fields of matching criteria; missing fields stay missing."""
+    """Copy the supplied fields of matching criteria; missing fields stay missing.
+
+    BadgeApp stores a status for every criterion, "?" until one is chosen, so a status
+    missing from the record was not retrieved. It is reported, never read as an answer.
+    """
     kinds = ("status", "justification") if justifications else ("status",)
-    answers, matched = {}, []
+    answers, not_retrieved = {}, []
     for definition in definitions:
+        if definition["status_field"] not in record:
+            not_retrieved.append(definition["criterion_id"])
         if not _matches(record, definition, statuses):
             continue
-        matched.append(definition["criterion_id"])
         for kind in kinds:
             field = definition[f"{kind}_field"]
             if field in record:
                 answers[field] = copy.deepcopy(record[field])
     _check_answer_bounds(answers)
-    return answers, matched
+    return answers, not_retrieved
 
 
 def _check_answer_bounds(answers: dict) -> None:
@@ -243,15 +242,28 @@ def _check_answer_bounds(answers: dict) -> None:
         raise _upstream("Public answers contain unsupported JSON values or nesting.") from exc
 
 
-def _summaries(record: dict) -> list[dict]:
-    summaries = []
+def _percentage(record: dict, field: str) -> float | int | None:
+    value = record.get(field)
+    invalid_number = type(value) is float and not math.isfinite(value)
+    if value is not None and (type(value) not in (int, float) or invalid_number):
+        raise _upstream("A public progress percentage has an unexpected value.", field)
+    return value
+
+
+def _level_statuses(record: dict) -> list[dict]:
+    """Copy each level's reported percentage and achievement times; compute nothing."""
+    statuses = []
     for level, field in PERCENTAGES.items():
-        value = record.get(field)
-        invalid_number = type(value) is float and not math.isfinite(value)
-        if value is not None and (type(value) not in (int, float) or invalid_number):
-            raise _upstream("A public progress percentage has an unexpected value.", field)
-        summaries.append({"level": level, "upstream_percentage": value})
-    return summaries
+        stem = level.replace("-", "_")
+        statuses.append(
+            {
+                "level": level,
+                "percentage": _percentage(record, field),
+                "achieved_at": _optional_text(record, f"achieved_{stem}_at"),
+                "lost_at": _optional_text(record, f"lost_{stem}_at"),
+            }
+        )
+    return statuses
 
 
 def _observation(result: Any, record: dict) -> dict:
@@ -329,34 +341,45 @@ class BadgeAppClient:
         observation = _observation(result, record)
         return record, observation
 
-    async def get_project_progress(
+    async def get_project_status(self, project_id: int) -> dict:
+        """Report the badge level and per-level progress that BadgeApp records."""
+        _positive_integer(project_id, "project_id")
+        result = await self.http.get_json(f"/projects/{project_id}.json")
+        record = _record(result.data, project_id)
+        return {
+            "schema_version": 1,
+            "project": _project(record),
+            "badge_level": _optional_text(record, "badge_level"),
+            "levels": _level_statuses(record),
+            "updated_at": _optional_text(record, "updated_at"),
+            "observation": _observation(result, record),
+        }
+
+    async def get_project_answers(
         self,
         project_id: int,
-        level: str | None = None,
+        level: str,
         criterion_ids: list[str] | None = None,
         statuses: list[str] | None = None,
         include_justifications: bool = True,
     ) -> dict:
+        """Return the answers saved for one level, optionally narrowed."""
         _positive_integer(project_id, "project_id")
-        if level is None and statuses is not None:
-            raise DomainError("invalid_level", "A status filter requires a level.")
+        if level is None:
+            raise DomainError("invalid_level", "Saved answers are read one badge level at a time.")
         definitions = criterion_definitions(level, criterion_ids)
         result = await self.http.get_json(f"/projects/{project_id}.json")
         record = _normalized_record(_record(result.data, project_id))
-        answers, matched = _saved_answers(record, definitions, statuses, include_justifications)
+        answers, not_retrieved = _saved_answers(
+            record, definitions, statuses, include_justifications
+        )
         return {
-            "schema_version": 2,
+            "schema_version": 1,
             "project": _project(record),
             "level": level,
-            "summaries": _summaries(record),
             "answers": answers,
-            "criterion_ids": matched,
-            "level_criterion_count": (
-                None if level is None else level_summary(level)["criterion_count"]
-            ),
+            "statuses_not_retrieved": not_retrieved,
+            "level_criterion_count": level_summary(level)["criterion_count"],
             "observation": _observation(result, record),
             "catalog": catalog_reference(),
-            "summary_metadata": {
-                key: copy.deepcopy(record[key]) for key in SUMMARY_FIELDS if key in record
-            },
         }

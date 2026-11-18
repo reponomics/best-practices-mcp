@@ -44,8 +44,8 @@ def test_schemas_and_examples(tool: str) -> None:
     "tool",
     [
         "read_draft",
-        "get_project_progress",
-        "get_project_badge_status",
+        "get_project_status",
+        "get_project_answers",
         "get_project_badge_svg",
         "update_draft",
         "validate_draft",
@@ -87,9 +87,9 @@ def test_omitted_draft_is_not_empty_or_null(tool: str) -> None:
         Draft202012Validator(input_schema(tool)).validate(base | {"draft": None})
 
 
-@pytest.mark.parametrize("tool", ["get_criteria", "get_project_progress"])
+@pytest.mark.parametrize("tool", ["get_criteria", "get_project_answers"])
 def test_filter_requires_level_and_distinct_ids(tool: str) -> None:
-    base = {"project_id": 123} if tool == "get_project_progress" else {}
+    base = {"project_id": 123} if tool == "get_project_answers" else {}
     for extra in [
         {"criterion_ids": []},
         {"level": None, "criterion_ids": []},
@@ -101,7 +101,16 @@ def test_filter_requires_level_and_distinct_ids(tool: str) -> None:
     assert result.criterion_ids == []
     unfiltered = validate_input(tool, base | {"level": "passing", "criterion_ids": None})
     assert unfiltered.criterion_ids is MISSING
-    assert validate_input(tool, base | {"level": None}).level is MISSING
+
+
+def test_level_is_optional_for_criteria_and_required_for_answers() -> None:
+    assert validate_input("get_criteria", {"level": None}).level is MISSING
+    for arguments in ({"project_id": 123}, {"project_id": 123, "level": None}):
+        assert issues("get_project_answers", arguments) == [
+            {"field": "level", "problem": "is required"}
+        ]
+    assert input_schema("get_project_answers")["required"] == ["project_id", "level"]
+    assert list(input_schema("get_project_status")["properties"]) == ["project_id"]
 
 
 def test_criteria_selection_rules() -> None:
@@ -122,23 +131,23 @@ def test_criteria_selection_rules() -> None:
         Draft202012Validator(input_schema("get_criteria")).validate({"detail": "index"})
 
 
-def test_progress_filter_rules() -> None:
-    base = {"project_id": 123}
+def test_answer_filter_rules() -> None:
+    base = {"project_id": 123, "level": "passing"}
     for extra in [
-        {"statuses": ["Met"]},
-        {"level": "passing", "statuses": ["met"]},
-        {"level": "passing", "statuses": ["Met", "Met"]},
-        {"level": "passing", "statuses": "Met"},
+        {"statuses": ["met"]},
+        {"statuses": ["absent"]},
+        {"statuses": ["Met", "Met"]},
+        {"statuses": "Met"},
         {"include_justifications": "false"},
     ]:
         with pytest.raises(ValidationError):
-            validate_input("get_project_progress", base | extra)
+            validate_input("get_project_answers", base | extra)
     chosen = validate_input(
-        "get_project_progress",
-        base | {"level": "passing", "statuses": ["?", "absent"], "include_justifications": False},
+        "get_project_answers",
+        base | {"statuses": ["?", "Unmet"], "include_justifications": False},
     )
-    assert chosen.statuses == ["?", "absent"] and chosen.include_justifications is False
-    assert validate_input("get_project_progress", base).include_justifications is True
+    assert chosen.statuses == ["?", "Unmet"] and chosen.include_justifications is False
+    assert validate_input("get_project_answers", base).include_justifications is True
 
 
 @pytest.mark.parametrize(
@@ -147,8 +156,8 @@ def test_progress_filter_rules() -> None:
         ("build_draft", "changes"),
         ("prepare_update_url", "overrides"),
         ("find_project", "page"),
-        ("get_project_badge_status", "family"),
-        ("get_project_progress", "statuses"),
+        ("get_project_answers", "criterion_ids"),
+        ("get_project_answers", "statuses"),
     ],
 )
 def test_null_optional_arguments_are_omitted(tool: str, field: str) -> None:
@@ -198,7 +207,7 @@ def test_argument_issues_name_each_argument_and_its_allowed_values() -> None:
         {"field": "category", "problem": "cannot be combined with criterion_ids"}
     ]
     assert issues(
-        "get_project_progress",
+        "get_project_answers",
         {"project_id": True, "level": "passing", "statuses": ["Met", "met"], "criterion_ids": [1]},
     ) == [
         {"field": "criterion_ids", "problem": "has an item that must be a string"},
@@ -206,14 +215,15 @@ def test_argument_issues_name_each_argument_and_its_allowed_values() -> None:
         {
             "field": "statuses",
             "problem": "has an item that is not an allowed value",
-            "allowed": ["Met", "Unmet", "N/A", "?", "absent"],
+            "allowed": ["Met", "Unmet", "N/A", "?"],
         },
     ]
     assert issues("find_project", {"query": 3, "page": 0}) == [
         {"field": "page", "problem": "must be greater than zero"},
         {"field": "query", "problem": "must be a string"},
     ]
-    assert issues("get_project_progress", {"project_id": 1, "include_justifications": 1}) == [
+    wrong_type = {"project_id": 1, "level": "gold", "include_justifications": 1}
+    assert issues("get_project_answers", wrong_type) == [
         {"field": "include_justifications", "problem": "must be true or false"}
     ]
 
@@ -291,14 +301,10 @@ def test_filter_dependency_is_in_the_published_schema() -> None:
         Draft202012Validator(input_schema("get_criteria")).validate({"criterion_ids": []})
 
 
-def test_badge_status_default_and_svg_explicit_family() -> None:
-    assert (
-        validate_input("get_project_badge_status", {"project_id": 123}).family == "best_practices"
-    )
+def test_badge_svg_requires_an_explicit_family() -> None:
     for family in ("passing", "baseline-2", "", 1):
-        for tool in ("get_project_badge_status", "get_project_badge_svg"):
-            with pytest.raises(ValidationError):
-                validate_input(tool, {"project_id": 123, "family": family})
+        with pytest.raises(ValidationError):
+            validate_input("get_project_badge_svg", {"project_id": 123, "family": family})
     with pytest.raises(ValidationError):
         validate_input("get_project_badge_svg", {"project_id": 123})
     with pytest.raises(SchemaValidationError):

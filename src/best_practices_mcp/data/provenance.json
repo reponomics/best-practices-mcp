@@ -1682,6 +1682,7 @@
       "obsolete": false
     }
   },
+  "excluded_criteria": {},
   "files": {
     "LICENSE": "d579030dcd292b0925056544b00fe6e6895dcd68c1b8ae1d38014e376ef631d9",
     "config/locales/en.yml": "2dec2815dafb6444e2213ea224dab22633164f618c6297c3d511bcd6c4a8b5e8",
@@ -1698,9 +1699,10 @@
   "generator": {
     "format_version": 2,
     "path": "scripts/generate_catalog.py",
-    "sha256": "a78566e95c61546f703fb3efb7fbe0c4c17510250538c0e916f7d461573dae41"
+    "sha256": "2539c0bc4747246bb8db4aebd9eb5da2b5aef48ab727d33040bca853488ef34b"
   },
   "license_file": "BADGEAPP-LICENSE.txt",
+  "lifecycle_policy": "Criteria that upstream marks obsolete or future are left out of the catalog and named in excluded_criteria.",
   "repository": "https://github.com/ossf/best-practices-badge",
   "revision": "31325acd7963e0c9203da0ff798802a766237517",
   "text_policy": "English locale descriptions; upstream rank-bounded details inheritance"

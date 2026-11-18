@@ -11,6 +11,7 @@ from typing import Annotated, ClassVar, Literal, Self
 
 from pydantic import (
     MISSING,
+    AfterValidator,
     BaseModel,
     BeforeValidator,
     ConfigDict,
@@ -33,7 +34,7 @@ Section = Literal[
 ]
 BadgeFamily = Literal["best_practices", "baseline"]
 Detail = Literal["index", "full"]
-StatusFilter = Literal["Met", "Unmet", "N/A", "?", "absent"]
+StatusFilter = Literal["Met", "Unmet", "N/A", "?"]
 LEVELS: tuple[Level, ...] = ("passing", "silver", "gold", "baseline-1", "baseline-2", "baseline-3")
 PositiveInt = Annotated[int, Field(strict=True, gt=0)]
 NonNegativeInt = Annotated[int, Field(strict=True, ge=0)]
@@ -114,37 +115,16 @@ def _distinct(value: list) -> list:
     return value
 
 
-class CriterionScope(Input):
-    level: Level | MISSING = Field(
-        default=MISSING, description="Badge level whose criteria to select."
-    )
-    criterion_ids: (
-        Annotated[list[str], Field(json_schema_extra={"uniqueItems": True})] | MISSING
-    ) = Field(
-        default=MISSING,
-        description=(
-            "Criterion IDs within level, as listed by get_criteria. Omit to select every "
-            "criterion of the level."
-        ),
-    )
-
-    requires_level: ClassVar[tuple[str, ...]] = ("criterion_ids",)
-
-    @field_validator("criterion_ids")
-    @classmethod
-    def distinct_ids(cls, value: list[str]) -> list[str]:
-        return _distinct(value)
-
-    @model_validator(mode="after")
-    def filters_require_level(self) -> Self:
-        if self.level is MISSING:
-            for field in self.requires_level:
-                if field in self.model_fields_set:
-                    raise argument_error(field, "requires level")
-        return self
+DistinctIds = Annotated[
+    list[str], AfterValidator(_distinct), Field(json_schema_extra={"uniqueItems": True})
+]
+CRITERION_IDS = (
+    "Criterion IDs within level, as listed by get_criteria. Omit to select every criterion "
+    "of the level."
+)
 
 
-class CriteriaInput(CriterionScope):
+class CriteriaInput(Input):
     model_config = ConfigDict(
         json_schema_extra={
             "dependentRequired": {
@@ -155,6 +135,10 @@ class CriteriaInput(CriterionScope):
         }
     )
 
+    level: Level | MISSING = Field(
+        default=MISSING, description="Badge level whose criteria to select."
+    )
+    criterion_ids: DistinctIds | MISSING = Field(default=MISSING, description=CRITERION_IDS)
     category: str | MISSING = Field(
         default=MISSING,
         description=(
@@ -171,10 +155,12 @@ class CriteriaInput(CriterionScope):
         ),
     )
 
-    requires_level: ClassVar[tuple[str, ...]] = ("criterion_ids", "category", "detail")
-
     @model_validator(mode="after")
-    def one_selection(self) -> Self:
+    def selection_rules(self) -> Self:
+        if self.level is MISSING:
+            for field in ("criterion_ids", "category", "detail"):
+                if field in self.model_fields_set:
+                    raise argument_error(field, "requires level")
         if self.category is not MISSING and self.criterion_ids is not MISSING:
             raise argument_error("category", "cannot be combined with criterion_ids")
         return self
@@ -197,36 +183,25 @@ class ProjectInput(Input):
     )
 
 
-class ProgressInput(CriterionScope, ProjectInput):
-    model_config = ConfigDict(
-        json_schema_extra={"dependentRequired": {"criterion_ids": ["level"], "statuses": ["level"]}}
-    )
-
+class AnswersInput(ProjectInput):
+    level: Level = Field(description="Badge level whose saved answers to return.")
+    criterion_ids: DistinctIds | MISSING = Field(default=MISSING, description=CRITERION_IDS)
     statuses: (
-        Annotated[list[StatusFilter], Field(json_schema_extra={"uniqueItems": True})] | MISSING
+        Annotated[
+            list[StatusFilter],
+            AfterValidator(_distinct),
+            Field(json_schema_extra={"uniqueItems": True}),
+        ]
+        | MISSING
     ) = Field(
         default=MISSING,
         description=(
-            "Return only criteria whose saved status is one of these. absent selects "
-            "criteria with no saved status."
+            "Return only criteria whose saved status is one of these. BadgeApp saves ? for "
+            "every criterion until an answer is chosen."
         ),
     )
     include_justifications: bool = Field(
         default=True, description="Set false to return statuses without justification text."
-    )
-
-    requires_level: ClassVar[tuple[str, ...]] = ("criterion_ids", "statuses")
-
-    @field_validator("statuses")
-    @classmethod
-    def distinct_statuses(cls, value: list[str]) -> list[str]:
-        return _distinct(value)
-
-
-class BadgeStatusInput(ProjectInput):
-    family: BadgeFamily = Field(
-        default="best_practices",
-        description="Badge family to observe; returned as effective family.",
     )
 
 
@@ -472,41 +447,47 @@ class FindProjectResult(Result):
     observation: SearchObservation
 
 
-class Summary(Model):
+class LevelStatus(Model):
     level: Level
-    upstream_percentage: float | int | None
+    percentage: float | int | None = Field(
+        description="Percentage complete as BadgeApp reports it; null when it reports none."
+    )
+    achieved_at: str | None = Field(
+        description="When BadgeApp recorded the level as achieved; null if it has not."
+    )
+    lost_at: str | None = Field(
+        description="When BadgeApp recorded the level as lost after achieving it, if ever."
+    )
 
 
-class SummaryMetadata(Model):
-    badge_level: JsonValue | MISSING = MISSING
-    tiered_percentage: JsonValue | MISSING = MISSING
-    baseline_tiered_percentage: JsonValue | MISSING = MISSING
-
-
-class GetProjectProgressResult(ResultV2):
+class GetProjectStatusResult(Result):
     project: Project
-    level: Level | None
-    summaries: list[Summary]
+    badge_level: str | None = Field(
+        description="The Best Practices badge level BadgeApp reports, such as in_progress."
+    )
+    levels: list[LevelStatus]
+    updated_at: str | None = Field(description="When the project entry was last updated.")
+    observation: Observation
+
+
+class GetProjectAnswersResult(Result):
+    project: Project
+    level: Level
     answers: Draft = Field(
         description=(
-            "Saved fields of the matching criteria, in draft format. A criterion with nothing "
-            "saved has no fields here."
+            "Saved fields of the criteria that matched the filters, in draft format. Each has "
+            "its status field; an empty justification has no field."
         )
     )
-    criterion_ids: list[str] = Field(
-        description="Criteria that matched the filters, including those with nothing saved."
+    statuses_not_retrieved: list[str] = Field(
+        description=(
+            "Selected criteria whose status was missing from BadgeApp's response. Normally "
+            "empty; an entry is a retrieval failure, not an answer."
+        )
     )
-    level_criterion_count: NonNegativeInt | None = Field(
-        description="Number of criteria in the selected level; null without a level."
-    )
+    level_criterion_count: NonNegativeInt = Field(description="Number of criteria in the level.")
     observation: Observation
     catalog: CatalogRef
-    summary_metadata: SummaryMetadata
-
-
-class BadgeProject(Model):
-    project_id: PositiveInt
-    name: str | None
 
 
 class BadgeObservation(Model):
@@ -515,24 +496,6 @@ class BadgeObservation(Model):
     service_attribution: str
     project_entry_attribution: None
     project_entry_license: None
-
-
-class BadgeProgress(Model):
-    field: Literal["tiered_percentage", "badge_percentage"]
-    value: float | int | None
-    level: Literal["baseline-1"] | None
-
-
-class GetProjectBadgeStatusResult(Result):
-    project: BadgeProject
-    family: BadgeFamily
-    badge_level: str | None
-    badge_state: Literal["earned", "in_progress", "unrecognized", "unknown"]
-    progress: BadgeProgress
-    updated_at: str | None
-    updated_at_status: Literal["valid", "missing", "invalid"]
-    observation: BadgeObservation
-    caveats: list[str]
 
 
 class SVGArtifact(Model):
