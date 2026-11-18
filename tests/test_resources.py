@@ -225,6 +225,9 @@ def test_resources_over_stdio_read_catalog_and_project_documents(tmp_path: Path)
             assert await read(client, "criteria://silver/dco") == (
                 resources.criterion_document("silver", "dco")
             )
+            assert await read(client, "criteria://baseline-1/OSPS-AC-01.01") == (
+                resources.criterion_document("baseline-1", "osps_ac_01_01")
+            )
             category = await read(client, "project://123/passing/basics")
             assert category.startswith("# Fixture Alpha (project 123): Passing, Basics\n")
             assert "13 criteria: 1 Met, 12 not retrieved." in category
@@ -234,6 +237,7 @@ def test_resources_over_stdio_read_catalog_and_project_documents(tmp_path: Path)
             assert "## description_good (MUST): Unmet" in level
             failures = {
                 "criteria://silver/unknown": "does not define the requested criterion",
+                "criteria://baseline-1/OSPS-BR-02.01": "OSPS-BR-02.01 is a criterion of baseline-2",
                 "criteria://bronze/dco": "supported badge levels",
                 "criteria://unknown": "Unknown resource",
                 "project://abc/passing": "numeric project ID",

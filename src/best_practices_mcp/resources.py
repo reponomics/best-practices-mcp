@@ -289,6 +289,8 @@ def project_resources(project_ids: list[int]) -> list[Resource]:
 def _failure(error: DomainError) -> ResourceError:
     allowed = error.details.get("allowed")
     hint = f" Allowed: {', '.join(allowed)}." if allowed else ""
+    for name, levels in error.details.get("other_levels", {}).items():
+        hint += f" {name} is a criterion of {', '.join(levels)}."
     return ResourceError(f"{error.message}{hint} {error.recovery}")
 
 

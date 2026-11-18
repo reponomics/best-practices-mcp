@@ -70,9 +70,13 @@ def test_integer_valued_identifiers_are_accepted(project_id: object) -> None:
 
 
 @pytest.mark.parametrize("tool", INPUT_MODELS)
-def test_extra_arguments_are_rejected(tool: str) -> None:
-    with pytest.raises(ValidationError):
-        validate_input(tool, EXAMPLES[tool]["input"] | {"unexpected": True})
+@pytest.mark.parametrize("value", [True, None])
+def test_extra_arguments_are_rejected(tool: str, value: object) -> None:
+    with pytest.raises(ValidationError) as error:
+        validate_input(tool, EXAMPLES[tool]["input"] | {"unexpected": value})
+    assert argument_issues(tool, error.value) == [
+        {"field": "unexpected", "problem": "is not an argument of this tool"}
+    ]
 
 
 @pytest.mark.parametrize("tool", ["validate_draft", "prepare_update_url"])

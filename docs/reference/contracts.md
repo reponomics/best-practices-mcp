@@ -5,7 +5,7 @@ This document is the reference for the tools, the resources, the errors and the 
 ## Common conventions
 
 - Names use snake_case.
-- Types are strict. A string is not accepted where a number is expected. [Schema compatibility](schema-compatibility.md#declared-schemas-and-accepted-input) describes the two exceptions.
+- Types are strict. A string is not accepted where a number is expected. [Schema compatibility](schema-compatibility.md#declared-schemas-and-accepted-input) describes the exceptions.
 - An unknown argument is rejected.
 - Every result is a JSON object with a `schema_version`. The value belongs to one tool and increases when that tool's result changes incompatibly. It is 2 for `get_criteria`, `validate_draft` and `prepare_update_url`, and 1 for the others.
 - A result is returned as structured content and as the same JSON in text.
@@ -82,7 +82,7 @@ A failure is a tool result with `isError` set. Its content is `{schema_version: 
 | Code | Meaning |
 | --- | --- |
 | `invalid_arguments` | An argument is missing, unknown or of the wrong form. `details.issues` names each argument and, where the values are few, lists them. It does not repeat the value that was sent. |
-| `invalid_level`, `invalid_criterion`, `invalid_category`, `invalid_query`, `invalid_override`, `invalid_field` | A value is well formed but not acceptable, such as a criterion that the level does not define |
+| `invalid_level`, `invalid_criterion`, `invalid_category`, `invalid_query`, `invalid_override`, `invalid_field` | A value is well formed but not acceptable, such as a criterion that the level does not define. For `invalid_criterion`, `details.other_levels` gives the levels that do define each refused name. |
 | `invalid_document`, `document_too_large` | A draft is not a valid document, or exceeds a limit |
 | `draft_not_found`, `draft_read_failed`, `draft_write_failed` | The stored draft is absent, or the store could not read or write it |
 | `project_not_found` | BadgeApp has no project with that ID |

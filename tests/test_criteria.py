@@ -436,6 +436,64 @@ def test_bad_level_or_filter_is_actionable(level, ids, code) -> None:
     assert error.value.code == code
 
 
+# BadgeApp derives a field key from a criterion name by lowercasing it and changing each "-" and
+# "." to "_" (vendor/badgeapp/docs/automation-proposals.md). A lookup accepts any name that
+# reduces to an identifier in that way, and returns the identifier.
+def _spellings(criterion: dict) -> set[str]:
+    identifier = criterion["criterion_id"]
+    return {
+        identifier.upper(),
+        identifier.lower(),
+        identifier.replace("_", "-"),
+        identifier.replace("_", "."),
+        *criterion["aliases"],
+    }
+
+
+@pytest.mark.parametrize("level", catalog_levels())
+def test_lookup_ignores_letter_case_and_the_separator(level) -> None:
+    for criterion in criterion_definitions(level):
+        for spelling in _spellings(criterion):
+            [found] = criterion_definitions(level, [spelling])
+            assert found["criterion_id"] == criterion["criterion_id"], spelling
+
+
+def test_two_spellings_of_one_criterion_are_not_distinct() -> None:
+    criterion = criterion_definitions("baseline-1")[0]
+    with pytest.raises(DomainError) as error:
+        get_criteria("baseline-1", [criterion["criterion_id"], *criterion["aliases"]])
+    assert error.value.code == "invalid_criterion"
+
+
+def test_lookup_refuses_a_name_that_does_not_reduce_to_an_identifier() -> None:
+    identifiers = [criterion["criterion_id"] for criterion in criterion_definitions("passing")]
+    identifier = next(name for name in identifiers if "_" in name)
+    for name in (identifier + "_", identifier.replace("_", " "), identifier.replace("_", "")):
+        with pytest.raises(DomainError) as error:
+            get_criteria("passing", [name])
+        assert error.value.details == {
+            "level": "passing",
+            "criterion_ids": [name],
+            "other_levels": {},
+        }
+
+
+def test_a_refused_name_reports_the_levels_that_define_it() -> None:
+    levels = catalog_levels()
+    defined: dict[str, list[str]] = {}
+    for level in levels:
+        for criterion in criterion_definitions(level):
+            defined.setdefault(criterion["criterion_id"], []).append(level)
+    # One identifier that a single level defines, and one that two levels share.
+    for count in (1, 2):
+        identifier = next(name for name, found in defined.items() if len(found) == count)
+        wrong = next(level for level in levels if level not in defined[identifier])
+        with pytest.raises(DomainError) as error:
+            get_criteria(wrong, [identifier.upper(), "no_such_criterion"])
+        assert error.value.details["other_levels"] == {identifier.upper(): defined[identifier]}
+        assert "other_levels" in error.value.recovery
+
+
 def test_baseline_aliases_cover_both_fields_without_guessing() -> None:
     aliases = field_aliases()
     assert len(aliases) == 64 * 2

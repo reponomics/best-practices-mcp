@@ -3,7 +3,8 @@
 Models do not register tools or implement their application behavior. Results are
 strict. Tool arguments accept two documented variations of their published schema:
 a null optional argument counts as omitted, and identifiers may arrive as
-integer-valued numbers or decimal strings.
+integer-valued numbers or decimal strings. Criterion lookups also ignore letter case
+and the separator; criteria.py holds that rule.
 """
 
 import re
@@ -93,7 +94,7 @@ class Model(BaseModel):
 
 
 class Input(Model):
-    """Tool arguments; a null optional argument is treated as omitted."""
+    """Tool arguments; a null value for a declared argument is treated as omitted."""
 
     null_is_invalid: ClassVar[frozenset[str]] = frozenset()
 
@@ -102,10 +103,9 @@ class Input(Model):
     def omit_null_arguments(cls, data: object) -> object:
         if type(data) is not dict:
             return data
+        omittable = cls.model_fields.keys() - cls.null_is_invalid
         return {
-            key: value
-            for key, value in data.items()
-            if value is not None or key in cls.null_is_invalid
+            key: value for key, value in data.items() if value is not None or key not in omittable
         }
 
 

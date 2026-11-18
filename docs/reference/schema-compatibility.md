@@ -11,6 +11,8 @@ Argument validation accepts two forms that the schema does not declare, because 
 - A `null` value for an optional argument is treated as an omitted argument. `draft` is the exception.
 - `project_id` and `page` accept a whole number that is written as a decimal string or as a number such as `123.0`.
 
+A criterion lookup is also tolerant, within the declared schema. `criterion_ids` and the criterion resource ignore letter case and treat a hyphen or a period as an underscore, which is how BadgeApp derives a field name from a criterion. `OSPS-BR-02.01` therefore selects `osps_br_02_01`. Results always carry the identifier in its canonical form. Draft field names are not matched this way.
+
 ## Arbitrary JSON values
 
 Drafts and saved answers can hold any JSON value, including fields that the server does not know. The schema for such a value must not narrow it.

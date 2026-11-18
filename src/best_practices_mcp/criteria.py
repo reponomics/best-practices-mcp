@@ -36,6 +36,14 @@ def provenance() -> dict[str, Any]:
     return data
 
 
+_SEPARATORS = str.maketrans("-.", "__")
+
+
+def _name_key(name: str) -> str:
+    """Reduce a criterion name as BadgeApp does: lower case, with - and . changed to _."""
+    return name.casefold().translate(_SEPARATORS)
+
+
 def field_aliases() -> dict[str, str]:
     """Return only source-identified display fields, never guessed spellings."""
     aliases = {}
@@ -63,22 +71,55 @@ def _level_definitions(level: str) -> dict[str, dict[str, Any]]:
     return {c["criterion_id"]: c for c in catalog["criteria"] if c["level"] == level}
 
 
+def _resolved(definitions: dict[str, dict[str, Any]], names: list[str]) -> list[str | None]:
+    """Map each name to a criterion identifier of the level, or to None.
+
+    A name is an identifier or one of the criterion's source-identified aliases, such as the
+    display form OSPS-AC-01.01. Letter case is ignored, and a hyphen or a period counts as an
+    underscore. Results always carry the identifier.
+    """
+    known = {
+        _name_key(name): identifier
+        for identifier, definition in definitions.items()
+        for name in (identifier, *definition["aliases"])
+    }
+    return [name if name in definitions else known.get(_name_key(name)) for name in names]
+
+
+def _other_levels(names: list[str]) -> dict[str, list[str]]:
+    """For each name that some level defines, list those levels in catalog order."""
+    found: dict[str, list[str]] = {}
+    for level in catalog_levels():
+        resolved = _resolved(_level_definitions(level), names)
+        for name, identifier in zip(names, resolved):
+            if identifier is not None:
+                found.setdefault(name, []).append(level)
+    return found
+
+
 def _selected(
     definitions: dict[str, dict[str, Any]], level: str, criterion_ids: list[str]
 ) -> list[dict[str, Any]]:
     if any(type(value) is not str for value in criterion_ids):
         raise DomainError("invalid_criterion", "Criterion identifiers must be strings.")
-    if len(criterion_ids) != len(set(criterion_ids)):
-        raise DomainError("invalid_criterion", "Criterion identifiers must be distinct.")
-    unknown = set(criterion_ids) - definitions.keys()
+    resolved = _resolved(definitions, criterion_ids)
+    unknown = {name for name, identifier in zip(criterion_ids, resolved) if identifier is None}
     if unknown:
+        elsewhere = _other_levels(sorted(unknown))
         raise DomainError(
             "invalid_criterion",
             "The selected level does not define the requested criterion identifiers.",
-            details={"level": level, "criterion_ids": sorted(unknown)},
-            recovery="Call get_criteria with this level to list its criterion identifiers.",
+            details={"level": level, "criterion_ids": sorted(unknown), "other_levels": elsewhere},
+            recovery=(
+                "Use a level that details.other_levels gives for the identifier."
+                if elsewhere
+                else "Call get_criteria with this level to list its criterion identifiers."
+            ),
         )
-    return [definitions[key] for key in sorted(criterion_ids)]
+    identifiers = [identifier for identifier in resolved if identifier is not None]
+    if len(identifiers) != len(set(identifiers)):
+        raise DomainError("invalid_criterion", "Criterion identifiers must be distinct.")
+    return [definitions[key] for key in sorted(identifiers)]
 
 
 def _in_category(
