@@ -3,15 +3,29 @@
 ## [0.6.0](https://github.com/reponomics/best-practices-mcp/compare/v0.5.0...v0.6.0) (2026-11-17)
 
 
-### Features
+### Breaking changes
 
-* update proposal semantics and refactor docs sync ([#25](https://github.com/reponomics/best-practices-mcp/issues/25)) ([c59e93d](https://github.com/reponomics/best-practices-mcp/commit/c59e93dbe92ea5405f1bd98481aad4cee7e5b7c7))
+* `validate_draft` and `prepare_update_url` now require `section` instead of `level`. Use a supported badge level or `choose_section` to defer section selection to the user ([#25](https://github.com/reponomics/best-practices-mcp/pull/25)).
+* `prepare_update_url` replaces `override_fields` with `overrides`: `{"mode":"none"}`, `{"mode":"all"}`, or `{"mode":"fields","fields":[...]}`. Its result replaces `requested_overrides` with the normalized `overrides` object and retains `effective_overrides` ([#25](https://github.com/reponomics/best-practices-mcp/pull/25)).
+* Both tools return successful payloads with `schema_version: 2`, structured compatibility warnings, and level-aware reporting. Validation's `checked_criteria` entries are now `{level, criterion_id}` objects; findings and skipped entries include a level. Proposal transfer rows include applicability and restrictions by level. Other tool payloads and shared error payloads remain at version 1. See the [migration guide](https://github.com/reponomics/best-practices-mcp/blob/v0.6.0/docs/contracts.md#proposal-interface-migration) ([#25](https://github.com/reponomics/best-practices-mcp/pull/25)).
 
+### Proposal features and compatibility
+
+* Generate `/choose/edit` URLs that preserve proposals across badge levels and let the user choose the destination section. Validation can check supplied answers at each applicable level ([#25](https://github.com/reponomics/best-practices-mcp/pull/25)).
+* Support wildcard override intent through `{"mode":"all"}`. This covers supplied eligible proposals; it does not change unspecified answers. Selected-field overrides continue to use exact canonical field names ([#25](https://github.com/reponomics/best-practices-mcp/pull/25)).
+* Preserve unknown (`?`) statuses in generated proposals instead of dropping them. Validation and URL preparation return the nonblocking `unknown_status_reset_unsupported` warning because resetting a status through a proposal URL was observed not to work in BadgeApp, even with overrides. URL generation does not imply that a reset will succeed ([#25](https://github.com/reponomics/best-practices-mcp/pull/25)).
+
+### Development and CI
+
+* Enforce coverage.py's native 95% total coverage threshold in coverage runs and `make validate`, retaining coverage collection from MCP subprocesses ([#27](https://github.com/reponomics/best-practices-mcp/pull/27)).
+* Add optional Atheris fuzzing for document parsing/serialization and proposal URL round trips, with Make targets, seed corpora, and a Linux CI workflow ([#31](https://github.com/reponomics/best-practices-mcp/pull/31)). Isolate temporary test repositories from inherited Git hook environment settings ([#32](https://github.com/reponomics/best-practices-mcp/pull/32)).
+* Run upstream maintenance with the locked development dependencies and standard `.venv` setup ([#26](https://github.com/reponomics/best-practices-mcp/pull/26)). Expand upstream monitoring to API and JSON-format documentation, centralize snapshot provenance, and preserve fixed historical citations during snapshot updates ([#25](https://github.com/reponomics/best-practices-mcp/pull/25)).
+* Check contributor checklist acknowledgments on human-authored pull requests ([#25](https://github.com/reponomics/best-practices-mcp/pull/25)).
 
 ### Documentation
 
-* display OpenSSF badges and record the Passing milestone ([#28](https://github.com/reponomics/best-practices-mcp/issues/28)) ([c5d1067](https://github.com/reponomics/best-practices-mcp/commit/c5d1067b300a3eb5c5e8535d89620b3e498aa533))
-* focus contributor guidance and consolidate Inspector setup ([#30](https://github.com/reponomics/best-practices-mcp/issues/30)) ([d7faad6](https://github.com/reponomics/best-practices-mcp/commit/d7faad6ff90d90c028c9c293b0bdeb2ef03e1538))
+* Add OpenSSF Best Practices Passing and Scorecard badges and record the project's Passing milestone ([#28](https://github.com/reponomics/best-practices-mcp/pull/28)).
+* Shorten contributor guidance, consolidate Inspector setup and release qualification instructions, and move specialized CI guidance to its dedicated documentation ([#30](https://github.com/reponomics/best-practices-mcp/pull/30)).
 
 ## [0.5.0](https://github.com/reponomics/best-practices-mcp/compare/v0.3.0-beta.1...v0.5.0) (2026-11-16)
 
