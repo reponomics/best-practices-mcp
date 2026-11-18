@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
 
 import yaml
@@ -24,6 +25,12 @@ FLAGS = (
     "met_url_required",
 )
 INPUTS = ("criteria/criteria.yml", "criteria/baseline_criteria.yml", "config/locales/en.yml")
+# Baseline YAML files every control under one group; upstream documents the category
+# of a control as the two-letter code in its identifier.
+CATEGORY_GUIDE = "docs/automation-proposals.md"
+CATEGORY_HEADING = "**OSPS category codes:**"
+CATEGORY_ROW = re.compile(r"^\| `([a-z]{2})` \| (.+?) \|$", re.MULTILINE)
+BASELINE_ID = re.compile(r"osps_([a-z]{2})_[0-9]{2}_[0-9]{2}")
 
 
 class SourceLoader(yaml.SafeLoader):
@@ -59,6 +66,25 @@ def read_sources(source_dir: Path) -> tuple[dict, dict, dict]:
     ]
     merged = {**metal, **{key: value for key, value in baseline.items() if key != "_metadata"}}
     return manifest, merged, english["en"]["criteria"]
+
+
+def baseline_categories(source_dir: Path) -> dict[str, str]:
+    """Read the documented category name for each OSPS identifier code."""
+    guide = (source_dir / CATEGORY_GUIDE).read_text(encoding="utf-8")
+    table = guide.partition(CATEGORY_HEADING)[2].strip().split("\n\n")[0]
+    categories = dict(CATEGORY_ROW.findall(table))
+    if not categories:
+        raise ValueError(f"Missing OSPS category codes: {CATEGORY_GUIDE}")
+    return categories
+
+
+def category(level: str, criterion_id: str, raw: dict, baseline: dict[str, str]) -> str:
+    if not level.startswith("baseline-"):
+        return raw["major"]
+    match = BASELINE_ID.fullmatch(criterion_id)
+    if match is None or match[1] not in baseline:
+        raise ValueError(f"No documented category code: {level}/{criterion_id}")
+    return baseline[match[1]]
 
 
 def flatten(groups: dict) -> dict[str, dict]:
@@ -97,7 +123,7 @@ def boolean_flags(raw: dict) -> dict[str, bool]:
 
 
 def criterion_record(
-    level: str, criterion_id: str, raw: dict, definitions: dict, english: dict
+    level: str, criterion_id: str, raw: dict, definitions: dict, english: dict, baseline: dict
 ) -> tuple[dict, dict]:
     text = english[level][criterion_id]
     details, inherited_level = inherited_details(level, criterion_id, definitions, english)
@@ -111,7 +137,7 @@ def criterion_record(
         "level": SOURCE_LEVELS[level],
         "description": description,
         "details": details,
-        "category": raw["major"],
+        "category": category(level, criterion_id, raw, baseline),
         "requirement": raw["category"],
         "status_field": f"{criterion_id}_status",
         "justification_field": f"{criterion_id}_justification",
@@ -136,12 +162,13 @@ def catalog_content(source_dir: Path) -> dict[str, bytes]:
     if set(groups) != set(SOURCE_LEVELS):
         raise ValueError("Source levels differ from the six supported levels")
     definitions = {level: flatten(group) for level, group in groups.items()}
+    baseline = baseline_categories(source_dir)
     criteria = []
     metadata = {}
     for level, definitions_at_level in definitions.items():
         for criterion_id, raw in sorted(definitions_at_level.items()):
             record, criterion_metadata = criterion_record(
-                level, criterion_id, raw, definitions, english
+                level, criterion_id, raw, definitions, english, baseline
             )
             criteria.append(record)
             metadata[f"{SOURCE_LEVELS[level]}/{criterion_id}"] = criterion_metadata
@@ -156,6 +183,10 @@ def catalog_content(source_dir: Path) -> dict[str, bytes]:
         "counts": {level: sum(c["level"] == level for c in criteria) for level in LEVELS},
         "license_file": "BADGEAPP-LICENSE.txt",
         "text_policy": "English locale descriptions; upstream rank-bounded details inheritance",
+        "category_policy": (
+            "Criteria major group, except Baseline levels, which use the OSPS category code "
+            f"table in {CATEGORY_GUIDE}; criteria_metadata keeps each upstream major group."
+        ),
         "flag_policy": (
             "Explicit requirements include upstream entailments: met_url_required implies "
             "met_justification_required; na_justification_required implies na_allowed."

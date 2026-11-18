@@ -10,8 +10,14 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs, urljoin, urlsplit, urlunsplit
 
-from best_practices_mcp.criteria import field_aliases, get_criteria
+from best_practices_mcp.criteria import (
+    catalog_reference,
+    criterion_definitions,
+    field_aliases,
+    level_summary,
+)
 from best_practices_mcp.documents import validate_document
+from best_practices_mcp.drafts import VALID_STATUSES
 from best_practices_mcp.errors import DomainError
 from best_practices_mcp.models import LEVELS
 
@@ -36,6 +42,8 @@ PERCENTAGES = dict(
     )
 )
 SUMMARY_FIELDS = ("badge_level", "tiered_percentage", "baseline_tiered_percentage")
+# The status filter's name for a criterion whose status field is not in the record.
+ABSENT = "absent"
 
 
 def _upstream(message: str, field: str | None = None) -> DomainError:
@@ -193,25 +201,33 @@ def _normalized_record(record: dict) -> dict:
     return normalized
 
 
-def _saved_answers(record: dict, definitions: list[dict]) -> tuple[dict, list[dict]]:
-    answers, criteria = {}, []
+def _matches(record: dict, definition: dict, statuses: list[str] | None) -> bool:
+    """Apply a status filter; values outside the known set match only without one."""
+    if statuses is None:
+        return True
+    field = definition["status_field"]
+    if field not in record:
+        return ABSENT in statuses
+    status = record[field]
+    return type(status) is str and status in VALID_STATUSES.intersection(statuses)
+
+
+def _saved_answers(
+    record: dict, definitions: list[dict], statuses: list[str] | None, justifications: bool
+) -> tuple[dict, list[str]]:
+    """Copy the supplied fields of matching criteria; missing fields stay missing."""
+    kinds = ("status", "justification") if justifications else ("status",)
+    answers, matched = {}, []
     for definition in definitions:
-        status_field = definition["status_field"]
-        justification_field = definition["justification_field"]
-        for field in (status_field, justification_field):
+        if not _matches(record, definition, statuses):
+            continue
+        matched.append(definition["criterion_id"])
+        for kind in kinds:
+            field = definition[f"{kind}_field"]
             if field in record:
                 answers[field] = copy.deepcopy(record[field])
-        criteria.append(
-            {
-                "criterion_id": definition["criterion_id"],
-                "status_present": status_field in record,
-                "status": record.get(status_field),
-                "justification_present": justification_field in record,
-                "justification": record.get(justification_field),
-            }
-        )
     _check_answer_bounds(answers)
-    return answers, criteria
+    return answers, matched
 
 
 def _check_answer_bounds(answers: dict) -> None:
@@ -222,7 +238,7 @@ def _check_answer_bounds(answers: dict) -> None:
             raise DomainError(
                 "response_too_large",
                 "Selected public answers exceed the document response budget.",
-                recovery="Request fewer criterion IDs for the selected level.",
+                recovery="Request fewer criterion IDs, or set include_justifications to false.",
             ) from exc
         raise _upstream("Public answers contain unsupported JSON values or nesting.") from exc
 
@@ -314,22 +330,32 @@ class BadgeAppClient:
         return record, observation
 
     async def get_project_progress(
-        self, project_id: int, level: str | None = None, criterion_ids: list[str] | None = None
+        self,
+        project_id: int,
+        level: str | None = None,
+        criterion_ids: list[str] | None = None,
+        statuses: list[str] | None = None,
+        include_justifications: bool = True,
     ) -> dict:
         _positive_integer(project_id, "project_id")
-        catalog = get_criteria(level, criterion_ids)
+        if level is None and statuses is not None:
+            raise DomainError("invalid_level", "A status filter requires a level.")
+        definitions = criterion_definitions(level, criterion_ids)
         result = await self.http.get_json(f"/projects/{project_id}.json")
         record = _normalized_record(_record(result.data, project_id))
-        answers, criteria = _saved_answers(record, catalog["criteria"])
+        answers, matched = _saved_answers(record, definitions, statuses, include_justifications)
         return {
-            "schema_version": 1,
+            "schema_version": 2,
             "project": _project(record),
             "level": level,
             "summaries": _summaries(record),
             "answers": answers,
-            "criteria": criteria,
+            "criterion_ids": matched,
+            "level_criterion_count": (
+                None if level is None else level_summary(level)["criterion_count"]
+            ),
             "observation": _observation(result, record),
-            "catalog": catalog["catalog"],
+            "catalog": catalog_reference(),
             "summary_metadata": {
                 key: copy.deepcopy(record[key]) for key in SUMMARY_FIELDS if key in record
             },

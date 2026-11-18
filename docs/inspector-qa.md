@@ -32,7 +32,7 @@ In the web UI, connect over stdio and inspect the ten tools and their input/outp
 
 | Check | Calls and expected observations |
 | --- | --- |
-| Catalog and explicit document | `get_criteria` with `{}` lists six levels. `build_draft` with `{"draft":{},"changes":{"name":"Inspector QA ✨"}}` returns that exact document. Inspect both structured output and its JSON text fallback. |
+| Catalog and explicit document | `get_criteria` with `{}` summarizes six levels; with `{"level":"passing"}` it returns the criterion index. An invalid argument such as `{"level":"bronze"}` returns `invalid_arguments` with the allowed levels. `build_draft` with `{"draft":{},"changes":{"name":"Inspector QA ✨"}}` returns that exact document. Inspect both structured output and its JSON text fallback. |
 | Expected error | After project selection, `read_draft` for its ID in a fresh disposable root returns the structured `draft_not_found` error. Confirm the error code; a disconnected client or malformed request is not a successful negative test. |
 | Stored draft and reconnect | `update_draft` with the selected `project_id` and `changes: {"description_good_justification":"Inspector QA ✨"}` creates a synthetic local draft. Read it, disconnect/reconnect to the same root, and read it again. Confirm the complete draft is preserved. Do not run concurrent writers against that root. |
 | Omitted versus explicit document | Call `validate_draft` with the selected ID and `section: "passing"`, first omitting `draft`, then with `draft: {}`, then with a nonempty explicit document. Check `draft_source.kind` and validation results. `{}` bypasses storage; omitted `draft` reads it. Findings are not operational errors and do not prevent proposal generation. |

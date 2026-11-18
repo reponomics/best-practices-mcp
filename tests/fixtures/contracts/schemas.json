@@ -4,12 +4,19 @@
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "dependentRequired": {
+        "category": [
+          "level"
+        ],
         "criterion_ids": [
+          "level"
+        ],
+        "detail": [
           "level"
         ]
       },
       "properties": {
         "level": {
+          "description": "Badge level whose criteria to select.",
           "enum": [
             "passing",
             "silver",
@@ -22,12 +29,27 @@
           "type": "string"
         },
         "criterion_ids": {
+          "description": "Criterion IDs within level, as listed by get_criteria. Omit to select every criterion of the level.",
           "items": {
             "type": "string"
           },
           "title": "Criterion Ids",
           "type": "array",
           "uniqueItems": true
+        },
+        "category": {
+          "description": "Return only one category of the level, such as Security. The level index lists each level's categories. Cannot be combined with criterion_ids.",
+          "title": "Category",
+          "type": "string"
+        },
+        "detail": {
+          "description": "index returns each criterion's ID, category and requirement; full adds the official text, field names and justification rules. Defaults to full when criterion_ids is given, otherwise index.",
+          "enum": [
+            "index",
+            "full"
+          ],
+          "title": "Detail",
+          "type": "string"
         }
       },
       "title": "CriteriaInput",
@@ -36,7 +58,7 @@
     "output": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$defs": {
-        "CatalogRef": {
+        "CriteriaCatalogRef": {
           "additionalProperties": false,
           "properties": {
             "revision": {
@@ -55,15 +77,21 @@
               "const": 1,
               "title": "Format Version",
               "type": "integer"
+            },
+            "text_source_url": {
+              "description": "Source of the description and details text.",
+              "title": "Text Source Url",
+              "type": "string"
             }
           },
           "required": [
             "revision",
             "source_url",
             "generated_at",
-            "format_version"
+            "format_version",
+            "text_source_url"
           ],
-          "title": "CatalogRef",
+          "title": "CriteriaCatalogRef",
           "type": "object"
         },
         "Criterion": {
@@ -156,10 +184,6 @@
               "description": "Whether Met requires a URL in its justification; implies met_justification_required.",
               "title": "Met Url Required",
               "type": "boolean"
-            },
-            "source_url": {
-              "title": "Source Url",
-              "type": "string"
             }
           },
           "required": [
@@ -175,10 +199,47 @@
             "na_allowed",
             "na_justification_required",
             "met_justification_required",
-            "met_url_required",
-            "source_url"
+            "met_url_required"
           ],
           "title": "Criterion",
+          "type": "object"
+        },
+        "CriterionSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "criterion_id": {
+              "title": "Criterion Id",
+              "type": "string"
+            },
+            "category": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            },
+            "requirement": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Requirement"
+            }
+          },
+          "required": [
+            "criterion_id",
+            "category",
+            "requirement"
+          ],
+          "title": "CriterionSummary",
           "type": "object"
         },
         "Error": {
@@ -186,10 +247,12 @@
           "properties": {
             "code": {
               "enum": [
+                "invalid_arguments",
                 "invalid_document",
                 "invalid_field",
                 "invalid_level",
                 "invalid_criterion",
+                "invalid_category",
                 "invalid_query",
                 "invalid_override",
                 "draft_not_found",
@@ -289,7 +352,7 @@
           "additionalProperties": false,
           "properties": {
             "schema_version": {
-              "const": 1,
+              "const": 2,
               "title": "Schema Version",
               "type": "integer"
             },
@@ -312,40 +375,96 @@
               ],
               "title": "Level"
             },
+            "detail": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "index",
+                    "full"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Form of the criteria rows; null without a level.",
+              "title": "Detail"
+            },
             "levels": {
+              "description": "Every level when no level is selected, otherwise the selected level.",
               "items": {
-                "enum": [
-                  "passing",
-                  "silver",
-                  "gold",
-                  "baseline-1",
-                  "baseline-2",
-                  "baseline-3"
-                ],
-                "type": "string"
+                "$ref": "#/$defs/LevelSummary"
               },
               "title": "Levels",
               "type": "array"
             },
             "criteria": {
-              "items": {
-                "$ref": "#/$defs/Criterion"
-              },
-              "title": "Criteria",
-              "type": "array"
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/$defs/Criterion"
+                  },
+                  "type": "array"
+                },
+                {
+                  "items": {
+                    "$ref": "#/$defs/CriterionSummary"
+                  },
+                  "type": "array"
+                }
+              ],
+              "title": "Criteria"
             },
             "catalog": {
-              "$ref": "#/$defs/CatalogRef"
+              "$ref": "#/$defs/CriteriaCatalogRef"
             }
           },
           "required": [
             "schema_version",
             "level",
+            "detail",
             "levels",
             "criteria",
             "catalog"
           ],
           "title": "GetCriteriaResult",
+          "type": "object"
+        },
+        "LevelSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "level": {
+              "enum": [
+                "passing",
+                "silver",
+                "gold",
+                "baseline-1",
+                "baseline-2",
+                "baseline-3"
+              ],
+              "title": "Level",
+              "type": "string"
+            },
+            "criterion_count": {
+              "minimum": 0,
+              "title": "Criterion Count",
+              "type": "integer"
+            },
+            "categories": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Categories",
+              "type": "array"
+            }
+          },
+          "required": [
+            "level",
+            "criterion_count",
+            "categories"
+          ],
+          "title": "LevelSummary",
           "type": "object"
         }
       },
@@ -366,11 +485,13 @@
       "additionalProperties": false,
       "properties": {
         "query": {
+          "description": "A project ID, the project's exact repository or homepage URL, or search text.",
           "title": "Query",
           "type": "string"
         },
         "page": {
           "default": 1,
+          "description": "Result page, starting at 1. Use next_page from the last result.",
           "exclusiveMinimum": 0,
           "title": "Page",
           "type": "integer"
@@ -415,10 +536,12 @@
           "properties": {
             "code": {
               "enum": [
+                "invalid_arguments",
                 "invalid_document",
                 "invalid_field",
                 "invalid_level",
                 "invalid_criterion",
+                "invalid_category",
                 "invalid_query",
                 "invalid_override",
                 "draft_not_found",
@@ -669,15 +792,20 @@
       "dependentRequired": {
         "criterion_ids": [
           "level"
+        ],
+        "statuses": [
+          "level"
         ]
       },
       "properties": {
         "project_id": {
+          "description": "BadgeApp project ID, as returned by find_project.",
           "exclusiveMinimum": 0,
           "title": "Project Id",
           "type": "integer"
         },
         "level": {
+          "description": "Badge level whose criteria to select.",
           "enum": [
             "passing",
             "silver",
@@ -690,12 +818,35 @@
           "type": "string"
         },
         "criterion_ids": {
+          "description": "Criterion IDs within level, as listed by get_criteria. Omit to select every criterion of the level.",
           "items": {
             "type": "string"
           },
           "title": "Criterion Ids",
           "type": "array",
           "uniqueItems": true
+        },
+        "statuses": {
+          "description": "Return only criteria whose saved status is one of these. absent selects criteria with no saved status.",
+          "items": {
+            "enum": [
+              "Met",
+              "Unmet",
+              "N/A",
+              "?",
+              "absent"
+            ],
+            "type": "string"
+          },
+          "title": "Statuses",
+          "type": "array",
+          "uniqueItems": true
+        },
+        "include_justifications": {
+          "default": true,
+          "description": "Set false to return statuses without justification text.",
+          "title": "Include Justifications",
+          "type": "boolean"
         }
       },
       "required": [
@@ -742,10 +893,12 @@
           "properties": {
             "code": {
               "enum": [
+                "invalid_arguments",
                 "invalid_document",
                 "invalid_field",
                 "invalid_level",
                 "invalid_criterion",
+                "invalid_category",
                 "invalid_query",
                 "invalid_override",
                 "draft_not_found",
@@ -845,7 +998,7 @@
           "additionalProperties": false,
           "properties": {
             "schema_version": {
-              "const": 1,
+              "const": 2,
               "title": "Schema Version",
               "type": "integer"
             },
@@ -902,15 +1055,30 @@
                   }
                 ]
               },
+              "description": "Saved fields of the matching criteria, in draft format. A criterion with nothing saved has no fields here.",
               "title": "Answers",
               "type": "object"
             },
-            "criteria": {
+            "criterion_ids": {
+              "description": "Criteria that matched the filters, including those with nothing saved.",
               "items": {
-                "$ref": "#/$defs/SavedCriterion"
+                "type": "string"
               },
-              "title": "Criteria",
+              "title": "Criterion Ids",
               "type": "array"
+            },
+            "level_criterion_count": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Number of criteria in the selected level; null without a level.",
+              "title": "Level Criterion Count"
             },
             "observation": {
               "$ref": "#/$defs/Observation"
@@ -928,7 +1096,8 @@
             "level",
             "summaries",
             "answers",
-            "criteria",
+            "criterion_ids",
+            "level_criterion_count",
             "observation",
             "catalog",
             "summary_metadata"
@@ -1034,78 +1203,6 @@
             "homepage_url"
           ],
           "title": "Project",
-          "type": "object"
-        },
-        "SavedCriterion": {
-          "additionalProperties": false,
-          "properties": {
-            "criterion_id": {
-              "title": "Criterion Id",
-              "type": "string"
-            },
-            "status_present": {
-              "title": "Status Present",
-              "type": "boolean"
-            },
-            "status": {
-              "anyOf": [
-                {
-                  "type": "null"
-                },
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "array"
-                },
-                {
-                  "additionalProperties": true,
-                  "type": "object"
-                }
-              ]
-            },
-            "justification_present": {
-              "title": "Justification Present",
-              "type": "boolean"
-            },
-            "justification": {
-              "anyOf": [
-                {
-                  "type": "null"
-                },
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "array"
-                },
-                {
-                  "additionalProperties": true,
-                  "type": "object"
-                }
-              ]
-            }
-          },
-          "required": [
-            "criterion_id",
-            "status_present",
-            "status",
-            "justification_present",
-            "justification"
-          ],
-          "title": "SavedCriterion",
           "type": "object"
         },
         "Summary": {
@@ -1239,6 +1336,7 @@
       "additionalProperties": false,
       "properties": {
         "project_id": {
+          "description": "BadgeApp project ID, as returned by find_project.",
           "exclusiveMinimum": 0,
           "title": "Project Id",
           "type": "integer"
@@ -1375,10 +1473,12 @@
           "properties": {
             "code": {
               "enum": [
+                "invalid_arguments",
                 "invalid_document",
                 "invalid_field",
                 "invalid_level",
                 "invalid_criterion",
+                "invalid_category",
                 "invalid_query",
                 "invalid_override",
                 "draft_not_found",
@@ -1581,6 +1681,7 @@
       "additionalProperties": false,
       "properties": {
         "project_id": {
+          "description": "BadgeApp project ID, as returned by find_project.",
           "exclusiveMinimum": 0,
           "title": "Project Id",
           "type": "integer"
@@ -1644,10 +1745,12 @@
           "properties": {
             "code": {
               "enum": [
+                "invalid_arguments",
                 "invalid_document",
                 "invalid_field",
                 "invalid_level",
                 "invalid_criterion",
+                "invalid_category",
                 "invalid_query",
                 "invalid_override",
                 "draft_not_found",
@@ -1876,6 +1979,7 @@
               }
             ]
           },
+          "description": "The document to change; {} starts an empty one.",
           "title": "Draft",
           "type": "object"
         },
@@ -1903,6 +2007,7 @@
               }
             ]
           },
+          "description": "Fields to set. A flat JSON object in draft format: \"<criterion_id>_status\" is \"Met\", \"Unmet\", \"N/A\" or \"?\"; \"<criterion_id>_justification\" is text; name, description, license and implementation_languages are project metadata. A null value removes the field.",
           "title": "Changes",
           "type": "object"
         }
@@ -1978,10 +2083,12 @@
           "properties": {
             "code": {
               "enum": [
+                "invalid_arguments",
                 "invalid_document",
                 "invalid_field",
                 "invalid_level",
                 "invalid_criterion",
+                "invalid_category",
                 "invalid_query",
                 "invalid_override",
                 "draft_not_found",
@@ -2124,6 +2231,7 @@
       "additionalProperties": false,
       "properties": {
         "project_id": {
+          "description": "BadgeApp project ID, as returned by find_project.",
           "exclusiveMinimum": 0,
           "title": "Project Id",
           "type": "integer"
@@ -2143,10 +2251,12 @@
           "properties": {
             "code": {
               "enum": [
+                "invalid_arguments",
                 "invalid_document",
                 "invalid_field",
                 "invalid_level",
                 "invalid_criterion",
+                "invalid_category",
                 "invalid_query",
                 "invalid_override",
                 "draft_not_found",
@@ -2399,6 +2509,7 @@
       "additionalProperties": false,
       "properties": {
         "project_id": {
+          "description": "BadgeApp project ID, as returned by find_project.",
           "exclusiveMinimum": 0,
           "title": "Project Id",
           "type": "integer"
@@ -2427,6 +2538,7 @@
               }
             ]
           },
+          "description": "Fields to set. A flat JSON object in draft format: \"<criterion_id>_status\" is \"Met\", \"Unmet\", \"N/A\" or \"?\"; \"<criterion_id>_justification\" is text; name, description, license and implementation_languages are project metadata. A null value removes the field.",
           "title": "Changes",
           "type": "object"
         }
@@ -2446,10 +2558,12 @@
           "properties": {
             "code": {
               "enum": [
+                "invalid_arguments",
                 "invalid_document",
                 "invalid_field",
                 "invalid_level",
                 "invalid_criterion",
+                "invalid_category",
                 "invalid_query",
                 "invalid_override",
                 "draft_not_found",
@@ -2707,6 +2821,7 @@
       "additionalProperties": false,
       "properties": {
         "project_id": {
+          "description": "BadgeApp project ID, as returned by find_project.",
           "exclusiveMinimum": 0,
           "title": "Project Id",
           "type": "integer"
@@ -2749,6 +2864,7 @@
               }
             ]
           },
+          "description": "A complete draft to use instead of the stored one. Omit it to use the draft saved by update_draft. A flat JSON object in draft format: \"<criterion_id>_status\" is \"Met\", \"Unmet\", \"N/A\" or \"?\"; \"<criterion_id>_justification\" is text; name, description, license and implementation_languages are project metadata.",
           "title": "Draft",
           "type": "object"
         }
@@ -2888,10 +3004,12 @@
           "properties": {
             "code": {
               "enum": [
+                "invalid_arguments",
                 "invalid_document",
                 "invalid_field",
                 "invalid_level",
                 "invalid_criterion",
+                "invalid_category",
                 "invalid_query",
                 "invalid_override",
                 "draft_not_found",
@@ -3294,6 +3412,7 @@
       "additionalProperties": false,
       "properties": {
         "project_id": {
+          "description": "BadgeApp project ID, as returned by find_project.",
           "exclusiveMinimum": 0,
           "title": "Project Id",
           "type": "integer"
@@ -3336,6 +3455,7 @@
               }
             ]
           },
+          "description": "A complete draft to use instead of the stored one. Omit it to use the draft saved by update_draft. A flat JSON object in draft format: \"<criterion_id>_status\" is \"Met\", \"Unmet\", \"N/A\" or \"?\"; \"<criterion_id>_justification\" is text; name, description, license and implementation_languages are project metadata.",
           "title": "Draft",
           "type": "object"
         },
@@ -3351,7 +3471,7 @@
               "$ref": "#/$defs/FieldOverrides"
             }
           ],
-          "description": "none fills unknown answers; all or fields overrides supplied answers.",
+          "description": "{\"mode\":\"none\"} proposes values only where BadgeApp has no answer; {\"mode\":\"all\"} also replaces saved answers for every supplied field; {\"mode\":\"fields\",\"fields\":[...]} replaces saved answers only for the named fields.",
           "title": "Overrides"
         }
       },
@@ -3478,10 +3598,12 @@
           "properties": {
             "code": {
               "enum": [
+                "invalid_arguments",
                 "invalid_document",
                 "invalid_field",
                 "invalid_level",
                 "invalid_criterion",
+                "invalid_category",
                 "invalid_query",
                 "invalid_override",
                 "draft_not_found",

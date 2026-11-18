@@ -1,4 +1,5 @@
 {
+  "category_policy": "Criteria major group, except Baseline levels, which use the OSPS category code table in docs/automation-proposals.md; criteria_metadata keeps each upstream major group.",
   "counts": {
     "baseline-1": 24,
     "baseline-2": 19,
@@ -1697,7 +1698,7 @@
   "generator": {
     "format_version": 2,
     "path": "scripts/generate_catalog.py",
-    "sha256": "47fb2904ac0683a0e741fd38b88fd091630c3651a03f910f0953246527830e16"
+    "sha256": "a78566e95c61546f703fb3efb7fbe0c4c17510250538c0e916f7d461573dae41"
   },
   "license_file": "BADGEAPP-LICENSE.txt",
   "repository": "https://github.com/ossf/best-practices-badge",

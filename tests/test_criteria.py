@@ -14,7 +14,14 @@ import yaml
 
 from best_practices_mcp import criteria as criteria_module
 from best_practices_mcp.contracts import validate_output
-from best_practices_mcp.criteria import field_aliases, get_criteria, provenance
+from best_practices_mcp.criteria import (
+    catalog_levels,
+    catalog_reference,
+    criterion_definitions,
+    field_aliases,
+    get_criteria,
+    provenance,
+)
 from best_practices_mcp.errors import DomainError
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,6 +32,18 @@ COUNTS = {
     "baseline-1": 24,
     "baseline-2": 19,
     "baseline-3": 21,
+}
+# Transcribed from "OSPS category codes" in vendor/badgeapp/docs/automation-proposals.md,
+# independently of the generator's reading of that table.
+BASELINE_CATEGORIES = {
+    "ac": "Access Control",
+    "br": "Build and Release",
+    "do": "Documentation",
+    "gv": "Governance",
+    "le": "Legal",
+    "qa": "Quality",
+    "sa": "Security Assessment",
+    "vm": "Vulnerability Management",
 }
 
 
@@ -87,13 +106,18 @@ def test_all_catalog_records_match_yaml_and_english_locale(
     source_url = (
         f"{source_manifest['repository']}/blob/{source_manifest['revision']}/config/locales/en.yml"
     )
-    result = get_criteria(level)
+    result = get_criteria(level, detail="full")
     validate_output("get_criteria", result)
+    assert result["catalog"]["text_source_url"] == source_url
+    assert result["criteria"] == criterion_definitions(level)
     assert len(result["criteria"]) == COUNTS[level]
     assert {row["criterion_id"] for row in result["criteria"]} == set(expected)
     for row in result["criteria"]:
         criterion_id = row["criterion_id"]
         category, raw = expected[criterion_id]
+        if level.startswith("baseline-"):
+            assert category == "General"
+            category = BASELINE_CATEGORIES[criterion_id.split("_")[1]]
         details = next(
             (
                 locale[parent][criterion_id]["details"]
@@ -119,7 +143,6 @@ def test_all_catalog_records_match_yaml_and_english_locale(
             "met_justification_required": raw.get("met_justification_required", False)
             or raw.get("met_url_required", False),
             "met_url_required": raw.get("met_url_required", False),
-            "source_url": source_url,
         }
 
 
@@ -139,7 +162,7 @@ def test_level_specific_flags_wording_and_inherited_details() -> None:
 
 def test_populated_catalog_flags_include_entailed_requirements() -> None:
     for level in COUNTS:
-        for row in get_criteria(level)["criteria"]:
+        for row in criterion_definitions(level):
             assert not row["met_url_required"] or row["met_justification_required"]
             assert not row["na_justification_required"] or row["na_allowed"]
     example = get_criteria("gold", ["build_reproducible"])["criteria"][0]
@@ -162,6 +185,40 @@ def catalog_generator():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def test_generator_reads_documented_baseline_category_codes(tmp_path, catalog_generator):
+    assert catalog_generator.baseline_categories(ROOT / "vendor/badgeapp") == BASELINE_CATEGORIES
+    assert provenance()["criteria_metadata"]["baseline-1/osps_ac_01_01"]["major"] == "General"
+    guide = tmp_path / catalog_generator.CATEGORY_GUIDE
+    guide.parent.mkdir()
+    guide.write_text("# Guide\n\n| `zz` | Outside the code table |\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="Missing OSPS category codes"):
+        catalog_generator.baseline_categories(tmp_path)
+
+
+@pytest.mark.parametrize(
+    "level,criterion_id,expected",
+    [
+        ("0", "osps_ac_01_01", "Basics"),
+        ("baseline-2", "osps_vm_01_01", "Vulnerability Management"),
+    ],
+)
+def test_generator_uses_code_categories_only_for_baseline(
+    catalog_generator, level, criterion_id, expected
+):
+    category = catalog_generator.category(
+        level, criterion_id, {"major": "Basics"}, BASELINE_CATEGORIES
+    )
+    assert category == expected
+
+
+@pytest.mark.parametrize("criterion_id", ["osps_zz_01_01", "osps_ac_1_01", "interact"])
+def test_generator_rejects_baseline_ids_without_a_documented_code(catalog_generator, criterion_id):
+    with pytest.raises(ValueError, match=f"No documented category code: baseline-1/{criterion_id}"):
+        catalog_generator.category(
+            "baseline-1", criterion_id, {"major": "General"}, BASELINE_CATEGORIES
+        )
 
 
 @pytest.mark.parametrize(
@@ -205,18 +262,109 @@ def test_generator_rejects_nonboolean_flags_before_entailment(catalog_generator,
 
 def test_index_filters_and_caller_mutation_do_not_change_catalog() -> None:
     index = get_criteria()
-    assert index["levels"] == list(COUNTS)
-    assert index["level"] is None
+    validate_output("get_criteria", index)
+    assert catalog_levels() == list(COUNTS)
+    assert {entry["level"]: entry["criterion_count"] for entry in index["levels"]} == COUNTS
+    assert index["level"] is None and index["detail"] is None
     assert index["criteria"] == []
     assert get_criteria("passing", [])["criteria"] == []
     selected = get_criteria("passing", ["interact", "description_good"])
     assert [c["criterion_id"] for c in selected["criteria"]] == ["description_good", "interact"]
     selected["criteria"][0]["description"] = "caller changed this"
     index["levels"].clear()
+    index["catalog"].clear()
+    catalog_levels().clear()
+    catalog_reference().clear()
     assert len(get_criteria()["levels"]) == 6
+    assert get_criteria()["catalog"]["revision"] == catalog_reference()["revision"]
     assert get_criteria("passing", ["description_good"])["criteria"][0]["description"] != (
         "caller changed this"
     )
+
+
+def test_level_summaries_name_categories_in_lexical_order() -> None:
+    summaries = {entry["level"]: entry["categories"] for entry in get_criteria()["levels"]}
+    assert summaries["passing"] == [
+        "Analysis",
+        "Basics",
+        "Change Control",
+        "Quality",
+        "Reporting",
+        "Security",
+    ]
+    assert "Reporting" not in summaries["gold"]
+    named = set(BASELINE_CATEGORIES.values())
+    assert set(summaries["baseline-1"]) == named - {"Security Assessment"}
+    assert set(summaries["baseline-2"]) == named
+    assert set(summaries["baseline-3"]) == named - {"Legal"}
+    assert get_criteria("gold")["levels"] == [
+        {"level": "gold", "criterion_count": 23, "categories": summaries["gold"]}
+    ]
+
+
+@pytest.mark.parametrize("level", COUNTS)
+def test_a_level_defaults_to_an_index_of_every_criterion(level) -> None:
+    index = get_criteria(level)
+    validate_output("get_criteria", index)
+    assert index["detail"] == "index"
+    assert index["criteria"] == [
+        {key: row[key] for key in ("criterion_id", "category", "requirement")}
+        for row in criterion_definitions(level)
+    ]
+    assert len(index["criteria"]) == COUNTS[level]
+    full = get_criteria(level, detail="full")
+    assert len(json.dumps(index)) * 5 < len(json.dumps(full))
+
+
+def test_detail_defaults_to_full_only_for_named_criteria() -> None:
+    assert get_criteria("passing", ["interact"])["detail"] == "full"
+    assert get_criteria("passing", [])["detail"] == "full"
+    assert get_criteria("passing", category="Basics")["detail"] == "index"
+    named = get_criteria("passing", ["interact"], detail="index")
+    assert named["criteria"] == [
+        {"criterion_id": "interact", "category": "Basics", "requirement": "MUST"}
+    ]
+
+
+def test_category_narrows_either_form_of_a_level() -> None:
+    index = get_criteria("passing", category="Security")
+    full = get_criteria("passing", category="Security", detail="full")
+    validate_output("get_criteria", full)
+    assert len(index["criteria"]) == 16
+    assert [row["criterion_id"] for row in full["criteria"]] == [
+        row["criterion_id"] for row in index["criteria"]
+    ]
+    assert {row["category"] for row in full["criteria"]} == {"Security"}
+    assert "description" in full["criteria"][0] and "description" not in index["criteria"][0]
+    access = get_criteria("baseline-1", category="Access Control")["criteria"]
+    assert [row["criterion_id"] for row in access] == [
+        "osps_ac_01_01",
+        "osps_ac_02_01",
+        "osps_ac_03_01",
+        "osps_ac_03_02",
+    ]
+    with pytest.raises(DomainError):
+        get_criteria("baseline-1", category="General")
+
+
+def test_unknown_category_lists_the_level_categories() -> None:
+    with pytest.raises(DomainError) as error:
+        get_criteria("gold", category="security")
+    assert error.value.code == "invalid_category"
+    assert error.value.details == {
+        "level": "gold",
+        "allowed": ["Analysis", "Basics", "Change Control", "Quality", "Security"],
+    }
+    with pytest.raises(DomainError) as error:
+        get_criteria("gold", ["hardening"], category="Security")
+    assert error.value.code == "invalid_category"
+
+
+@pytest.mark.parametrize("arguments", [{"category": "Basics"}, {"detail": "full"}])
+def test_category_and_detail_require_a_level(arguments) -> None:
+    with pytest.raises(DomainError) as error:
+        get_criteria(**arguments)
+    assert error.value.code == "invalid_level"
 
 
 @pytest.mark.parametrize(
@@ -252,11 +400,16 @@ def test_provenance_identifies_all_inputs_and_retains_source_metadata(source_man
     assert data["revision"] == source["revision"]
     assert data["repository"] == source["repository"]
     assert data["generated_at"] == source["generated_at"]
-    assert get_criteria()["catalog"] == {
+    base_url = f"{source['repository']}/blob/{source['revision']}"
+    assert catalog_reference() == {
         "revision": source["revision"],
-        "source_url": f"{source['repository']}/blob/{source['revision']}/criteria/criteria.yml",
+        "source_url": f"{base_url}/criteria/criteria.yml",
         "generated_at": source["generated_at"],
         "format_version": 1,
+    }
+    assert get_criteria()["catalog"] == {
+        **catalog_reference(),
+        "text_source_url": f"{base_url}/config/locales/en.yml",
     }
     assert data["counts"] == COUNTS
     assert data["files"] == source["files"]
@@ -323,10 +476,8 @@ def test_metadata_refresh_preserves_catalog_bytes_and_updates_public_references(
             "generated_at": manifest["generated_at"],
             "source_url": f"{base_url}/criteria/criteria.yml",
             "format_version": 1,
+            "text_source_url": f"{base_url}/config/locales/en.yml",
         }
-        assert all(
-            row["source_url"] == f"{base_url}/config/locales/en.yml" for row in result["criteria"]
-        )
     finally:
         criteria_module._catalog.cache_clear()
 

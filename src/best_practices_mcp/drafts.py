@@ -3,20 +3,21 @@
 from typing import Any
 from urllib.parse import urlsplit
 
-from best_practices_mcp.criteria import field_aliases, get_criteria
+from best_practices_mcp.criteria import catalog_levels, criterion_definitions, field_aliases
 from best_practices_mcp.documents import normalize_document, serialize_document
 from best_practices_mcp.errors import DomainError
 
 METADATA_FIELDS = frozenset({"name", "description", "license", "implementation_languages"})
 PROVENANCE_FIELDS = frozenset({"id", "repo_url"})
 VALID_STATUSES = frozenset({"Met", "Unmet", "N/A", "?"})
+STATUS_MESSAGE = 'Status must be exactly "Met", "Unmet", "N/A" or "?".'
 
 
 def field_definitions() -> dict[str, dict[str, Any]]:
     """Describe every writable canonical field without choosing a badge level."""
     fields = {field: {"kind": "metadata", "criterion_id": None} for field in METADATA_FIELDS}
-    for level in get_criteria()["levels"]:
-        for criterion in get_criteria(level)["criteria"]:
+    for level in catalog_levels():
+        for criterion in criterion_definitions(level):
             for kind in ("status", "justification"):
                 fields[criterion[f"{kind}_field"]] = {
                     "kind": kind,
@@ -38,7 +39,7 @@ def _field_issue(field: str, value: Any, definition: dict | None) -> dict | None
     if type(value) is not str:
         return {"field": field, "code": "invalid_type", "message": "Field must be a string."}
     if definition["kind"] == "status" and value not in VALID_STATUSES:
-        return {"field": field, "code": "invalid_status", "message": "Unsupported status value."}
+        return {"field": field, "code": "invalid_status", "message": STATUS_MESSAGE}
     return None
 
 
@@ -69,7 +70,10 @@ def build_draft(draft: dict[str, Any], changes: dict[str, Any] | None = None) ->
     invalid = [issue for issue in issues if issue["code"] != "unknown_field"]
     if invalid:
         raise DomainError(
-            "invalid_field", "Draft contains invalid answer fields.", details={"issues": invalid}
+            "invalid_field",
+            "Draft contains invalid answer fields.",
+            details={"issues": invalid},
+            recovery="Correct each listed field as its message describes and try again.",
         )
     return {
         "schema_version": 1,

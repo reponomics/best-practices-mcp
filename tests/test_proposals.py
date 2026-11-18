@@ -5,7 +5,7 @@ from urllib.parse import parse_qs, urlsplit
 
 import pytest
 
-from best_practices_mcp.criteria import get_criteria
+from best_practices_mcp.criteria import catalog_levels
 from best_practices_mcp.errors import DomainError
 from best_practices_mcp.models import PrepareURLResult
 from best_practices_mcp.proposals import prepare_update_url
@@ -215,7 +215,7 @@ def test_raw_unicode_reserved_and_empty_values_are_encoded_exactly_once():
 
 def test_all_metadata_fields_available_at_all_levels():
     draft = {name: "new" for name in ("name", "description", "license", "implementation_languages")}
-    for level in get_criteria()["levels"]:
+    for level in catalog_levels():
         result = prepare(draft, section=level)
         assert result["outcome"] == "complete"
         assert set(params(result)) == set(draft)
@@ -249,7 +249,7 @@ def test_invalid_metadata_is_excluded_from_url_and_effective_overrides(field, va
         "disposition": "invalid",
         "reason": "invalid_type",
         "override": False,
-        "applicable_levels": get_criteria()["levels"],
+        "applicable_levels": catalog_levels(),
         "restrictions": [],
     }
     assert draft == original
@@ -350,7 +350,7 @@ def test_choose_section_preserves_mixed_level_proposals_and_field_applicability(
     }
     assert reports(result)[STATUS]["applicable_levels"] == ["passing"]
     assert reports(result)["osps_br_04_01_status"]["applicable_levels"] == ["baseline-2"]
-    assert reports(result)["name"]["applicable_levels"] == get_criteria()["levels"]
+    assert reports(result)["name"]["applicable_levels"] == catalog_levels()
     assert result["warnings"][0]["fields"] == ["osps_br_04_01_status"]
 
 

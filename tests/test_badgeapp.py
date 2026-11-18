@@ -50,9 +50,10 @@ def find(data, query="example", page=1, **kwargs):
     return result, http
 
 
-def progress(data=None, level=None, ids=None, project_id=123):
+def progress(data=None, level=None, ids=None, project_id=123, **filters):
     http = FakeHTTP(fixture() if data is None else data)
-    result = asyncio.run(BadgeAppClient(http).get_project_progress(project_id, level, ids))
+    client = BadgeAppClient(http)
+    result = asyncio.run(client.get_project_progress(project_id, level, ids, **filters))
     validate_output("get_project_progress", result)
     return result, http
 
@@ -235,7 +236,9 @@ def test_ambiguous_multiple_next_links_are_not_chosen():
 def test_progress_summaries_and_attribution_come_from_upstream():
     result, http = progress()
     assert http.calls == [("/projects/123.json", None)]
-    assert result["answers"] == {} and result["criteria"] == []
+    assert result["schema_version"] == 2
+    assert result["answers"] == {} and result["criterion_ids"] == []
+    assert result["level_criterion_count"] is None
     assert [item["upstream_percentage"] for item in result["summaries"]] == [42, 10.5, 0, 75, 25, 5]
     assert result["summary_metadata"] == {
         "badge_level": "in_progress",
@@ -258,23 +261,15 @@ def test_level_filter_preserves_actual_justification_and_missing_fields():
         == fixture()["description_good_justification"]
     )
     assert "contribution_justification" not in result["answers"]
-    contribution = result["criteria"][0]
-    assert contribution["status"] == "?" and contribution["status_present"] is True
-    assert contribution["justification"] is None and contribution["justification_present"] is False
+    assert result["answers"]["contribution_status"] == "?"
+    assert result["criterion_ids"] == ["contribution", "description_good"]
+    assert result["level_criterion_count"] == 67
 
 
 def test_missing_status_is_not_synthesized_and_missing_metadata_stays_null():
     result, _ = progress({"id": 123}, "passing", ["description_good"])
     assert result["answers"] == {}
-    assert result["criteria"] == [
-        {
-            "criterion_id": "description_good",
-            "status_present": False,
-            "status": None,
-            "justification_present": False,
-            "justification": None,
-        }
-    ]
+    assert result["criterion_ids"] == ["description_good"]
     assert all(item["upstream_percentage"] is None for item in result["summaries"])
     assert result["project"] == {
         "project_id": 123,
@@ -309,14 +304,71 @@ def test_unexpected_saved_field_values_are_returned_without_guessing():
     record["description_good_status"] = {"future": "value"}
     record["description_good_justification"] = None
     result, _ = progress(record, "passing", ["description_good"])
-    assert result["answers"]["description_good_status"] == {"future": "value"}
-    assert result["criteria"][0]["justification_present"] is True
-    assert result["criteria"][0]["justification"] is None
+    assert result["answers"] == {
+        "description_good_status": {"future": "value"},
+        "description_good_justification": None,
+    }
+
+
+def test_status_filter_selects_saved_and_absent_criteria():
+    met, _ = progress(level="passing", statuses=["Met"])
+    assert met["criterion_ids"] == ["description_good"]
+    assert list(met["answers"]) == ["description_good_status", "description_good_justification"]
+    unknown, _ = progress(level="passing", statuses=["?"])
+    assert unknown["criterion_ids"] == ["contribution"]
+    assert unknown["answers"] == {"contribution_status": "?"}
+    remaining, _ = progress(level="passing", statuses=["Unmet", "?", "absent"])
+    assert len(remaining["criterion_ids"]) == 66
+    assert "description_good" not in remaining["criterion_ids"]
+    assert remaining["answers"] == {"contribution_status": "?"}
+    assert remaining["level_criterion_count"] == 67
+    none, _ = progress(level="passing", statuses=[])
+    assert none["criterion_ids"] == [] and none["answers"] == {}
+
+
+def test_status_filter_combines_with_criterion_ids():
+    ids = ["contribution", "description_good", "interact"]
+    result, _ = progress(level="passing", ids=ids, statuses=["Met", "absent"])
+    assert result["criterion_ids"] == ["description_good", "interact"]
+    assert "interact_status" not in result["answers"]
+
+
+def test_absent_criterion_keeps_a_saved_justification():
+    record = fixture() | {"interact_justification": "Saved without a status."}
+    result, _ = progress(record, "passing", ["interact"], statuses=["absent"])
+    assert result["criterion_ids"] == ["interact"]
+    assert result["answers"] == {"interact_justification": "Saved without a status."}
+
+
+@pytest.mark.parametrize("value", ["met", "absent", None, 1, {"future": "value"}])
+def test_unrecognized_saved_statuses_match_no_status_filter(value):
+    record = fixture() | {"description_good_status": value}
+    every = ["Met", "Unmet", "N/A", "?", "absent"]
+    filtered, _ = progress(record, "passing", ["description_good"], statuses=every)
+    assert filtered["criterion_ids"] == [] and filtered["answers"] == {}
+    unfiltered, _ = progress(record, "passing", ["description_good"])
+    assert unfiltered["answers"]["description_good_status"] == value
+
+
+def test_justifications_can_be_left_out():
+    result, _ = progress(level="passing", include_justifications=False)
+    assert result["answers"] == {"contribution_status": "?", "description_good_status": "Met"}
+    assert len(result["criterion_ids"]) == 67
+    baseline, _ = progress(level="baseline-1", ids=["osps_ac_01_01"], include_justifications=False)
+    assert baseline["answers"] == {"osps_ac_01_01_status": "Met"}
+
+
+def test_status_filter_requires_a_level_before_network():
+    http = FakeHTTP(fixture())
+    with pytest.raises(DomainError) as caught:
+        asyncio.run(BadgeAppClient(http).get_project_progress(123, statuses=["Met"]))
+    assert caught.value.code == "invalid_level"
+    assert http.calls == []
 
 
 def test_explicit_empty_filter_selects_no_saved_answers():
     result, _ = progress(level="passing", ids=[])
-    assert result["answers"] == {} and result["criteria"] == []
+    assert result["answers"] == {} and result["criterion_ids"] == []
 
 
 @pytest.mark.parametrize(

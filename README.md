@@ -44,8 +44,8 @@ Starting the executable directly in a terminal waits for MCP messages; it is not
 | Tool | What it does | Network or storage effects |
 | --- | --- | --- |
 | `find_project` | Find public project candidates by ID, repository/homepage URL, or text; the host selects the intended project. | Public BadgeApp GETs |
-| `get_criteria` | Read the bundled criteria by badge level and criterion. | Offline |
-| `get_project_progress` | Read all-level percentages or selected saved answers and progress, with source and fetch time. | Public BadgeApp GETs |
+| `get_criteria` | List the bundled criteria of a badge level, or read the full text of selected criteria or a category. | Offline |
+| `get_project_progress` | Read all-level percentages or a level's saved answers, optionally filtered by criterion or status, with source and fetch time. | Public BadgeApp GETs |
 | `get_project_badge_status` | Quickly read one badge family's status, progress and project-record update time. | Public BadgeApp JSON GET |
 | `get_project_badge_svg` | Retrieve a badge SVG and dynamic README embed snippet for one badge family. | Public BadgeApp SVG GET |
 | `build_draft` | Create or patch a document supplied by the host. | Offline; no stored files changed |

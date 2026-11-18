@@ -19,9 +19,18 @@ NETWORK_TOOLS = frozenset(
         "prepare_update_url",
     }
 )
-BADGE_TITLES = {
+BADGE_TOOLS = frozenset({"get_project_badge_status", "get_project_badge_svg"})
+TITLES = {
+    "get_criteria": "Get badge criteria",
+    "find_project": "Find BadgeApp project",
+    "get_project_progress": "Get project progress",
     "get_project_badge_status": "Get project badge status",
     "get_project_badge_svg": "Get project badge SVG",
+    "build_draft": "Build draft document",
+    "read_draft": "Read stored draft",
+    "update_draft": "Update stored draft",
+    "validate_draft": "Validate draft",
+    "prepare_update_url": "Prepare BadgeApp edit URL",
 }
 
 
@@ -30,7 +39,7 @@ def tool_definition(name: str, description: str) -> Tool:
     mutation = name == "update_draft"
     return Tool(
         name=name,
-        title=BADGE_TITLES.get(name),
+        title=TITLES[name],
         description=description,
         input_schema=input_schema(name),
         output_schema=output_schema(name),
@@ -39,7 +48,7 @@ def tool_definition(name: str, description: str) -> Tool:
             destructive_hint=mutation,
             # Badge reads have no additional side effects; their observations may change.
             # Preserve existing annotations on the previously published tools.
-            idempotent_hint=name not in NETWORK_TOOLS or name in BADGE_TITLES,
+            idempotent_hint=name not in NETWORK_TOOLS or name in BADGE_TOOLS,
             open_world_hint=name in NETWORK_TOOLS,
         ),
     )
@@ -73,8 +82,8 @@ def tool_result(name: str, payload: dict) -> CallToolResult:
             details={"limit_bytes": RESPONSE_LIMIT_BYTES},
             recovery=(
                 "View the badge on BadgeApp's project page or report the oversized badge response."
-                if name in BADGE_TITLES
-                else "Request fewer criteria or reduce the document size."
+                if name in BADGE_TOOLS
+                else "Request fewer criteria, index detail, or a smaller document."
             ),
         )
     return result

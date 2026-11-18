@@ -64,6 +64,9 @@ def test_modern_discovery_without_initialize_and_stable_lists(tmp_path: Path) ->
         assert result["cacheScope"] == "public"
         assert result["_meta"]["io.modelcontextprotocol/serverInfo"]["name"] == "bestpractices-mcp"
     assert replies[1]["result"]["tools"] == replies[2]["result"]["tools"]
+    instructions = replies[0]["result"]["instructions"]
+    assert '"<criterion_id>_status", one of "Met", "Unmet", "N/A", "?"' in instructions
+    assert "never saves to BadgeApp" in instructions
     assert [tool["name"] for tool in replies[1]["result"]["tools"]] == [
         "build_draft",
         "find_project",

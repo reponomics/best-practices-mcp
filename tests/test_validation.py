@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 from best_practices_mcp.contracts import validate_output
-from best_practices_mcp.criteria import get_criteria
+from best_practices_mcp.criteria import catalog_levels, criterion_definitions, get_criteria
 from best_practices_mcp.errors import DomainError
 from best_practices_mcp.validation import contains_url, usable_justification, validate_draft
 
@@ -83,8 +83,8 @@ def test_other_level_invalid_values_are_not_selected_level_findings() -> None:
 
 
 def test_all_catalog_flags_apply_at_their_own_levels() -> None:
-    for level in get_criteria()["levels"]:
-        for criterion in get_criteria(level)["criteria"]:
+    for level in catalog_levels():
+        for criterion in criterion_definitions(level):
             for status in ("Met", "Unmet", "N/A"):
                 result = validate_draft(8, level, {criterion["status_field"]: status})
                 codes = {finding["code"] for finding in result["findings"]}

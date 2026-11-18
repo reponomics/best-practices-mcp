@@ -1,23 +1,36 @@
 {
   "get_criteria": {
-    "input": {},
+    "input": {
+      "level": "passing",
+      "category": "Basics"
+    },
     "success": {
-      "schema_version": 1,
-      "level": null,
+      "schema_version": 2,
+      "level": "passing",
+      "detail": "index",
       "levels": [
-        "passing",
-        "silver",
-        "gold",
-        "baseline-1",
-        "baseline-2",
-        "baseline-3"
+        {
+          "level": "passing",
+          "criterion_count": 67,
+          "categories": [
+            "Basics",
+            "Security"
+          ]
+        }
       ],
-      "criteria": [],
+      "criteria": [
+        {
+          "criterion_id": "description_good",
+          "category": "Basics",
+          "requirement": "MUST"
+        }
+      ],
       "catalog": {
         "revision": "868e1677339a3fdb48851b0c2ae8862c553115eb",
         "source_url": "https://github.com/ossf/best-practices-badge",
         "generated_at": "2026-11-09T00:00:00Z",
-        "format_version": 1
+        "format_version": 1,
+        "text_source_url": "https://github.com/ossf/best-practices-badge"
       }
     },
     "error": {
@@ -77,10 +90,14 @@
     "input": {
       "project_id": 123,
       "level": "passing",
-      "criterion_ids": []
+      "statuses": [
+        "Met",
+        "absent"
+      ],
+      "include_justifications": false
     },
     "success": {
-      "schema_version": 1,
+      "schema_version": 2,
       "project": {
         "project_id": 123,
         "name": "Example",
@@ -94,8 +111,14 @@
           "upstream_percentage": null
         }
       ],
-      "answers": {},
-      "criteria": [],
+      "answers": {
+        "description_good_status": "Met"
+      },
+      "criterion_ids": [
+        "contribution",
+        "description_good"
+      ],
+      "level_criterion_count": 67,
       "observation": {
         "project_id": 123,
         "source_url": "https://www.bestpractices.dev/en/projects/123.json",

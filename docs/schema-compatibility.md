@@ -1,6 +1,6 @@
 # MCP schema compatibility
 
-The server uses the official Python MCP SDK and publishes JSON Schema 2020-12 input/output schemas. Runtime validation and declared schemas must describe the same accepted values. Inspector portability warnings are useful compatibility feedback, but are not by themselves proof of an MCP specification violation.
+The server uses the official Python MCP SDK and publishes JSON Schema 2020-12 input/output schemas. Declared schemas describe the canonical accepted values, and results always conform to their declared schema. Tool-argument validation additionally tolerates two forms that models commonly produce and that a declared schema would only make noisier: a `null` optional argument (treated as omitted, except `draft`) and an integer-valued number or decimal string for `project_id` and `page`. The [contract](contracts.md#common-conventions) defines both. Inspector portability warnings are useful compatibility feedback, but are not by themselves proof of an MCP specification violation.
 
 ## Arbitrary JSON values
 

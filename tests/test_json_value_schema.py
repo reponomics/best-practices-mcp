@@ -73,15 +73,6 @@ def test_progress_preserves_unexpected_saved_values(value):
     payload = copy.deepcopy(EXAMPLES["get_project_progress"]["success"])
     payload["summary_metadata"] = {"badge_level": value}
     payload["answers"] = {"description_good_status": value}
-    payload["criteria"] = [
-        {
-            "criterion_id": "description_good",
-            "status_present": True,
-            "status": value,
-            "justification_present": True,
-            "justification": value,
-        }
-    ]
     Draft202012Validator(output_schema("get_project_progress")).validate(payload)
     assert validate_output("get_project_progress", payload).model_dump(mode="json") == payload
 

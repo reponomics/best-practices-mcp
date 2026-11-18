@@ -1,6 +1,8 @@
-"""Schema inventory for implemented and planned tools; never tool registration."""
+"""Schema inventory and argument diagnostics for the tools; never tool registration."""
 
-from pydantic import TypeAdapter
+from typing import Literal, get_args, get_origin
+
+from pydantic import TypeAdapter, ValidationError
 
 from best_practices_mcp import models
 
@@ -16,7 +18,7 @@ INPUT_MODELS: dict[str, type[models.Model]] = {
     "validate_draft": models.DraftSourceInput,
     "prepare_update_url": models.PrepareURLInput,
 }
-OUTPUT_MODELS: dict[str, type[models.Result]] = {
+OUTPUT_MODELS: dict[str, type[models.Model]] = {
     "get_criteria": models.GetCriteriaResult,
     "find_project": models.FindProjectResult,
     "get_project_progress": models.GetProjectProgressResult,
@@ -55,6 +57,61 @@ def output_schema(tool: str) -> dict:
 
 def validate_input(tool: str, arguments: dict) -> models.Model:
     return INPUT_MODELS[tool].model_validate(arguments)
+
+
+PROBLEMS = {
+    "missing": "is required",
+    "extra_forbidden": "is not an argument of this tool",
+    "literal_error": "is not an allowed value",
+    "int_type": "must be an integer",
+    "greater_than": "must be greater than zero",
+    "string_type": "must be a string",
+    "bool_type": "must be true or false",
+    "list_type": "must be an array",
+    "dict_type": "must be an object",
+}
+FIELD_NAME_LIMIT = 64
+
+
+def _allowed_values(annotation: object) -> list:
+    """Collect the literal choices of an argument, including those of array items."""
+    if get_origin(annotation) is Literal:
+        return list(get_args(annotation))
+    return [value for part in get_args(annotation) for value in _allowed_values(part)]
+
+
+def _issue(model: type[models.Model], error: dict) -> dict:
+    location, kind = error["loc"], error["type"]
+    if kind == "argument":
+        return {"field": error["ctx"]["field"], "problem": error["ctx"]["problem"]}
+    field = str(location[0])[:FIELD_NAME_LIMIT] if location else "arguments"
+    definition = model.model_fields.get(field)
+    item = len(location) == 2 and type(location[1]) is int
+    if kind == "value_error" and len(location) == 1:
+        problem = str(error["ctx"]["error"])
+    elif kind in PROBLEMS and (len(location) == 1 or item):
+        problem = PROBLEMS[kind]
+        if item:
+            problem = "has an item that " + problem
+    else:
+        # Nested shapes produce one error per alternative; restate the expected shape.
+        issue = {"field": field, "problem": "is invalid"}
+        if definition is not None and definition.description:
+            issue["expected"] = definition.description
+        return issue
+    issue = {"field": field, "problem": problem}
+    if kind == "literal_error" and definition is not None:
+        issue["allowed"] = _allowed_values(definition.annotation)
+    return issue
+
+
+def argument_issues(tool: str, error: ValidationError) -> list[dict]:
+    """Describe rejected arguments by name, one issue each, without repeating their values."""
+    issues: dict[str, dict] = {}
+    for item in error.errors():
+        issue = _issue(INPUT_MODELS[tool], item)
+        issues.setdefault(issue["field"], issue)
+    return [issues[field] for field in sorted(issues)]
 
 
 def validate_output(tool: str, payload: dict) -> models.Result:

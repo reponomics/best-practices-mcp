@@ -4,7 +4,7 @@ from collections import defaultdict
 from typing import Any
 
 from best_practices_mcp.compatibility import section_catalog
-from best_practices_mcp.criteria import get_criteria
+from best_practices_mcp.criteria import catalog_levels
 from best_practices_mcp.drafts import (
     METADATA_FIELDS,
     PROVENANCE_FIELDS,
@@ -142,7 +142,7 @@ def transfer_rows(draft, criteria, scope, overrides):
     """Report inclusion, applicable levels and restrictions for each supplied field."""
     definitions = field_definitions()
     all_criteria = _criteria_by_id(section_catalog("choose_section"))
-    levels = get_criteria()["levels"]
+    levels = catalog_levels()
     rows = []
     for field in sorted(draft):
         report = _field_report(field, draft, criteria, scope, definitions)

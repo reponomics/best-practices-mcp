@@ -48,8 +48,8 @@ async def catalog_and_storage(params: StdioServerParameters) -> None:
         assert mutation.annotations.read_only_hint is False
         index = await call(client, "get_criteria", {})
         assert len(index["levels"]) == 6
-        for level in index["levels"]:
-            assert (await call(client, "get_criteria", {"level": level}))["criteria"]
+        for entry in index["levels"]:
+            assert (await call(client, "get_criteria", {"level": entry["level"]}))["criteria"]
         await call(client, "read_draft", {"project_id": 123}, "draft_not_found")
         draft = {"name": "Fresh install ✨", "description_good_justification": "Synthetic text"}
         created = await call(client, "update_draft", {"project_id": 123, "changes": draft})
