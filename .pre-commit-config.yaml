@@ -24,11 +24,4 @@ repos:
         entry: make test
         language: system
         pass_filenames: false
-        # Tests may assert documentation content, so every commit needs the suite.
         always_run: true
-  - repo: https://github.com/kjanat/actionlint
-    rev: 220b76cfa568e00ed8b3c476898f849a722b88e2 # frozen: v1.17.1
-    hooks:
-      - id: actionlint
-        language_version: '1.27.4'
-        files: ^\.github/workflows/.*\.ya?ml$

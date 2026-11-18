@@ -37,7 +37,6 @@ dev = [
 fuzz = ["atheris==3.1.0"]
 
 audit-tools = ["uv==0.13.8"]
-inventory-tools = ["PyYAML==6.0.3"]
 release-tools = ["cyclonedx-bom==8.0.1"]
 verification-tools = ["pypi-attestations==0.0.31"]
 

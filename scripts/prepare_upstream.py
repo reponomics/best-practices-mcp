@@ -3,39 +3,11 @@
 from __future__ import annotations
 
 import html
-import re
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 
-import yaml
-from generate_catalog import SourceLoader, catalog_content, encoded, flatten
-
-
-def criterion_ids(contents: dict[str, bytes | None]) -> set[str]:
-    """Compare identities only; this advisory never judges requirement semantics."""
-    result = set()
-    for name in ("criteria/criteria.yml", "criteria/baseline_criteria.yml"):
-        raw = yaml.load(contents[name], Loader=SourceLoader)
-        for level, groups in raw.items():
-            if level == "_metadata":
-                continue
-            for criterion_id in flatten(groups):
-                identity = f"{level}/{criterion_id}"
-                if not re.fullmatch(r"[A-Za-z0-9_-]+/[A-Za-z0-9_-]+", identity):
-                    raise ValueError("Unrecognized level or criterion identifier")
-                result.add(identity)
-    return result
-
-
-def id_advisory(source: Path, remote: dict[str, bytes | None]) -> dict:
-    try:
-        before = criterion_ids({name: (source / name).read_bytes() for name in remote})
-        after = criterion_ids(remote)
-        return {"added": sorted(after - before), "removed": sorted(before - after), "error": None}
-    except Exception as exc:
-        # A schema change must reach the PR even when this advisory cannot parse it.
-        return {"added": [], "removed": [], "error": f"{type(exc).__name__}: {exc}"}
+from generate_catalog import catalog_content, encoded
 
 
 def source_timestamp(client, sha: str) -> str:
@@ -108,19 +80,10 @@ def preparation_body(result: dict) -> str:
         )
     else:
         lines.append("Catalog and provenance regenerated successfully. CI still needs to pass.")
-    advisory = result["ids"]
-    lines.extend(["", "## Criterion IDs (advisory)", ""])
-    if advisory["error"]:
-        lines.append(f"Comparison unavailable: <pre>{error_text(advisory['error'])}</pre>")
-    else:
-        for key in ("added", "removed"):
-            values = ", ".join(f"`{value}`" for value in advisory[key]) or "none"
-            lines.append(f"{key.capitalize()} (level-qualified): {values}.")
     lines.extend(
         [
             "",
-            "Labels do not classify compatibility or authorize merging. Review changes to "
-            "requirements, wording, documentation and notices in the diff.",
+            "Review changes to requirements, wording, documentation and notices in the diff.",
             "",
             "To make manual fixes on this generated branch, first set the repository variable "
             "`UPSTREAM_UPDATES_PAUSED=true`. Re-enable updates after merging or finishing the fix. "
@@ -131,14 +94,9 @@ def preparation_body(result: dict) -> str:
 
 
 def prepare_update(client, report, root: Path, output: Path) -> str:
-    result = {
-        "changed": bool(report.changed),
-        "ids": {"added": [], "removed": [], "error": None},
-        "generation_error": None,
-    }
+    result = {"changed": bool(report.changed), "generation_error": None}
     if report.changed:
         timestamp = source_timestamp(client, report.production_revision)
-        result["ids"] = id_advisory(root / "vendor/badgeapp", report.production_files)
         with tempfile.TemporaryDirectory(prefix="badgeapp-sources-") as temporary:
             staged = Path(temporary)
             generated, result["generation_error"] = build_snapshot(report, timestamp, staged)

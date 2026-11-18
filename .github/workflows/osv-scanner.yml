@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   scan:
-    name: Scan resolved Python and actionlint dependencies
+    name: Scan resolved Python dependencies
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -37,17 +37,6 @@ jobs:
           enable-cache: false
       - name: Verify the resolved Python lock is current
         run: make lock-check
-      - name: Set up Go for module inventory resolution
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version: '1.27.4'
-          cache: false
-      - name: Generate inventory from the pinned actionlint revision
-        env:
-          UV_PROJECT_ENVIRONMENT: build/osv-inventory-venv
-        run: |
-          uv sync --locked --only-group inventory-tools --no-install-project
-          make actionlint-inventory VENV=build/osv-inventory-venv
       - name: Scan the committed dependency versions for vulnerabilities
         # No package installation or implicit dependency resolution in this scan.
         # A scanner error remains a job failure; it is not treated as an empty result.
@@ -56,8 +45,6 @@ jobs:
           scan-args: |-
             --config=osv-scanner.toml
             --lockfile=uv.lock
-            --lockfile=osv-scanner:build/actionlint-inventory/inventory.json
-            --lockfile=osv-scanner:build/actionlint-inventory/stdlib-inventory.json
             --no-resolve
             --format=sarif
             --output-file=osv-scanner.sarif
@@ -71,14 +58,13 @@ jobs:
           scan-args: |-
             --config=osv-scanner.toml
             --lockfile=uv.lock
-            --lockfile=osv-scanner:build/actionlint-inventory/inventory.json
             --no-resolve
-            --licenses=MIT,MIT-0,BSD-2-Clause,BSD-3-Clause,Apache-2.0,ISC,PSF-2.0,MPL-2.0,BlueOak-1.0.0,0BSD,Unlicense
+            --licenses=MIT,MIT-0,BSD-2-Clause,BSD-3-Clause,Apache-2.0,ISC,PSF-2.0,MPL-2.0,0BSD,Unlicense
             --all-packages
             --format=json
             --output-file=osv-licenses.json
       - name: Retain the scan and resolved inputs
-        if: ${{ !cancelled() && hashFiles('osv-scanner.sarif', 'build/actionlint-inventory/inventory.json') != '' }}
+        if: ${{ !cancelled() && hashFiles('osv-scanner.sarif') != '' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: osv-dependency-report
@@ -86,10 +72,9 @@ jobs:
             osv-scanner.sarif
             uv.lock
             osv-scanner.toml
-            build/actionlint-inventory/
           retention-days: 14
       - name: Retain license results and policy
-        if: ${{ !cancelled() && hashFiles('osv-licenses.json', 'build/actionlint-inventory/inventory.json') != '' }}
+        if: ${{ !cancelled() && hashFiles('osv-licenses.json') != '' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: osv-license-report
@@ -98,7 +83,6 @@ jobs:
             osv-scanner.toml
             Makefile
             uv.lock
-            build/actionlint-inventory/
           retention-days: 14
       - name: Upload SARIF where code scanning is available
         if: >-

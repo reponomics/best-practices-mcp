@@ -29,7 +29,6 @@ POLICY_INPUTS = (
     ("uv.lock", "uv.lock"),
     ("pyproject.toml", "pyproject.toml"),
     (".pre-commit-config.yaml", "pre-commit-config.yaml"),
-    (".github/workflows/actionlint.yml", "actionlint-workflow.yml"),
     (".github/workflows/release.yml", "release-workflow.yml"),
 )
 
@@ -69,9 +68,6 @@ def copy_reports(root: Path, reports: Path, evidence: Path, destination: Path) -
     copy_evidence(evidence.with_suffix(".log"), destination / "qualification.log")
     for source, name in POLICY_INPUTS:
         copy_evidence(root / source, destination / name)
-    inventory = root / "build/actionlint-inventory"
-    for name in ("inventory.json", "stdlib-inventory.json", "provenance.json", "go.mod", "go.sum"):
-        copy_evidence(inventory / name, destination / f"actionlint-{name}")
 
 
 def write_manifest(output: Path, metadata: dict) -> None:
@@ -124,7 +120,7 @@ def assemble(
             "runtime_sbom_scope": (
                 "Reference fresh installations; not a universal or bundled dependency set"
             ),
-            "tooling_sbom_scope": "Development Python lockfile and actionlint executable modules",
+            "tooling_sbom_scope": "Development Python lockfile",
         },
     )
 

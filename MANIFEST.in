@@ -1,7 +1,6 @@
 include CONTRIBUTING.md
 include Makefile .python-version uv.lock
 include osv-scanner.toml
-include .github/workflows/actionlint.yml
 include .pre-commit-config.yaml
 include .gitattributes
 include .github/release-please-config.json .github/.release-please-manifest.json

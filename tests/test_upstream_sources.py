@@ -1,25 +1,14 @@
-"""Verify integrity of the retained upstream documents, criteria and locale."""
+"""The retained upstream sources are the files their manifest describes."""
 
-import hashlib
-import json
 from pathlib import Path
 
 from scripts import check_upstream
 
-ROOT = Path(__file__).resolve().parents[1]
+SOURCE = Path(__file__).resolve().parents[1] / "vendor/badgeapp"
 
 
-def test_retained_source_hashes():
-    source = ROOT / "vendor/badgeapp"
-    manifest = json.loads((source / "source.json").read_text(encoding="utf-8"))
-    for name, expected in manifest["files"].items():
-        assert hashlib.sha256((source / name).read_bytes()).hexdigest() == expected
-
-
-def test_required_retained_sources_form_a_complete_verified_baseline():
-    source = ROOT / "vendor/badgeapp"
-    revision, hashes = check_upstream.read_baseline(source)
-    manifest = json.loads((source / "source.json").read_text(encoding="utf-8"))
-    assert revision == manifest["revision"]
-    assert hashes == manifest["files"]
+def test_retained_sources_match_their_manifest():
+    # read_baseline raises on a hash mismatch or an unexpected set of paths.
+    revision, hashes = check_upstream.read_baseline(SOURCE)
+    assert revision
     assert set(hashes) == set(check_upstream.SOURCE_FILES)

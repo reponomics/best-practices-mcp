@@ -75,6 +75,7 @@ jobs:
           commit-message: 'fix(catalog): refresh upstream BadgeApp sources'
           title: 'fix(catalog): refresh upstream BadgeApp sources'
           body-path: build/upstream/pr.md
+          labels: upstream
           draft: false
           add-paths: |
             vendor/badgeapp/criteria/criteria.yml
@@ -89,12 +90,6 @@ jobs:
             src/best_practices_mcp/data/catalog.json
             src/best_practices_mcp/data/provenance.json
             src/best_practices_mcp/data/BADGEAPP-LICENSE.txt
-      - name: Synchronize advisory labels
-        if: steps.pr.outputs.pull-request-number != ''
-        env:
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
-          PR_NUMBER: ${{ steps.pr.outputs.pull-request-number }}
-        run: .venv/bin/python scripts/upstream_pr.py --pr-number "$PR_NUMBER"
       - name: Report generation failure after publishing the reviewable patch
         if: steps.prepare.outputs.generation-failed == 'true'
         run: |

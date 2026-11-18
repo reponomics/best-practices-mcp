@@ -89,7 +89,6 @@ def test_deleted_implementation_file_changes_fingerprint(repo: Path) -> None:
         ".github/dependabot.yml",
         ".github/release-please-config.json",
         ".github/workflows/ci.yml",
-        ".github/workflows/actionlint.yml",
     ],
 )
 def test_dependency_build_and_release_input_changes_change_fingerprint(repo: Path, name: str):

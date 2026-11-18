@@ -143,8 +143,8 @@ def report_body(report: Report) -> str:
         return "\n".join(lines) + "\n"
     lines.extend(
         [
-            "Review the source and generated changes together. Labels are advisory; all updates "
-            "require maintainer review and passing CI. No runtime code is changed automatically.",
+            "Review the source and generated changes together. All updates require maintainer "
+            "review and passing CI. No runtime code is changed automatically.",
             "",
             "| Changed file | Bundled source | Production source |",
             "| --- | --- | --- |",

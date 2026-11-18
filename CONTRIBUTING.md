@@ -32,7 +32,7 @@ Run this before submitting a PR:
 make validate
 ```
 
-This checks the lockfile, formatting and lint, offline tests, catalog reproduction, and workflow syntax. It returns a failing status if any check fails. Workflow lint uses the pinned pre-commit hook; its first run downloads the Go toolchain and builds the linter. You do not need to install Go separately. Stage new workflow files before checking them.
+This checks the lockfile, formatting and lint, offline tests and catalog reproduction. It returns a failing status if any check fails.
 
 Use focused checks while developing and additional package checks when relevant:
 
@@ -42,7 +42,6 @@ Use focused checks while developing and additional package checks when relevant:
 | `make test-coverage` | Server coverage, including MCP subprocesses; reports in `build/coverage/` |
 | `make test-package` | Build and inspect distributions and test an isolated installed wheel with existing dependencies |
 | `make check-fresh-package` | Install wheel and sdist in fresh environments; permits dependency downloads and writes results to `build/verification/` |
-| `make workflow-check` | Lint all tracked GitHub Actions workflows |
 
 Add or update tests for changed behavior. The [testing policy](docs/testing-policy.md) defines contract and compatibility expectations. CI runs the Python 3.11/3.12 matrix on Linux, macOS and Windows, plus dependency and security checks; see [CI documentation](docs/ci.md).
 

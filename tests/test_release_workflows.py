@@ -218,8 +218,6 @@ def test_scan_failure_blocks_bundle_and_pypi_gets_only_archives():
     assert publish["with"]["attestations"] is True
     vulnerability = step("build", "Scan candidate and tooling dependencies for vulnerabilities")
     licenses = step("build", "Check candidate and tooling licenses")
-    assert "stdlib-inventory.json" in vulnerability["with"]["scan-args"]
-    assert "stdlib-inventory.json" not in licenses["with"]["scan-args"]
     for kind in ("wheel", "sdist"):
         assert f"runtime-{kind}.inventory.json" in vulnerability["with"]["scan-args"]
         assert f"runtime-{kind}.inventory.json" in licenses["with"]["scan-args"]

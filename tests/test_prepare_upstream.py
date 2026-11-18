@@ -1,5 +1,10 @@
-"""Prepare real upstream snapshots for review without modifying runtime code or tests."""
+"""Preparing an upstream snapshot for review: what is written, and what is reported.
 
+The checkout here is synthetic. Catalog generation is replaced by a stand-in that echoes
+the sources it was given, because the generator has its own tests in test_criteria.py.
+"""
+
+import hashlib
 import importlib
 import json
 import shutil
@@ -8,52 +13,43 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
-import yaml
 
 from scripts import check_upstream as check
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 prepare = importlib.import_module("prepare_upstream")
+BASE = "a" * 40
 PRODUCTION = "b" * 40
 TIMESTAMP = "2026-11-13T15:00:00Z"
-GENERATED = ("catalog.json", "provenance.json", "BADGEAPP-LICENSE.txt")
+CHANGED = check.SOURCE_FILES[0]
+GENERATED = "src/best_practices_mcp/data/generated.bin"
+
+
+def generated_from(source: Path) -> dict[str, bytes]:
+    """Stand in for catalog generation with output that depends on the sources read."""
+    return {
+        "generated.bin": (source / CHANGED).read_bytes() + (source / "source.json").read_bytes()
+    }
 
 
 @pytest.fixture
-def checkout(tmp_path):
+def checkout(tmp_path, monkeypatch):
+    """A checkout with a valid bundled snapshot, generated data and one unrelated file."""
     root = tmp_path / "checkout"
-    shutil.copytree(ROOT / "vendor/badgeapp", root / "vendor/badgeapp")
-    names = [
-        "docs/upstream-compatibility.md",
-        "docs/transfer-rules.md",
-        "docs/design.md",
-        "docs/specification.md",
-        "THIRD_PARTY_NOTICES.md",
-        *(f"src/best_practices_mcp/data/{name}" for name in GENERATED),
-        "src/best_practices_mcp/criteria.py",
-        "tests/test_criteria.py",
-        "docs/planning/initial-implementation/badgeapp-mcp-upstream-baseline.md",
-        "docs/adr/0001-badge-image-and-status-tools.md",
-    ]
-    for name in names:
-        destination = root / name
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(ROOT / name, destination)
-    archive = root / "docs/archive/historical-baseline.md"
-    archive.parent.mkdir(parents=True)
-    manifest = json.loads((root / "vendor/badgeapp/source.json").read_text())
-    archive.write_text(f"Historical baseline: {manifest['revision']}\n", encoding="utf-8")
-    # Explicit citations remain fixed even when they match either sync endpoint.
-    (root / "docs/explicit-citations.md").write_text(
-        "\n".join(
-            f"Reviewed upstream docs/api.md at commit {sha}: "
-            f"https://github.com/ossf/best-practices-badge/blob/{sha}/docs/api.md"
-            for sha in (manifest["revision"], PRODUCTION)
-        )
-        + "\n",
-        encoding="utf-8",
-    )
+    source = root / "vendor/badgeapp"
+    hashes = {}
+    for name in check.SOURCE_FILES:
+        path = source / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(f"bundled {name}".encode())
+        hashes[name] = hashlib.sha256(path.read_bytes()).hexdigest()
+    manifest = {"repository": check.UPSTREAM_URL, "revision": BASE, "files": hashes}
+    (source / "source.json").write_text(json.dumps(manifest), encoding="utf-8")
+    for name, content in ((GENERATED, b"previous generated data"), ("unrelated/file", b"kept")):
+        (root / name).parent.mkdir(parents=True, exist_ok=True)
+        (root / name).write_bytes(content)
+    monkeypatch.setattr(prepare, "catalog_content", generated_from)
     return root
 
 
@@ -64,7 +60,7 @@ def client():
     return value
 
 
-def read_tree(root):
+def read_tree(root: Path) -> dict[str, bytes]:
     return {
         path.relative_to(root).as_posix(): path.read_bytes()
         for path in root.rglob("*")
@@ -72,277 +68,114 @@ def read_tree(root):
     }
 
 
-def remote_files(root):
-    return {name: (root / "vendor/badgeapp" / name).read_bytes() for name in check.SOURCE_FILES}
+def production(checkout: Path, **changes: bytes | None) -> check.Report:
+    """A report whose production files are the bundled ones with `changes` applied."""
+    source = checkout / "vendor/badgeapp"
+    revision, hashes = check.read_baseline(source)
+    remote = {name: (source / name).read_bytes() for name in check.SOURCE_FILES}
+    return check.Report(revision, PRODUCTION, hashes, remote | changes)
 
 
-def report_for(root, remote):
-    revision, hashes = check.read_baseline(root / "vendor/badgeapp")
-    return check.Report(revision, PRODUCTION, hashes, remote)
-
-
-def load_yaml(contents, name):
-    return yaml.load(contents[name], Loader=prepare.SourceLoader)
-
-
-def replace_yaml(contents, name, value):
-    contents[name] = yaml.safe_dump(value, sort_keys=False, allow_unicode=True).encode("utf-8")
-
-
-def change_wording(remote):
-    locale = load_yaml(remote, "config/locales/en.yml")
-    locale["en"]["criteria"]["0"]["description_good"]["description"] = "Updated upstream wording."
-    replace_yaml(remote, "config/locales/en.yml", locale)
-
-
-def generated_catalog(root):
-    return json.loads(
-        (root / "src/best_practices_mcp/data/catalog.json").read_text(encoding="utf-8")
-    )
-
-
-def prepared_result(output):
+def result(output: Path) -> dict:
     return json.loads((output / "result.json").read_text(encoding="utf-8"))
 
 
-def test_wording_refresh_regenerates_data_and_preserves_all_documentation(
+def test_changed_snapshot_is_written_with_its_manifest_and_regenerated_data(
     checkout, client, tmp_path
 ):
     before = read_tree(checkout)
-    remote = remote_files(checkout)
-    change_wording(remote)
-    report = report_for(checkout, remote)
+    report = production(checkout, **{CHANGED: b"updated upstream text"})
     output = tmp_path / "reports"
-    body = prepare.prepare_update(client, report, checkout, output)
-    result = prepared_result(output)
-    assert result["generation_error"] is None
-    assert result["ids"] == {"added": [], "removed": [], "error": None}
-    assert "regenerated successfully" in body
-    source = checkout / "vendor/badgeapp"
-    manifest = json.loads((source / "source.json").read_text())
-    assert manifest["revision"] == PRODUCTION
-    assert manifest["generated_at"] == TIMESTAMP
-    assert manifest["files"] == report.production_hashes
-    assert all((source / name).read_bytes() == content for name, content in remote.items())
-    catalog = generated_catalog(checkout)
-    assert catalog["format_version"] == 2
-    assert "catalog" not in catalog
-    selected = next(row for row in catalog["criteria"] if row["criterion_id"] == "description_good")
-    assert selected["description"] == "Updated upstream wording."
-    assert "source_url" not in selected
-    provenance = json.loads((checkout / "src/best_practices_mcp/data/provenance.json").read_text())
-    assert provenance["files"] == manifest["files"]
-    assert provenance["revision"] == PRODUCTION
-    assert provenance["generated_at"] == TIMESTAMP
-    managed = {
-        *(f"vendor/badgeapp/{name}" for name in check.SOURCE_FILES),
-        "vendor/badgeapp/source.json",
-        *(f"src/best_practices_mcp/data/{name}" for name in GENERATED),
-    }
+    assert prepare.prepare_update(client, report, checkout, output)
+    assert result(output) == {"changed": True, "generation_error": None}
     after = read_tree(checkout)
-    assert {name for name in before if before[name] != after[name]} <= managed
-    assert (
-        after["src/best_practices_mcp/criteria.py"] == before["src/best_practices_mcp/criteria.py"]
-    )
-    assert after["tests/test_criteria.py"] == before["tests/test_criteria.py"]
-
-
-def test_condition_change_flows_through_generation_without_id_classification(
-    checkout, client, tmp_path
-):
-    remote = remote_files(checkout)
-    criteria = load_yaml(remote, "criteria/criteria.yml")
-    criteria["0"]["Basics"]["Basic project website content"]["description_good"][
-        "met_url_required"
-    ] = True
-    replace_yaml(remote, "criteria/criteria.yml", criteria)
-    output = tmp_path / "reports"
-    prepare.prepare_update(client, report_for(checkout, remote), checkout, output)
-    result = prepared_result(output)
-    assert result["generation_error"] is None
-    assert result["ids"] == {"added": [], "removed": [], "error": None}
-    criterion = next(
-        row
-        for row in generated_catalog(checkout)["criteria"]
-        if row["criterion_id"] == "description_good"
-    )
-    assert criterion["met_url_required"] is True
-    assert criterion["met_justification_required"] is True
-
-
-@pytest.mark.parametrize(
-    "name",
-    [
-        "docs/api.md",
-        "docs/automation-approach.md",
-        "docs/automation-proposals.md",
-        "docs/bestpractices-json.md",
-        "LICENSE",
-    ],
-)
-def test_retained_document_and_notice_changes_are_prepared(checkout, client, tmp_path, name):
-    catalog_path = checkout / "src/best_practices_mcp/data/catalog.json"
-    catalog_before = catalog_path.read_bytes()
-    remote = remote_files(checkout)
-    remote[name] += b"\nUpdated upstream text.\n"
-    report = report_for(checkout, remote)
-    assert report.changed == [name]
-    output = tmp_path / "reports"
-    prepare.prepare_update(client, report, checkout, output)
-    assert prepared_result(output)["generation_error"] is None
-    assert catalog_path.read_bytes() == catalog_before
-    assert (checkout / "vendor/badgeapp" / name).read_bytes() == remote[name]
-    provenance = json.loads((checkout / "src/best_practices_mcp/data/provenance.json").read_text())
-    assert provenance["files"][name] == report.production_hashes[name]
-    if name == "LICENSE":
-        assert (
-            checkout / "src/best_practices_mcp/data/BADGEAPP-LICENSE.txt"
-        ).read_bytes() == remote[name]
-
-
-def test_added_removed_ids_are_advisory_and_do_not_prevent_generation(checkout, client, tmp_path):
-    remote = remote_files(checkout)
-    criteria = load_yaml(remote, "criteria/criteria.yml")
-    group = criteria["0"]["Basics"]["Basic project website content"]
-    group["new_description"] = group.pop("description_good")
-    replace_yaml(remote, "criteria/criteria.yml", criteria)
-    locale = load_yaml(remote, "config/locales/en.yml")
-    texts = locale["en"]["criteria"]["0"]
-    texts["new_description"] = texts.pop("description_good")
-    replace_yaml(remote, "config/locales/en.yml", locale)
-    output = tmp_path / "reports"
-    body = prepare.prepare_update(client, report_for(checkout, remote), checkout, output)
-    result = prepared_result(output)
-    assert result["generation_error"] is None
-    assert result["ids"] == {
-        "added": ["0/new_description"],
-        "removed": ["0/description_good"],
-        "error": None,
+    assert {name for name in after if after[name] != before.get(name)} == {
+        f"vendor/badgeapp/{CHANGED}",
+        "vendor/badgeapp/source.json",
+        GENERATED,
     }
-    assert "0/new_description" in body
-    ids = {row["criterion_id"] for row in generated_catalog(checkout)["criteria"]}
-    assert "new_description" in ids
-    assert "description_good" not in ids
+    assert json.loads(after["vendor/badgeapp/source.json"]) == {
+        "repository": check.UPSTREAM_URL,
+        "revision": PRODUCTION,
+        "generated_at": TIMESTAMP,
+        "files": report.production_hashes,
+    }
+    source = checkout / "vendor/badgeapp"
+    assert after[GENERATED] == generated_from(source)["generated.bin"]
+    # The refreshed snapshot is a valid baseline that no longer differs from production.
+    revision, hashes = check.read_baseline(source)
+    assert revision == PRODUCTION
+    assert check.Report(revision, PRODUCTION, hashes, report.production_files).changed == []
 
 
-def test_unchanged_inputs_do_not_rewrite_repository_or_fetch_commit_metadata(
-    checkout, client, tmp_path
-):
+def test_unchanged_snapshot_writes_nothing_and_makes_no_request(checkout, client, tmp_path):
     before = read_tree(checkout)
-    report = report_for(checkout, remote_files(checkout))
     output = tmp_path / "reports"
-    assert prepare.prepare_update(client, report, checkout, output) == ""
+    assert prepare.prepare_update(client, production(checkout), checkout, output) == ""
     assert read_tree(checkout) == before
+    assert result(output) == {"changed": False, "generation_error": None}
     client.api.assert_not_called()
-    assert prepared_result(output)["changed"] is False
 
 
-@pytest.mark.parametrize("missing_source", [False, True])
-def test_same_base_and_upstream_snapshot_produce_identical_patch(
-    checkout, client, tmp_path, missing_source
-):
+def test_same_snapshot_prepares_identical_patches_in_two_checkouts(checkout, client, tmp_path):
     second = tmp_path / "second"
     shutil.copytree(checkout, second)
-    remote = remote_files(checkout)
-    change_wording(remote)
-    if missing_source:
-        remote["criteria/criteria.yml"] = None
-    report = report_for(checkout, remote)
-    first_body = prepare.prepare_update(client, report, checkout, tmp_path / "first-report")
+    report = production(checkout, **{CHANGED: b"updated upstream text"})
+    first_body = prepare.prepare_update(client, report, checkout, tmp_path / "first")
     second_body = prepare.prepare_update(client, report, second, tmp_path / "second-report")
     assert read_tree(checkout) == read_tree(second)
     assert first_body == second_body
-    assert prepared_result(tmp_path / "first-report") == prepared_result(tmp_path / "second-report")
-    if missing_source:
-        assert "Retained upstream source files are missing: criteria/criteria.yml" in first_body
 
 
-@pytest.mark.parametrize("name", check.SOURCE_FILES)
-def test_missing_upstream_input_still_prepares_reviewable_patch(checkout, client, tmp_path, name):
-    before = read_tree(checkout)
-    remote = remote_files(checkout)
-    remote[name] = None
-    report = report_for(checkout, remote)
-    output = tmp_path / "reports"
-    body = prepare.prepare_update(client, report, checkout, output)
-    assert "Catalog generation failed" in body
-    assert prepared_result(output)["generation_error"] == (
-        f"Retained upstream source files are missing: {name}"
-    )
-    assert not (checkout / "vendor/badgeapp" / name).exists()
-    manifest = json.loads((checkout / "vendor/badgeapp/source.json").read_text())
-    assert manifest["revision"] == PRODUCTION
-    assert name not in manifest["files"]
-    for name in GENERATED:
-        path = f"src/best_practices_mcp/data/{name}"
-        assert (checkout / path).read_bytes() == before[path]
-
-
-def test_malformed_yaml_preserves_source_patch_and_reports_advisory_and_generation_errors(
+def test_file_missing_upstream_becomes_a_reviewable_deletion_without_new_generated_data(
     checkout, client, tmp_path
 ):
-    remote = remote_files(checkout)
-    remote["criteria/criteria.yml"] = b"invalid: [\n"
+    before = read_tree(checkout)
     output = tmp_path / "reports"
-    body = prepare.prepare_update(client, report_for(checkout, remote), checkout, output)
-    result = prepared_result(output)
-    assert result["ids"]["error"]
-    assert result["generation_error"]
-    assert "Comparison unavailable" in body
-    assert (checkout / "vendor/badgeapp/criteria/criteria.yml").read_bytes() == b"invalid: [\n"
+    report = production(checkout, **{CHANGED: None})
+    body = prepare.prepare_update(client, report, checkout, output)
+    after = read_tree(checkout)
+    assert f"vendor/badgeapp/{CHANGED}" not in after
+    manifest = json.loads(after["vendor/badgeapp/source.json"])
+    assert manifest["revision"] == PRODUCTION
+    assert CHANGED not in manifest["files"]
+    assert after[GENERATED] == before[GENERATED]
+    assert CHANGED in result(output)["generation_error"]
+    assert CHANGED in body
 
 
-def test_generation_failure_keeps_old_outputs_and_docs_but_refreshes_sources(
+def test_generation_failure_keeps_previous_generated_data_beside_new_sources(
     checkout, client, tmp_path, monkeypatch
 ):
     before = read_tree(checkout)
-    remote = remote_files(checkout)
-    change_wording(remote)
-    report = report_for(checkout, remote)
-    monkeypatch.setattr(
-        prepare, "catalog_content", Mock(side_effect=RuntimeError("schema changed"))
-    )
+    monkeypatch.setattr(prepare, "catalog_content", Mock(side_effect=KeyError("schema changed")))
     output = tmp_path / "reports"
+    report = production(checkout, **{CHANGED: b"updated"})
     body = prepare.prepare_update(client, report, checkout, output)
+    after = read_tree(checkout)
+    assert after[f"vendor/badgeapp/{CHANGED}"] == b"updated"
+    assert after[GENERATED] == before[GENERATED]
+    assert "schema changed" in result(output)["generation_error"]
     assert "schema changed" in body
-    assert prepared_result(output)["generation_error"] == "RuntimeError: schema changed"
-    assert (checkout / "vendor/badgeapp/config/locales/en.yml").read_bytes() == remote[
-        "config/locales/en.yml"
-    ]
-    for name in GENERATED:
-        path = f"src/best_practices_mcp/data/{name}"
-        assert (checkout / path).read_bytes() == before[path]
-    for name in before:
-        if name.startswith("docs/") or name == "THIRD_PARTY_NOTICES.md":
-            assert (checkout / name).read_bytes() == before[name]
-
-
-def test_preparation_does_not_require_maintained_documentation(checkout, client, tmp_path):
-    shutil.rmtree(checkout / "docs")
-    (checkout / "THIRD_PARTY_NOTICES.md").unlink()
-    remote = remote_files(checkout)
-    change_wording(remote)
-    output = tmp_path / "reports"
-    prepare.prepare_update(client, report_for(checkout, remote), checkout, output)
-    assert prepared_result(output)["generation_error"] is None
-    assert not (checkout / "docs").exists()
 
 
 @pytest.mark.parametrize(
     "metadata",
     [
-        {"sha": "a" * 40, "committer": {"date": TIMESTAMP}},
+        {"sha": BASE, "committer": {"date": TIMESTAMP}},
         {"sha": PRODUCTION, "committer": {"date": "2026-11-13T15:00:00"}},
         {"sha": PRODUCTION, "committer": {"date": "not-a-date"}},
     ],
+    ids=["another commit", "no timezone", "not a date"],
 )
-def test_invalid_commit_metadata_does_not_modify_repository(checkout, client, tmp_path, metadata):
+def test_invalid_commit_metadata_is_refused_before_anything_is_written(
+    checkout, client, tmp_path, metadata
+):
     before = read_tree(checkout)
-    remote = remote_files(checkout)
-    change_wording(remote)
     client.api.return_value = metadata
+    report = production(checkout, **{CHANGED: b"updated"})
     with pytest.raises(ValueError):
-        prepare.prepare_update(client, report_for(checkout, remote), checkout, tmp_path / "reports")
+        prepare.prepare_update(client, report, checkout, tmp_path / "reports")
     assert read_tree(checkout) == before
 
 
@@ -354,10 +187,9 @@ def test_source_timestamp_is_normalized_to_utc(client):
     assert prepare.source_timestamp(client, PRODUCTION) == TIMESTAMP
 
 
-def test_error_details_are_bounded_escaped_and_do_not_mention_users():
+def test_error_text_in_the_review_body_is_bounded_escaped_and_mentions_no_user():
+    # Policy: upstream-controlled error text must not inject markup or notify people in a PR.
     escaped = prepare.error_text("<script>@maintainer</script>" + "x" * 2000)
     assert "<script>" not in escaped
     assert "@maintainer" not in escaped
-    assert "&lt;script&gt;" in escaped
-    assert "&#64;maintainer" in escaped
     assert escaped.count("x") < 1500

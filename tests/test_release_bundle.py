@@ -29,10 +29,6 @@ def candidate(tmp_path, monkeypatch):
         path = tmp_path / source
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("policy input")
-    inventory = tmp_path / "build/actionlint-inventory"
-    inventory.mkdir(parents=True)
-    for name in ("inventory.json", "stdlib-inventory.json", "provenance.json", "go.mod", "go.sum"):
-        (inventory / name).write_text("inventory input")
     evidence = tmp_path / "evidence.json"
     evidence.write_text(
         json.dumps(

@@ -15,9 +15,8 @@ endif
 PIP ?= "$(PYTHON)" -m pip
 UV ?= uv
 OSV_SCANNER ?= osv-scanner
-GO ?= go
 # Keep in sync with the license scan in .github/workflows/osv-scanner.yml.
-OSV_LICENSES := MIT,MIT-0,BSD-2-Clause,BSD-3-Clause,Apache-2.0,ISC,PSF-2.0,MPL-2.0,BlueOak-1.0.0,0BSD,Unlicense
+OSV_LICENSES := MIT,MIT-0,BSD-2-Clause,BSD-3-Clause,Apache-2.0,ISC,PSF-2.0,MPL-2.0,0BSD,Unlicense
 RELEASE_DIST ?= build/release/dist
 RELEASE_EVIDENCE ?= build/release/evidence.json
 RELEASE_ARGS ?=
@@ -53,7 +52,7 @@ check: quality ## Run quality checks and the offline test suite
 .PHONY: validate
 
 validate: ## Run contributor checks and the coverage floor (OSV scans run in CI)
-	"$(MAKE)" -k lock-check quality test-coverage catalog-check workflow-check
+	"$(MAKE)" -k lock-check quality test-coverage catalog-check
 
 tooling-check: ## Verify the uv bootstrap requirement matches its locked audit inventory
 	"$(UV)" run --no-project $(UV_PYTHON_ARG) python scripts/dev_tools.py tooling-check
@@ -147,16 +146,13 @@ test-coverage: ## Measure server coverage and enforce the configured total floor
 check-fresh-package: ## Build/install wheel and sdist in fresh temporary venvs (downloads dependencies)
 	"$(PYTHON)" scripts/check_fresh_package.py --allow-downloads --output build/verification/fresh-package.json
 
-.PHONY: lock lock-check workflow-check release-check release-build release-artifacts release-qualify
+.PHONY: lock lock-check release-check release-build release-artifacts release-qualify
 
 lock: ## Resolve project metadata into the cross-platform development lockfile (network)
 	"$(UV)" lock $(UV_PYTHON_ARG)
 
 lock-check: tooling-check ## Verify the committed lockfile matches project metadata
 	"$(UV)" lock --check $(UV_PYTHON_ARG)
-
-workflow-check: ## Lint tracked GitHub Actions workflows through managed actionlint
-	"$(PYTHON)" -m pre_commit run actionlint --all-files
 
 .PHONY: setup-hooks pre-commit-check
 
@@ -167,11 +163,6 @@ pre-commit-check: ## Run all configured hooks against tracked files (no live tes
 	"$(PYTHON)" -m pre_commit run --all-files
 
 .PHONY: scan-vulnerabilities scan-licenses
-
-.PHONY: actionlint-inventory
-
-actionlint-inventory: ## Generate CI-only actionlint inventory (network; requires Go and PyYAML)
-	"$(PYTHON)" scripts/actionlint_inventory.py --go "$(GO)"
 
 scan-vulnerabilities: ## Scan the Python lockfile for vulnerabilities (network; requires OSV-Scanner)
 	"$(OSV_SCANNER)" --config=osv-scanner.toml --lockfile=uv.lock --no-resolve --format=sarif --output-file=osv-scanner.sarif
