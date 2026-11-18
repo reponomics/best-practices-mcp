@@ -14,7 +14,7 @@ from best_practices_mcp.errors import DomainError
 @lru_cache(maxsize=1)
 def _catalog() -> dict[str, Any]:
     resource = files("best_practices_mcp").joinpath("data/catalog.json")
-    catalog = json.loads(resource.read_text(encoding="utf-8"))
+    catalog: dict[str, Any] = json.loads(resource.read_text(encoding="utf-8"))
     if catalog["format_version"] != 2:
         raise ValueError("Unsupported packaged catalog format")
     source = provenance()
@@ -32,7 +32,8 @@ def _catalog() -> dict[str, Any]:
 def provenance() -> dict[str, Any]:
     """Return source hashes, generator identity, and upstream criterion metadata."""
     resource = files("best_practices_mcp").joinpath("data/provenance.json")
-    return json.loads(resource.read_text(encoding="utf-8"))
+    data: dict[str, Any] = json.loads(resource.read_text(encoding="utf-8"))
+    return data
 
 
 def field_aliases() -> dict[str, str]:
@@ -55,14 +56,16 @@ def catalog_reference() -> dict[str, Any]:
     return dict(_catalog()["catalog"])
 
 
-def _level_definitions(level: str) -> dict[str, dict]:
+def _level_definitions(level: str) -> dict[str, dict[str, Any]]:
     catalog = _catalog()
     if level not in catalog["levels"]:
         raise DomainError("invalid_level", "Choose one of the supported badge levels.")
     return {c["criterion_id"]: c for c in catalog["criteria"] if c["level"] == level}
 
 
-def _selected(definitions: dict[str, dict], level: str, criterion_ids: list[str]) -> list[dict]:
+def _selected(
+    definitions: dict[str, dict[str, Any]], level: str, criterion_ids: list[str]
+) -> list[dict[str, Any]]:
     if any(type(value) is not str for value in criterion_ids):
         raise DomainError("invalid_criterion", "Criterion identifiers must be strings.")
     if len(criterion_ids) != len(set(criterion_ids)):
@@ -78,7 +81,9 @@ def _selected(definitions: dict[str, dict], level: str, criterion_ids: list[str]
     return [definitions[key] for key in sorted(criterion_ids)]
 
 
-def _in_category(definitions: dict[str, dict], level: str, category: str) -> list[dict]:
+def _in_category(
+    definitions: dict[str, dict[str, Any]], level: str, category: str
+) -> list[dict[str, Any]]:
     categories = _categories(definitions)
     if category not in categories:
         raise DomainError(
@@ -92,7 +97,7 @@ def _in_category(definitions: dict[str, dict], level: str, category: str) -> lis
     ]
 
 
-def _categories(definitions: dict[str, dict]) -> list[str]:
+def _categories(definitions: dict[str, dict[str, Any]]) -> list[str]:
     return sorted({definition["category"] for definition in definitions.values()})
 
 
@@ -100,7 +105,7 @@ def criterion_definitions(
     level: str | None,
     criterion_ids: list[str] | None = None,
     category: str | None = None,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Return complete definitions for one level, optionally narrowed; none without a level."""
     if level is None:
         if criterion_ids is not None or category is not None:
@@ -120,7 +125,7 @@ def criterion_definitions(
     return copy.deepcopy(selected)
 
 
-def level_summary(level: str) -> dict:
+def level_summary(level: str) -> dict[str, Any]:
     """Count one level's criteria and name its categories."""
     definitions = _level_definitions(level)
     return {
@@ -138,7 +143,7 @@ def get_criteria(
     criterion_ids: list[str] | None = None,
     category: str | None = None,
     detail: str | None = None,
-) -> dict:
+) -> dict[str, Any]:
     """Build the get_criteria result: a level index, a criterion index, or full definitions."""
     criteria = criterion_definitions(level, criterion_ids, category)
     if level is None:

@@ -31,7 +31,9 @@ def normalize_draft(draft: dict[str, Any]) -> dict[str, Any]:
     return normalize_document(draft, field_aliases())
 
 
-def _field_issue(field: str, value: Any, definition: dict | None) -> dict | None:
+def _field_issue(
+    field: str, value: Any, definition: dict[str, Any] | None
+) -> dict[str, Any] | None:
     if definition is None:
         if field in PROVENANCE_FIELDS:
             return None
@@ -52,7 +54,7 @@ def structural_issues(draft: dict[str, Any]) -> list[dict[str, str]]:
     )
 
 
-def build_draft(draft: dict[str, Any], changes: dict[str, Any] | None = None) -> dict:
+def build_draft(draft: dict[str, Any], changes: dict[str, Any] | None = None) -> dict[str, Any]:
     """Apply a canonical patch atomically in memory, allowing repairs before validation."""
     candidate = normalize_draft(draft)
     patch = normalize_draft({} if changes is None else changes)
@@ -96,7 +98,7 @@ def _check_id(project_id: int, draft: dict[str, Any]) -> str:
     return "matched"
 
 
-def _comparable_repo(value: Any) -> tuple:
+def _comparable_repo(value: Any) -> tuple[Any, ...]:
     """Normalize only scheme, hostname and a scheme's default port."""
     if type(value) is not str or any(
         ord(character) <= 32 or character.isspace() for character in value

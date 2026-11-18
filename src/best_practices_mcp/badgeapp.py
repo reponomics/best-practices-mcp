@@ -22,7 +22,7 @@ from best_practices_mcp.errors import DomainError
 from best_practices_mcp.models import LEVELS
 
 if TYPE_CHECKING:
-    from best_practices_mcp.http import BadgeAppHTTP
+    from best_practices_mcp.http import BadgeAppHTTP, FetchResult
 
 ORIGIN = "https://www.bestpractices.dev"
 PROJECTS_PATH = "/projects.json"
@@ -101,7 +101,7 @@ def _classify_query(query: str, page: int) -> tuple[str, str]:
     return query, "text"
 
 
-def _record(value: Any, expected_id: int | None = None) -> dict:
+def _record(value: Any, expected_id: int | None = None) -> dict[str, Any]:
     if type(value) is not dict:
         raise _upstream("A project response must contain a JSON object.")
     project_id = value.get("id")
@@ -117,21 +117,21 @@ def _record(value: Any, expected_id: int | None = None) -> dict:
     return value
 
 
-def _optional_text(record: dict, field: str) -> str | None:
+def _optional_text(record: dict[str, Any], field: str) -> str | None:
     value = record.get(field)
     if value is not None and type(value) is not str:
         raise _upstream("A public project text field has an unexpected type.", field)
     return value
 
 
-def _project(record: dict) -> dict:
+def _project(record: dict[str, Any]) -> dict[str, Any]:
     return {
         "project_id": record["id"],
         **{field: _optional_text(record, field) for field in ("name", "repo_url", "homepage_url")},
     }
 
 
-def _match_basis(record: dict, query: str, kind: str) -> str:
+def _match_basis(record: dict[str, Any], query: str, kind: str) -> str:
     if kind != "url":
         return kind
     wanted = _comparable_url(query)
@@ -151,7 +151,7 @@ def _next_link(header: str) -> list[str]:
     return links
 
 
-def _next_page(url: str, source_url: str, params: dict) -> int | None:
+def _next_page(url: str, source_url: str, params: dict[str, Any]) -> int | None:
     try:
         resolved = urljoin(source_url, url)
         parts = urlsplit(resolved)
@@ -174,7 +174,7 @@ def _next_page(url: str, source_url: str, params: dict) -> int | None:
     return page if page > params["page"] else None
 
 
-def _pagination(result: Any, params: dict, empty: bool) -> tuple[int | None, bool]:
+def _pagination(result: Any, params: dict[str, Any], empty: bool) -> tuple[int | None, bool]:
     if empty:
         return None, True
     header = next((v for k, v in result.headers.items() if k.lower() == "link"), "")
@@ -184,9 +184,9 @@ def _pagination(result: Any, params: dict, empty: bool) -> tuple[int | None, boo
     return _next_page(links[0], result.source_url, params), False
 
 
-def _normalized_record(record: dict) -> dict:
+def _normalized_record(record: dict[str, Any]) -> dict[str, Any]:
     aliases = field_aliases()
-    normalized = {}
+    normalized: dict[str, Any] = {}
     for field, value in record.items():
         canonical = aliases.get(field, field)
         if canonical in normalized:
@@ -198,7 +198,9 @@ def _normalized_record(record: dict) -> dict:
     return normalized
 
 
-def _matches(record: dict, definition: dict, statuses: list[str] | None) -> bool:
+def _matches(
+    record: dict[str, Any], definition: dict[str, Any], statuses: list[str] | None
+) -> bool:
     """Apply a status filter; values outside the known set match only without one."""
     if statuses is None:
         return True
@@ -207,8 +209,11 @@ def _matches(record: dict, definition: dict, statuses: list[str] | None) -> bool
 
 
 def _saved_answers(
-    record: dict, definitions: list[dict], statuses: list[str] | None, justifications: bool
-) -> tuple[dict, list[str]]:
+    record: dict[str, Any],
+    definitions: list[dict[str, Any]],
+    statuses: list[str] | None,
+    justifications: bool,
+) -> tuple[dict[str, Any], list[str]]:
     """Copy the supplied fields of matching criteria; missing fields stay missing.
 
     BadgeApp stores a status for every criterion, "?" until one is chosen, so a status
@@ -229,7 +234,7 @@ def _saved_answers(
     return answers, not_retrieved
 
 
-def _check_answer_bounds(answers: dict) -> None:
+def _check_answer_bounds(answers: dict[str, Any]) -> None:
     try:
         validate_document(answers)
     except DomainError as exc:
@@ -242,7 +247,7 @@ def _check_answer_bounds(answers: dict) -> None:
         raise _upstream("Public answers contain unsupported JSON values or nesting.") from exc
 
 
-def _percentage(record: dict, field: str) -> float | int | None:
+def _percentage(record: dict[str, Any], field: str) -> float | int | None:
     value = record.get(field)
     invalid_number = type(value) is float and not math.isfinite(value)
     if value is not None and (type(value) not in (int, float) or invalid_number):
@@ -250,7 +255,7 @@ def _percentage(record: dict, field: str) -> float | int | None:
     return value
 
 
-def _level_statuses(record: dict) -> list[dict]:
+def _level_statuses(record: dict[str, Any]) -> list[dict[str, Any]]:
     """Copy each level's reported percentage and achievement times; compute nothing."""
     statuses = []
     for level, field in PERCENTAGES.items():
@@ -266,7 +271,7 @@ def _level_statuses(record: dict) -> list[dict]:
     return statuses
 
 
-def _observation(result: Any, record: dict) -> dict:
+def _observation(result: Any, record: dict[str, Any]) -> dict[str, Any]:
     return {
         "project_id": record["id"],
         "source_url": result.source_url,
@@ -282,7 +287,7 @@ class BadgeAppClient:
     def __init__(self, http: BadgeAppHTTP) -> None:
         self.http = http
 
-    async def find_project(self, query: str, page: int = 1) -> dict:
+    async def find_project(self, query: str, page: int = 1) -> dict[str, Any]:
         query, kind = _classify_query(query, page)
         if kind == "id":
             return await self._find_id(query)
@@ -294,7 +299,7 @@ class BadgeAppClient:
         next_page, complete = _pagination(result, params, not records)
         return self._search_result(query, kind, page, records, result, next_page, complete)
 
-    async def _find_id(self, query: str) -> dict:
+    async def _find_id(self, query: str) -> dict[str, Any]:
         path = f"/projects/{query}.json"
         try:
             result = await self.http.get_json(path)
@@ -318,7 +323,15 @@ class BadgeAppClient:
         return self._search_result(query, "id", 1, [record], result, None, True)
 
     @staticmethod
-    def _search_result(query, kind, page, records, result, next_page, complete) -> dict:
+    def _search_result(
+        query: str,
+        kind: str,
+        page: int,
+        records: list[dict[str, Any]],
+        result: FetchResult,
+        next_page: int | None,
+        complete: bool,
+    ) -> dict[str, Any]:
         return {
             "schema_version": 1,
             "query": query,
@@ -333,7 +346,7 @@ class BadgeAppClient:
             "observation": {"source_url": result.source_url, "fetched_at": result.fetched_at},
         }
 
-    async def get_project_snapshot(self, project_id: int) -> tuple[dict, dict]:
+    async def get_project_snapshot(self, project_id: int) -> tuple[dict[str, Any], dict[str, Any]]:
         """Read public project identity and observation metadata for artifact preparation."""
         _positive_integer(project_id, "project_id")
         result = await self.http.get_json(f"/projects/{project_id}.json")
@@ -341,7 +354,7 @@ class BadgeAppClient:
         observation = _observation(result, record)
         return record, observation
 
-    async def get_project_status(self, project_id: int) -> dict:
+    async def get_project_status(self, project_id: int) -> dict[str, Any]:
         """Report the badge level and per-level progress that BadgeApp records."""
         _positive_integer(project_id, "project_id")
         result = await self.http.get_json(f"/projects/{project_id}.json")
@@ -362,7 +375,7 @@ class BadgeAppClient:
         criterion_ids: list[str] | None = None,
         statuses: list[str] | None = None,
         include_justifications: bool = True,
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Return the answers saved for one level, optionally narrowed."""
         _positive_integer(project_id, "project_id")
         if level is None:

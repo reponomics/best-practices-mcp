@@ -4,6 +4,7 @@ import ast
 import hashlib
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 import yaml
@@ -31,7 +32,7 @@ def verification_namespace():
         for item in module.body
         if isinstance(item, ast.Import | ast.ImportFrom | ast.FunctionDef)
     ]
-    namespace = {}
+    namespace: dict[str, Any] = {}
     exec(compile(module, "release-candidate-verifier", "exec"), namespace)
     return namespace
 
@@ -245,7 +246,7 @@ def test_final_publisher_checks_uploaded_assets_before_sealing(candidate, monkey
     signatures.mkdir()
     for name in ("provenance", "runtime-wheel", "runtime-sdist"):
         (signatures / f"{name}.sigstore.json").write_text("signature")
-    state = {"assets": [], "uploaded": False, "published": False}
+    state: dict[str, Any] = {"assets": [], "uploaded": False, "published": False}
 
     def query(command, **kwargs):
         if command[1:3] == ["release", "upload"]:

@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from scripts import check_upstream
+import check_upstream
 
 SOURCE = Path(__file__).resolve().parents[1] / "vendor/badgeapp"
 

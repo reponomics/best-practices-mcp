@@ -3,6 +3,7 @@
 import copy
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 from jsonschema import Draft202012Validator
@@ -21,7 +22,17 @@ from best_practices_mcp.models import JsonValue
 EXAMPLES = json.loads(
     (Path(__file__).parent / "fixtures/contracts/examples.json").read_text(encoding="utf-8")
 )
-JSON_VALUES = [None, True, False, 42, -3.25, "雪", [], {}, {"mixed": [None, False, 7, {"x": []}]}]
+JSON_VALUES: list[Any] = [
+    None,
+    True,
+    False,
+    42,
+    -3.25,
+    "雪",
+    [],
+    {},
+    {"mixed": [None, False, 7, {"x": []}]},
+]
 
 
 @pytest.mark.parametrize("mode", ["validation", "serialization"])
@@ -36,11 +47,11 @@ def test_json_schema_accepts_every_json_kind_and_rejects_non_json(mode):
             value, ensure_ascii=False, separators=(",", ":")
         )
     # An empty schema incorrectly accepts these Python instances as well as JSON.
-    for value in (object(), b"bytes", (1, 2), {1, 2}):
+    for rejected in (object(), b"bytes", (1, 2), {1, 2}):
         with pytest.raises(SchemaValidationError):
-            validator.validate(value)
+            validator.validate(rejected)
         with pytest.raises(ValidationError):
-            adapter.validate_python(value)
+            adapter.validate_python(rejected)
 
 
 @pytest.mark.parametrize("tool", INPUT_MODELS)

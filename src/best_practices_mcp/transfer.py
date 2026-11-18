@@ -15,15 +15,20 @@ from best_practices_mcp.drafts import (
 )
 from best_practices_mcp.errors import DomainError
 
+Record = dict[str, Any]
+Criteria = dict[str, list[Record]]
 
-def _criteria_by_id(catalog):
-    criteria = defaultdict(list)
+
+def _criteria_by_id(catalog: Record) -> Criteria:
+    criteria: defaultdict[str, list[Record]] = defaultdict(list)
     for item in catalog["criteria"]:
         criteria[item["criterion_id"]].append(item)
     return criteria
 
 
-def transfer_context(project_id, section, draft, record, observation):
+def transfer_context(
+    project_id: int, section: str, draft: Record, record: Record, observation: Record
+) -> tuple[Record, Criteria, set[str], Record]:
     """Resolve shared source context without performing I/O or inventing answers."""
     catalog = section_catalog(section)
     normalized = normalize_draft(draft)
@@ -44,7 +49,7 @@ def transfer_context(project_id, section, draft, record, observation):
     return normalized, criteria, scope, result
 
 
-def _override_fields(requested, draft, scope):
+def _override_fields(requested: Record, draft: Record, scope: set[str]) -> list[str]:
     fields = requested.get("fields")
     if set(requested) != {"mode", "fields"} or type(fields) is not list or not fields:
         raise DomainError("invalid_override", "Selected overrides require a nonempty fields list.")
@@ -54,7 +59,7 @@ def _override_fields(requested, draft, scope):
     return sorted(set(fields))
 
 
-def override_scope(requested, draft, scope):
+def override_scope(requested: Any, draft: Record, scope: set[str]) -> tuple[Record, set[str]]:
     """Resolve an explicit none, all, or selected-fields override intention."""
     if type(requested) is not dict or requested.get("mode") not in ("none", "all", "fields"):
         raise DomainError("invalid_override", "Overrides must choose none, all, or fields mode.")
@@ -67,7 +72,7 @@ def override_scope(requested, draft, scope):
     return {"mode": mode}, set(draft) & scope if mode == "all" else set()
 
 
-def row(field, disposition, reason, override=False):
+def row(field: str, disposition: str, reason: str, override: bool = False) -> Record:
     return {
         "field": field,
         "disposition": disposition,
@@ -78,7 +83,7 @@ def row(field, disposition, reason, override=False):
     }
 
 
-def _status_problem(value, criterion):
+def _status_problem(value: Any, criterion: Record) -> str | None:
     if type(value) is not str:
         return "invalid_type"
     if value not in VALID_STATUSES:
@@ -88,7 +93,7 @@ def _status_problem(value, criterion):
     return None
 
 
-def _answer_problem(field, draft, definition, criterion):
+def _answer_problem(field: str, draft: Record, definition: Record, criterion: Record) -> str | None:
     kind = definition["kind"]
     if kind == "status":
         return _status_problem(draft[field], criterion)
@@ -100,7 +105,7 @@ def _answer_problem(field, draft, definition, criterion):
     return None
 
 
-def _scope_problem(field, scope, definitions):
+def _scope_problem(field: str, scope: set[str], definitions: dict[str, Record]) -> Record | None:
     if field in PROVENANCE_FIELDS:
         return row(field, "omitted", "provenance_not_editable")
     if field not in definitions:
@@ -110,7 +115,9 @@ def _scope_problem(field, scope, definitions):
     return None
 
 
-def _value_report(field, draft, definition, candidates):
+def _value_report(
+    field: str, draft: Record, definition: Record, candidates: list[Record]
+) -> Record:
     restrictions = []
     for criterion in candidates:
         problem = _answer_problem(field, draft, definition, criterion)
@@ -126,7 +133,9 @@ def _value_report(field, draft, definition, candidates):
     return report
 
 
-def _field_report(field, draft, criteria, scope, definitions):
+def _field_report(
+    field: str, draft: Record, criteria: Criteria, scope: set[str], definitions: dict[str, Record]
+) -> Record:
     report = _scope_problem(field, scope, definitions)
     if report is not None:
         return report
@@ -138,7 +147,9 @@ def _field_report(field, draft, criteria, scope, definitions):
     return _value_report(field, draft, definition, criteria[definition["criterion_id"]])
 
 
-def transfer_rows(draft, criteria, scope, overrides):
+def transfer_rows(
+    draft: Record, criteria: Criteria, scope: set[str], overrides: set[str]
+) -> list[Record]:
     """Report inclusion, applicable levels and restrictions for each supplied field."""
     definitions = field_definitions()
     all_criteria = _criteria_by_id(section_catalog("choose_section"))
@@ -156,7 +167,7 @@ def transfer_rows(draft, criteria, scope, overrides):
     return rows
 
 
-def finish_result(result: dict[str, Any], rows):
+def finish_result(result: Record, rows: list[Record]) -> bool:
     requested = [item for item in rows if item["field"] not in PROVENANCE_FIELDS]
     encoded = any(item["disposition"] == "encoded" for item in requested)
     omitted = any(

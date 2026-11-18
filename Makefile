@@ -33,7 +33,7 @@ export UV_PROJECT_ENVIRONMENT := $(VENV)
 # Evidence must identify this Make executable, including gmake/custom paths.
 export VERIFICATION_MAKE := $(MAKE)
 
-.PHONY: help setup quality tooling-check ci-environment check test format build run test-contract test-catalog test-protocol test-package catalog catalog-check test-network test-api smoke-live
+.PHONY: help setup quality typecheck tooling-check ci-environment check test format build run test-contract test-catalog test-protocol test-package catalog catalog-check test-network test-api smoke-live
 
 help: ## Show available development commands (no project environment required)
 	@"$(UV)" run --no-project $(UV_PYTHON_ARG) python scripts/dev_tools.py help
@@ -46,13 +46,16 @@ quality: tooling-check ## Check formatting, lint and installed dependency consis
 	"$(PYTHON)" -m ruff check src tests scripts
 	$(PIP) check
 
-check: quality ## Run quality checks and the offline test suite
+typecheck: ## Check types with mypy: strict for the package and scripts, relaxed for tests
+	"$(PYTHON)" -m mypy
+
+check: quality typecheck ## Run quality checks, type checks and the offline test suite
 	"$(MAKE)" test
 
 .PHONY: validate
 
 validate: ## Run contributor checks and the coverage floor (OSV scans run in CI)
-	"$(MAKE)" -k lock-check quality test-coverage catalog-check
+	"$(MAKE)" -k lock-check quality typecheck test-coverage catalog-check
 
 tooling-check: ## Verify the uv bootstrap requirement matches its locked audit inventory
 	"$(UV)" run --no-project $(UV_PYTHON_ARG) python scripts/dev_tools.py tooling-check

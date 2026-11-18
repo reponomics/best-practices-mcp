@@ -548,7 +548,7 @@ def test_oversized_selected_answers_fail_with_filter_recovery():
 
 
 def test_excessively_nested_public_answers_are_upstream_errors():
-    value = "answer"
+    value: object = "answer"
     for _ in range(65):
         value = [value]
     record = {"id": 123, "description_good_justification": value}

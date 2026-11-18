@@ -6,8 +6,10 @@ import argparse
 import hashlib
 import json
 import re
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
 PROJECT = "best-practices-mcp"
@@ -27,7 +29,7 @@ def public_url(value: str) -> str:
     return urlunsplit((parsed.scheme, host, parsed.path, "", ""))
 
 
-def public_data(value):
+def public_data(value: Any) -> Any:
     """Drop credentials, URL query strings and absolute local paths recursively."""
     if isinstance(value, dict):
         return {key: public_data(item) for key, item in value.items()}
@@ -41,7 +43,7 @@ def public_data(value):
     return value
 
 
-def installation_packages(report: dict) -> list[dict]:
+def installation_packages(report: dict[str, Any]) -> list[dict[str, Any]]:
     """The pip install report identifies the resolved runtime dependency closure."""
     if report.get("version") != "1" or not isinstance(report.get("install"), list):
         raise ValueError("Expected a version-one pip installation report")
@@ -62,7 +64,7 @@ def installation_packages(report: dict) -> list[dict]:
     return sorted(packages, key=lambda package: normalized(package["name"]))
 
 
-def sanitized_installation(report: dict) -> dict:
+def sanitized_installation(report: dict[str, Any]) -> dict[str, Any]:
     """Publish only installation facts, never full descriptions or local paths."""
     selected = []
     for item in report["install"]:
@@ -78,7 +80,7 @@ def sanitized_installation(report: dict) -> dict:
                 },
             }
         )
-    return public_data(
+    installation: dict[str, Any] = public_data(
         {
             "version": report["version"],
             "pip_version": report.get("pip_version"),
@@ -86,13 +88,16 @@ def sanitized_installation(report: dict) -> dict:
             "install": selected,
         }
     )
+    return installation
 
 
-def write_json(path: Path, value: dict) -> None:
+def write_json(path: Path, value: dict[str, Any]) -> None:
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def annotate_sbom(document: dict, artifact: Path, installation: dict, source_sha: str) -> dict:
+def annotate_sbom(
+    document: dict[str, Any], artifact: Path, installation: dict[str, Any], source_sha: str
+) -> dict[str, Any]:
     if document.get("bomFormat") != "CycloneDX" or document.get("specVersion") != "1.6":
         raise ValueError("Expected CycloneDX JSON 1.6")
     metadata = document["metadata"]
@@ -115,7 +120,8 @@ def annotate_sbom(document: dict, artifact: Path, installation: dict, source_sha
         {"name": f"reponomics:reference-installation:{key}", "value": value}
         for key, value in facts.items()
     )
-    return public_data(document)
+    annotated: dict[str, Any] = public_data(document)
+    return annotated
 
 
 def generate_reference(
@@ -126,7 +132,7 @@ def generate_reference(
     output: Path,
     root: Path,
     source_sha: str,
-    run,
+    run: Callable[[str, list[str]], Any],
 ) -> dict[str, str]:
     kind = "wheel" if artifact.suffix == ".whl" else "sdist"
     installation = json.loads(installation_path.read_text(encoding="utf-8"))

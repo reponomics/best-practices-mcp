@@ -12,9 +12,8 @@ import sys
 from pathlib import Path
 from unittest.mock import Mock
 
+import check_upstream as check
 import pytest
-
-from scripts import check_upstream as check
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -72,7 +71,9 @@ def production(checkout: Path, **changes: bytes | None) -> check.Report:
     """A report whose production files are the bundled ones with `changes` applied."""
     source = checkout / "vendor/badgeapp"
     revision, hashes = check.read_baseline(source)
-    remote = {name: (source / name).read_bytes() for name in check.SOURCE_FILES}
+    remote: dict[str, bytes | None] = {
+        name: (source / name).read_bytes() for name in check.SOURCE_FILES
+    }
     return check.Report(revision, PRODUCTION, hashes, remote | changes)
 
 

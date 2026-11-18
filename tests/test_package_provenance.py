@@ -6,8 +6,7 @@ import sys
 from pathlib import Path
 
 import pytest
-
-from scripts.check_package import PROBE
+from check_package import PROBE
 
 ROOT = Path(__file__).resolve().parents[1]
 

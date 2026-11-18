@@ -234,7 +234,7 @@ def test_update_envelope_is_checked_before_any_commit(tmp_path, monkeypatch):
     store = DraftStore(tmp_path)
     original = {"name": "old"}
     path = seed(store, original)
-    changes = {"unrecognized-removal-" + str(i): None for i in range(100)}
+    changes: dict[str, str | None] = {"unrecognized-removal-" + str(i): None for i in range(100)}
     changes["name"] = "new"
     before = path.read_bytes()
     read_size = len(

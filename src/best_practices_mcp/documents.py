@@ -135,6 +135,9 @@ def normalize_document(document: dict[str, Any], aliases: dict[str, str]) -> dic
     return normalized
 
 
+def _canonical_json(value: Any) -> str:
+    return json.dumps(value, sort_keys=True, ensure_ascii=False, allow_nan=False)
+
+
 def _same_json(left: Any, right: Any) -> bool:
-    options = {"sort_keys": True, "ensure_ascii": False, "allow_nan": False}
-    return json.dumps(left, **options) == json.dumps(right, **options)
+    return _canonical_json(left) == _canonical_json(right)

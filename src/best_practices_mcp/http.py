@@ -11,9 +11,11 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
-from http.cookiejar import CookieJar, DefaultCookiePolicy
+from http.cookiejar import Cookie, CookieJar, DefaultCookiePolicy
+from types import TracebackType
 from typing import Any
 from urllib.parse import quote, urlencode
+from urllib.request import Request
 from xml.etree import ElementTree
 
 import httpx2
@@ -49,10 +51,10 @@ class FetchResult:
 
 
 class _NoCookies(DefaultCookiePolicy):
-    def set_ok(self, cookie, request) -> bool:
+    def set_ok(self, cookie: Cookie, request: Request) -> bool:
         return False
 
-    def return_ok(self, cookie, request) -> bool:
+    def return_ok(self, cookie: Cookie, request: Request) -> bool:
         return False
 
 
@@ -70,7 +72,9 @@ def _unavailable() -> DomainError:
     )
 
 
-def _invalid_response(message: str = "BadgeApp returned an invalid public response."):
+def _invalid_response(
+    message: str = "BadgeApp returned an invalid public response.",
+) -> DomainError:
     return DomainError(
         "upstream_invalid_response", message, recovery="Retry later or report drift."
     )
@@ -91,7 +95,7 @@ def _valid_query_value(key: str, value: Any) -> bool:
     return type(value) is str
 
 
-def _validate_parameters(params: dict) -> None:
+def _validate_parameters(params: dict[str, Any]) -> None:
     if set(params) - {"q", "url", "page"}:
         raise DomainError("invalid_query", "Unsupported public query parameters.")
     if "q" in params and "url" in params:
@@ -100,7 +104,7 @@ def _validate_parameters(params: dict) -> None:
         raise DomainError("invalid_query", "Invalid public query parameter type.")
 
 
-def _validate_target(path: str, params: dict | None) -> None:
+def _validate_target(path: str, params: dict[str, Any] | None) -> None:
     if path != "/projects.json" and PROJECT_PATH.fullmatch(path) is None:
         raise DomainError("invalid_query", "Only documented public project JSON paths are allowed.")
     if params:
@@ -109,7 +113,7 @@ def _validate_target(path: str, params: dict | None) -> None:
         _validate_parameters(params)
 
 
-def _unique_object(pairs: list[tuple[str, Any]]) -> dict:
+def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     result = {}
     for key, value in pairs:
         if key in result:
@@ -202,8 +206,13 @@ class BadgeAppHTTP:
         await self._client.__aenter__()
         return self
 
-    async def __aexit__(self, *exc_info) -> None:
-        await self._client.__aexit__(*exc_info)
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        await self._client.__aexit__(exc_type, exc, traceback)
 
     async def aclose(self) -> None:
         await self._client.aclose()
@@ -289,7 +298,7 @@ class BadgeAppHTTP:
             raise _invalid_response("BadgeApp did not return JSON content.")
 
     async def _attempt(
-        self, path: str, params: dict | None, deadline: float, *, svg: bool = False
+        self, path: str, params: dict[str, Any] | None, deadline: float, *, svg: bool = False
     ) -> FetchResult:
         remaining = deadline - self._clock()
         if remaining <= 0:
@@ -316,7 +325,7 @@ class BadgeAppHTTP:
         except httpx2.HTTPError as error:
             raise _unavailable() from error
 
-    async def get_json(self, path: str, params: dict | None = None) -> FetchResult:
+    async def get_json(self, path: str, params: dict[str, Any] | None = None) -> FetchResult:
         """Read only fixed-origin project resources; returned failures contain no body text."""
         _validate_target(path, params)
         return await self._get(path, params)
@@ -329,7 +338,9 @@ class BadgeAppHTTP:
             )
         return await self._get(path, None, svg=True)
 
-    async def _get(self, path: str, params: dict | None, *, svg: bool = False) -> FetchResult:
+    async def _get(
+        self, path: str, params: dict[str, Any] | None, *, svg: bool = False
+    ) -> FetchResult:
         deadline = self._clock() + OVERALL_TIMEOUT_SECONDS
         try:
             async with asyncio.timeout(OVERALL_TIMEOUT_SECONDS):

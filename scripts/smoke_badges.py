@@ -3,13 +3,14 @@
 import argparse
 import asyncio
 import json
+from typing import Any
 
 from best_practices_mcp.badges import get_project_badge_svg
 from best_practices_mcp.http import BadgeAppHTTP
 from best_practices_mcp.sdk_adapter import tool_result
 
 
-async def probe(project_id: int) -> list[dict]:
+async def probe(project_id: int) -> list[dict[str, Any]]:
     observations = []
     async with BadgeAppHTTP() as http:
         for family in ("best_practices", "baseline"):

@@ -7,7 +7,7 @@ integer-valued numbers or decimal strings.
 """
 
 import re
-from typing import Annotated, ClassVar, Literal, Self
+from typing import Annotated, Any, ClassVar, Literal, Self
 
 from pydantic import (
     MISSING,
@@ -109,7 +109,7 @@ class Input(Model):
         }
 
 
-def _distinct(value: list) -> list:
+def _distinct(value: list[Any]) -> list[Any]:
     if len(value) != len(set(value)):
         raise ValueError("items must be distinct")
     return value

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from best_practices_mcp.badgeapp import ORIGIN, _positive_integer, _upstream
 from best_practices_mcp.errors import DomainError
@@ -28,7 +28,7 @@ def _family(project_id: int, family: str) -> tuple[str, str, str]:
     return FAMILIES[family]
 
 
-def _observation(result: FetchResult) -> dict:
+def _observation(result: FetchResult) -> dict[str, Any]:
     return {
         "source_url": result.source_url,
         "fetched_at": result.fetched_at,
@@ -38,7 +38,7 @@ def _observation(result: FetchResult) -> dict:
     }
 
 
-def _svg_artifact(svg: object, project_id: int, suffix: str) -> dict:
+def _svg_artifact(svg: object, project_id: int, suffix: str) -> dict[str, Any]:
     if type(svg) is not str:
         raise _upstream("The public badge image must contain SVG text.")
     try:
@@ -53,7 +53,7 @@ def _svg_artifact(svg: object, project_id: int, suffix: str) -> dict:
     }
 
 
-async def get_project_badge_svg(http: BadgeAppHTTP, project_id: int, family: str) -> dict:
+async def get_project_badge_svg(http: BadgeAppHTTP, project_id: int, family: str) -> dict[str, Any]:
     """Fetch one SVG snapshot and construct dynamic embedding links for the host."""
     suffix, section, label = _family(project_id, family)
     path = f"/projects/{project_id}/{suffix}.svg"

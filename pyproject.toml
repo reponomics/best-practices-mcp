@@ -23,6 +23,7 @@ dev = [
     "build==1.6.1",
     "coverage==7.17.3",
     "jsonschema==4.26.0",
+    "mypy==2.4.1",
     "packaging==26.3",
     "pip==26.3",
     "pre-commit==4.7.0",
@@ -31,6 +32,8 @@ dev = [
     "ruff==0.17.5",
     "setuptools==84.2.1",
     "twine==7.0.0",
+    "types-jsonschema==4.26.0.20261006",
+    "types-PyYAML==6.0.12.20261113",
 ]
 
 # Atheris publishes Linux x86_64 wheels; keep it out of normal development installs.
@@ -58,6 +61,8 @@ best_practices_mcp = ["data/*.json", "data/*.txt", "data/*.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Development scripts import one another as top-level modules; tests import them the same way.
+pythonpath = ["scripts"]
 addopts = "-ra"
 [tool.ruff]
 target-version = "py311"
@@ -77,3 +82,27 @@ patch = ["subprocess"]
 fail_under = 95
 show_missing = true
 precision = 2
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src/best_practices_mcp", "scripts", "tests"]
+mypy_path = ["src", "scripts"]
+strict = true
+warn_unreachable = true
+
+[[tool.mypy.overrides]]
+# Installed only in the optional fuzz and release-tools groups, and published without type stubs.
+module = ["atheris", "cyclonedx.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# Tests are exempt from strict mode's annotation requirements. They also pass fakes where
+# real collaborators are expected, patch attributes, and read union results from the SDK
+# without narrowing, so those four error codes are off here. The other checks apply.
+module = ["tests.*"]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_calls = false
+disallow_any_generics = false
+warn_return_any = false
+disable_error_code = ["union-attr", "arg-type", "attr-defined", "method-assign"]

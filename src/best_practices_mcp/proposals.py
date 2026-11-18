@@ -1,5 +1,6 @@
 """Prepare one deterministic URL using BadgeApp's documented query proposal route."""
 
+from typing import Any
 from urllib.parse import quote, urlencode
 
 from best_practices_mcp.compatibility import unknown_status_warnings
@@ -13,7 +14,14 @@ from best_practices_mcp.transfer import (
 ORIGIN = "https://www.bestpractices.dev"
 
 
-def prepare_update_url(project_id, section, draft, record, observation, overrides=None):
+def prepare_update_url(
+    project_id: int,
+    section: str,
+    draft: dict[str, Any],
+    record: dict[str, Any],
+    observation: dict[str, Any],
+    overrides: Any = None,
+) -> dict[str, Any]:
     """Encode supplied values and override intent without changing answer text."""
     draft, criteria, scope, result = transfer_context(
         project_id, section, draft, record, observation

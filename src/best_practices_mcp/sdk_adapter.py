@@ -1,14 +1,20 @@
 """SDK model adaptation for contracts; this module registers no tools."""
 
 import json
+from typing import Any
 
+from mcp.server.mcpserver import Context
 from mcp.types import CallToolResult, TextContent, Tool, ToolAnnotations
 
 from best_practices_mcp import __version__
+from best_practices_mcp.badgeapp import BadgeAppClient
 from best_practices_mcp.contracts import input_schema, output_schema, validate_output
 from best_practices_mcp.documents import RESPONSE_LIMIT_BYTES
 from best_practices_mcp.errors import DomainError
 from best_practices_mcp.models import ErrorResult
+
+# A request context of this server: its lifespan value is the BadgeApp client.
+ServerContext = Context[BadgeAppClient, Any]
 
 NETWORK_TOOLS = frozenset(
     {
@@ -59,7 +65,7 @@ def result_bytes(result: CallToolResult) -> bytes:
     return result.model_dump_json(by_alias=True, exclude_none=True).encode("utf-8")
 
 
-def tool_result(name: str, payload: dict) -> CallToolResult:
+def tool_result(name: str, payload: dict[str, Any]) -> CallToolResult:
     """Validate both result variants and produce matching JSON/text channels."""
     validated = validate_output(name, payload)
     structured = validated.model_dump(mode="json")

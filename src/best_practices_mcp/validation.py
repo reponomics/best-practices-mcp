@@ -25,7 +25,9 @@ def contains_url(value: Any) -> bool:
     return type(value) is str and not value.startswith("// ") and _URL.search(value) is not None
 
 
-def _finding(criterion: dict, field: str, code: str, requirement: str, message: str) -> dict:
+def _finding(
+    criterion: dict[str, Any], field: str, code: str, requirement: str, message: str
+) -> dict[str, Any]:
     return {
         "criterion_id": criterion["criterion_id"],
         "level": criterion["level"],
@@ -36,7 +38,7 @@ def _finding(criterion: dict, field: str, code: str, requirement: str, message: 
     }
 
 
-def _requires_justification(criterion: dict, status: str) -> bool:
+def _requires_justification(criterion: dict[str, Any], status: str) -> bool:
     # A required URL entails usable justification. Report the stronger URL
     # requirement alone, matching upstream's ordered Met checks.
     if status == "Met" and criterion["met_url_required"]:
@@ -45,7 +47,9 @@ def _requires_justification(criterion: dict, status: str) -> bool:
     return flag is not None and criterion[flag]
 
 
-def _conditional_findings(criterion: dict, status: str, justification: Any) -> list[dict]:
+def _conditional_findings(
+    criterion: dict[str, Any], status: str, justification: Any
+) -> list[dict[str, Any]]:
     findings = []
     if status == "N/A" and not criterion["na_allowed"]:
         findings.append(
@@ -80,7 +84,7 @@ def _conditional_findings(criterion: dict, status: str, justification: Any) -> l
     return findings
 
 
-def _skip_reason(draft: dict, criterion: dict) -> str | None:
+def _skip_reason(draft: dict[str, Any], criterion: dict[str, Any]) -> str | None:
     field = criterion["status_field"]
     if field not in draft:
         return "status_absent"
@@ -92,11 +96,13 @@ def _skip_reason(draft: dict, criterion: dict) -> str | None:
     return None
 
 
-def _shape_findings(draft: dict, selected: list[dict], fields: dict) -> list[dict]:
-    levels = {}
+def _shape_findings(
+    draft: dict[str, Any], selected: list[dict[str, Any]], fields: dict[str, Any]
+) -> list[dict[str, Any]]:
+    levels: dict[str, list[str]] = {}
     for criterion in selected:
         levels.setdefault(criterion["criterion_id"], []).append(criterion["level"])
-    findings = []
+    findings: list[dict[str, Any]] = []
     for issue in structural_issues(draft):
         definition = fields.get(issue["field"], {})
         criterion_id = definition.get("criterion_id")
@@ -113,7 +119,7 @@ def _shape_findings(draft: dict, selected: list[dict], fields: dict) -> list[dic
     return findings
 
 
-def _represented(draft: dict, fields: dict) -> set[str]:
+def _represented(draft: dict[str, Any], fields: dict[str, Any]) -> set[str]:
     return {
         fields[field]["criterion_id"]
         for field in draft
@@ -121,11 +127,13 @@ def _represented(draft: dict, fields: dict) -> set[str]:
     }
 
 
-def _identity(criterion: dict) -> dict:
+def _identity(criterion: dict[str, Any]) -> dict[str, Any]:
     return {"level": criterion["level"], "criterion_id": criterion["criterion_id"]}
 
 
-def _other_level_skips(represented: set[str], selected: list[dict]) -> list[dict]:
+def _other_level_skips(
+    represented: set[str], selected: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
     outside = represented - {criterion["criterion_id"] for criterion in selected}
     if not outside:
         return []
@@ -140,7 +148,9 @@ def _other_level_skips(represented: set[str], selected: list[dict]) -> list[dict
     ]
 
 
-def _check_criterion(document: dict, criterion: dict) -> tuple[list[dict], list[dict]]:
+def _check_criterion(
+    document: dict[str, Any], criterion: dict[str, Any]
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     reason = _skip_reason(document, criterion)
     if reason is not None:
         return [], [{**_identity(criterion), "reason": reason, "checks": list(_CONDITIONAL_CHECKS)}]
@@ -151,7 +161,7 @@ def _check_criterion(document: dict, criterion: dict) -> tuple[list[dict], list[
     ), []
 
 
-def validate_draft(project_id: int, section: str, draft: dict[str, Any]) -> dict:
+def validate_draft(project_id: int, section: str, draft: dict[str, Any]) -> dict[str, Any]:
     """Report level-qualified checks of supplied answers, without completing them."""
     catalog = section_catalog(section)
     document = normalize_draft(draft)

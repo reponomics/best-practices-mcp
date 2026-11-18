@@ -6,11 +6,15 @@ import html
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 from generate_catalog import catalog_content, encoded
 
+if TYPE_CHECKING:
+    from check_upstream import GitHub, Report
 
-def source_timestamp(client, sha: str) -> str:
+
+def source_timestamp(client: GitHub, sha: str) -> str:
     commit = client.api(f"/repos/ossf/best-practices-badge/git/commits/{sha}")
     if commit["sha"] != sha:
         raise ValueError("Unexpected source commit metadata")
@@ -20,7 +24,9 @@ def source_timestamp(client, sha: str) -> str:
     return date.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
-def build_snapshot(report, timestamp: str, directory: Path) -> tuple[dict[str, bytes], str | None]:
+def build_snapshot(
+    report: Report, timestamp: str, directory: Path
+) -> tuple[dict[str, bytes], str | None]:
     """Generate before applying writes; retain a reviewable source patch on failure."""
     sources = {
         name: content for name, content in report.production_files.items() if content is not None
@@ -46,7 +52,7 @@ def build_snapshot(report, timestamp: str, directory: Path) -> tuple[dict[str, b
         return {}, f"{type(exc).__name__}: {exc}".replace(str(directory), "<sources>")
 
 
-def apply_snapshot(root: Path, report, staged: Path, generated: dict[str, bytes]) -> None:
+def apply_snapshot(root: Path, report: Report, staged: Path, generated: dict[str, bytes]) -> None:
     source = root / "vendor/badgeapp"
     for name, content in report.production_files.items():
         path = source / name
@@ -64,7 +70,7 @@ def error_text(value: str) -> str:
     return html.escape(value[:1500]).replace("@", "&#64;")
 
 
-def preparation_body(result: dict) -> str:
+def preparation_body(result: dict[str, Any]) -> str:
     if not result["changed"]:
         return ""
     lines = ["", "## Preparation", ""]
@@ -93,8 +99,8 @@ def preparation_body(result: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
-def prepare_update(client, report, root: Path, output: Path) -> str:
-    result = {"changed": bool(report.changed), "generation_error": None}
+def prepare_update(client: GitHub, report: Report, root: Path, output: Path) -> str:
+    result: dict[str, Any] = {"changed": bool(report.changed), "generation_error": None}
     if report.changed:
         timestamp = source_timestamp(client, report.production_revision)
         with tempfile.TemporaryDirectory(prefix="badgeapp-sources-") as temporary:

@@ -196,14 +196,11 @@ def test_page_anchors_point_at_criteria_of_the_same_level() -> None:
     assert criterion_definitions("silver", ["signed_releases"])
 
 
-def read(client, uri: str) -> str:
-    async def fetch():
-        result = await client.read_resource(uri)
-        [content] = result.contents
-        assert content.mime_type == "text/markdown"
-        return content.text
-
-    return fetch()
+async def read(client, uri: str) -> str:
+    result = await client.read_resource(uri)
+    [content] = result.contents
+    assert content.mime_type == "text/markdown"
+    return content.text
 
 
 def test_resources_over_stdio_read_catalog_and_project_documents(tmp_path: Path) -> None:

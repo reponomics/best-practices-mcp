@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 from jsonschema import Draft202012Validator
@@ -89,12 +90,13 @@ def test_omitted_draft_is_not_empty_or_null(tool: str) -> None:
 
 @pytest.mark.parametrize("tool", ["get_criteria", "get_project_answers"])
 def test_filter_requires_level_and_distinct_ids(tool: str) -> None:
-    base = {"project_id": 123} if tool == "get_project_answers" else {}
-    for extra in [
+    base: dict[str, Any] = {"project_id": 123} if tool == "get_project_answers" else {}
+    rejected: list[dict[str, Any]] = [
         {"criterion_ids": []},
         {"level": None, "criterion_ids": []},
         {"level": "passing", "criterion_ids": ["x", "x"]},
-    ]:
+    ]
+    for extra in rejected:
         with pytest.raises(ValidationError):
             validate_input(tool, base | extra)
     result = validate_input(tool, base | {"level": "passing", "criterion_ids": []})
@@ -132,14 +134,15 @@ def test_criteria_selection_rules() -> None:
 
 
 def test_answer_filter_rules() -> None:
-    base = {"project_id": 123, "level": "passing"}
-    for extra in [
+    base: dict[str, Any] = {"project_id": 123, "level": "passing"}
+    rejected: list[dict[str, Any]] = [
         {"statuses": ["met"]},
         {"statuses": ["absent"]},
         {"statuses": ["Met", "Met"]},
         {"statuses": "Met"},
         {"include_justifications": "false"},
-    ]:
+    ]
+    for extra in rejected:
         with pytest.raises(ValidationError):
             validate_input("get_project_answers", base | extra)
     chosen = validate_input(

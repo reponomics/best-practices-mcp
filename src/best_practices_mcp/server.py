@@ -1,14 +1,14 @@
 """MCP tool composition; protocol and transport remain SDK-owned."""
 
-from collections.abc import Callable
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any
 
 from mcp import MCPError
 from mcp.server import MCPServer
 from mcp.server.caching import CacheHint
 from mcp.server.lowlevel.server import NotificationOptions
-from mcp.server.mcpserver import Context
 from mcp.server.stdio import stdio_server
 from mcp.types import CallToolResult, InputRequiredResult, Resource, Tool
 from pydantic import ValidationError
@@ -23,7 +23,7 @@ from best_practices_mcp.errors import DomainError
 from best_practices_mcp.http import BadgeAppHTTP
 from best_practices_mcp.proposals import prepare_update_url
 from best_practices_mcp.resources import project_resources, register_resources
-from best_practices_mcp.sdk_adapter import tool_definition, tool_result
+from best_practices_mcp.sdk_adapter import ServerContext, tool_definition, tool_result
 from best_practices_mcp.storage import DraftStore, resolve_data_root
 from best_practices_mcp.validation import validate_draft
 
@@ -118,7 +118,7 @@ STORAGE_TOOLS = {
 IMPLEMENTED_TOOLS = {**READ_TOOLS, **DOCUMENT_TOOLS, **STORAGE_TOOLS}
 
 
-async def _announce_resource_list_change(context: Context) -> None:
+async def _announce_resource_list_change(context: ServerContext) -> None:
     """Tell the client that a first draft added project documents to the resource list.
 
     Clients on 2026-07-28 receive the event through subscriptions/listen; earlier
@@ -128,10 +128,10 @@ async def _announce_resource_list_change(context: Context) -> None:
     await context.session.send_resource_list_changed()
 
 
-class BestPracticesServer(MCPServer):
+class BestPracticesServer(MCPServer[BadgeAppClient]):
     """Adapt generated contracts through public SDK handler extension points."""
 
-    def __init__(self, *args, storage: DraftStore, **kwargs):
+    def __init__(self, *args: Any, storage: DraftStore, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.storage = storage
 
@@ -161,7 +161,7 @@ class BestPracticesServer(MCPServer):
         return [*await super().list_resources(), *stored]
 
     async def call_tool(
-        self, name: str, arguments: dict, context: Context | None = None
+        self, name: str, arguments: dict[str, Any], context: ServerContext | None = None
     ) -> CallToolResult | InputRequiredResult:
         if name in IMPLEMENTED_TOOLS:
             return await self._execute_tool(name, arguments, context)
@@ -170,7 +170,7 @@ class BestPracticesServer(MCPServer):
         return await super().call_tool(name, arguments, context)
 
     async def _execute_tool(
-        self, name: str, arguments: dict, context: Context | None
+        self, name: str, arguments: dict[str, Any], context: ServerContext | None
     ) -> CallToolResult:
         try:
             values = validate_input(name, arguments).model_dump()
@@ -188,7 +188,7 @@ class BestPracticesServer(MCPServer):
         except DomainError as error:
             return tool_result(name, error.to_payload())
         except Exception:
-            error = DomainError(
+            failure = DomainError(
                 "internal_error",
                 "The tool operation could not be completed.",
                 recovery=(
@@ -198,9 +198,11 @@ class BestPracticesServer(MCPServer):
                     else "Retry the operation; report the tool name if the error persists."
                 ),
             )
-            return tool_result(name, error.to_payload())
+            return tool_result(name, failure.to_payload())
 
-    async def _payload(self, name: str, values: dict, context: Context | None) -> dict:
+    async def _payload(
+        self, name: str, values: dict[str, Any], context: ServerContext | None
+    ) -> dict[str, Any]:
         if name == "get_criteria":
             return get_criteria(**values)
         if name == "build_draft":
@@ -216,7 +218,9 @@ class BestPracticesServer(MCPServer):
             return await self._document_payload(name, values, context)
         return await self._read_payload(name, values, context)
 
-    async def _read_payload(self, name: str, values: dict, context: Context | None) -> dict:
+    async def _read_payload(
+        self, name: str, values: dict[str, Any], context: ServerContext | None
+    ) -> dict[str, Any]:
         if context is None:
             raise RuntimeError("Network tools require the running server lifespan.")
         client = context.request_context.lifespan_context
@@ -228,7 +232,9 @@ class BestPracticesServer(MCPServer):
             return await client.get_project_status(**values)
         return await client.get_project_answers(**values)
 
-    async def _document_payload(self, name: str, values: dict, context: Context | None) -> dict:
+    async def _document_payload(
+        self, name: str, values: dict[str, Any], context: ServerContext | None
+    ) -> dict[str, Any]:
         source = {"kind": "explicit", "location": None}
         if "draft" not in values:
             stored = await self.storage.read(values["project_id"])
@@ -245,7 +251,9 @@ class BestPracticesServer(MCPServer):
             result["identity"]["association"] = "storage_key"
         return result
 
-    async def _artifact_payload(self, values: dict, context: Context | None) -> dict:
+    async def _artifact_payload(
+        self, values: dict[str, Any], context: ServerContext | None
+    ) -> dict[str, Any]:
         if context is None:
             raise RuntimeError("Network tools require the running server lifespan.")
         client = context.request_context.lifespan_context
@@ -260,7 +268,7 @@ def create_server(
     storage = DraftStore(resolve_data_root() if data_root is None else data_root)
 
     @asynccontextmanager
-    async def lifespan(_server: MCPServer):
+    async def lifespan(_server: MCPServer[BadgeAppClient]) -> AsyncIterator[BadgeAppClient]:
         async with http_factory() as http:
             yield BadgeAppClient(http)
 

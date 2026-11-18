@@ -32,13 +32,14 @@ Run this before submitting a PR:
 make validate
 ```
 
-This checks the lockfile, formatting and lint, offline tests and catalog reproduction. It returns a failing status if any check fails.
+This checks the lockfile, formatting and lint, types, offline tests and catalog reproduction. It returns a failing status if any check fails.
 
 Use focused checks while developing and additional package checks when relevant:
 
 | Command | Purpose |
 | --- | --- |
 | `make test` | Offline unit and MCP integration tests |
+| `make typecheck` | mypy in strict mode over the server package and scripts, with a relaxed profile for tests |
 | `make test-coverage` | Server coverage, including MCP subprocesses; reports in `build/coverage/` |
 | `make test-package` | Build and inspect distributions and test an isolated installed wheel with existing dependencies |
 | `make check-fresh-package` | Install wheel and sdist in fresh environments; permits dependency downloads and writes results to `build/verification/` |

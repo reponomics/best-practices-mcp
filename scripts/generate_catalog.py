@@ -10,7 +10,9 @@ import argparse
 import hashlib
 import json
 import re
+from collections.abc import Hashable
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -40,8 +42,8 @@ class SourceLoader(yaml.SafeLoader):
     """Safe loader supporting upstream's ordered maps without losing keys."""
 
 
-def ordered_mapping(loader: SourceLoader, node: yaml.SequenceNode) -> dict:
-    result = {}
+def ordered_mapping(loader: SourceLoader, node: yaml.SequenceNode) -> dict[Hashable, Any]:
+    result: dict[Hashable, Any] = {}
     for child in node.value:
         item = loader.construct_mapping(child, deep=True)
         if len(item) != 1 or result.keys() & item.keys():
@@ -57,7 +59,7 @@ def encoded(value: object) -> bytes:
     return (json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode()
 
 
-def read_sources(source_dir: Path) -> tuple[dict, dict, dict]:
+def read_sources(source_dir: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     manifest = json.loads((source_dir / "source.json").read_text(encoding="utf-8"))
     for name, expected in manifest["files"].items():
         actual = hashlib.sha256((source_dir / name).read_bytes()).hexdigest()
@@ -81,16 +83,17 @@ def baseline_categories(source_dir: Path) -> dict[str, str]:
     return categories
 
 
-def category(level: str, criterion_id: str, raw: dict, baseline: dict[str, str]) -> str:
+def category(level: str, criterion_id: str, raw: dict[str, Any], baseline: dict[str, str]) -> str:
     if not level.startswith("baseline-"):
-        return raw["major"]
+        major: str = raw["major"]
+        return major
     match = BASELINE_ID.fullmatch(criterion_id)
     if match is None or match[1] not in baseline:
         raise ValueError(f"No documented category code: {level}/{criterion_id}")
     return baseline[match[1]]
 
 
-def flatten(groups: dict) -> dict[str, dict]:
+def flatten(groups: dict[str, Any]) -> dict[str, dict[str, Any]]:
     result = {}
     for major, minors in groups.items():
         for minor, criteria in minors.items():
@@ -101,7 +104,9 @@ def flatten(groups: dict) -> dict[str, dict]:
     return result
 
 
-def inherited_details(level: str, criterion_id: str, definitions: dict, english: dict) -> tuple:
+def inherited_details(
+    level: str, criterion_id: str, definitions: dict[str, Any], english: dict[str, Any]
+) -> tuple[str | None, str | None]:
     # Mirrors Criteria#get_text_if_exists: reverse defined-level order, with rank bound.
     for candidate in reversed(definitions):
         if RANKS[candidate] > RANKS[level] or criterion_id not in definitions[candidate]:
@@ -112,7 +117,7 @@ def inherited_details(level: str, criterion_id: str, definitions: dict, english:
     return None, None
 
 
-def exclusion(raw: dict) -> str | None:
+def exclusion(raw: dict[str, Any]) -> str | None:
     """Name the upstream lifecycle flag that keeps a criterion out of the catalog."""
     for flag in EXCLUDING_FLAGS:
         value = raw.get(flag, False)
@@ -123,7 +128,7 @@ def exclusion(raw: dict) -> str | None:
     return None
 
 
-def boolean_flags(raw: dict) -> dict[str, bool]:
+def boolean_flags(raw: dict[str, Any]) -> dict[str, bool]:
     """Expand upstream's omitted entailed flags into explicit requirements."""
     result = {}
     for flag in FLAGS:
@@ -137,8 +142,13 @@ def boolean_flags(raw: dict) -> dict[str, bool]:
 
 
 def criterion_record(
-    level: str, criterion_id: str, raw: dict, definitions: dict, english: dict, baseline: dict
-) -> tuple[dict, dict]:
+    level: str,
+    criterion_id: str,
+    raw: dict[str, Any],
+    definitions: dict[str, Any],
+    english: dict[str, Any],
+    baseline: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
     text = english[level][criterion_id]
     details, inherited_level = inherited_details(level, criterion_id, definitions, english)
     description = text["description"]

@@ -4,11 +4,13 @@ import argparse
 import asyncio
 import json
 import sys
+from typing import Any
 
 from mcp import Client, StdioServerParameters
+from mcp.types import CallToolResult
 
 
-def require_success(result) -> dict:
+def require_success(result: CallToolResult) -> dict[str, Any]:
     data = result.structured_content
     if result.is_error:
         code = (
@@ -22,7 +24,7 @@ def require_success(result) -> dict:
     return data
 
 
-async def check(project_id: int) -> dict:
+async def check(project_id: int) -> dict[str, Any]:
     parameters = StdioServerParameters(command=sys.executable, args=["-m", "best_practices_mcp"])
     failure = None
     async with asyncio.timeout(80), Client(parameters, read_timeout_seconds=40) as client:

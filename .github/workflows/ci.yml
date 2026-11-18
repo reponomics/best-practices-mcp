@@ -60,8 +60,8 @@ jobs:
         run: make help
       - name: Install the locked development environment
         run: make setup
-      - name: Formatting, lint, lock and catalog reproduction
-        run: make quality catalog-check lock-check
+      - name: Formatting, lint, types, lock and catalog reproduction
+        run: make quality typecheck catalog-check lock-check
       - name: Offline regression with line and branch coverage
         run: make test-coverage
       - name: Offline installed wheel check

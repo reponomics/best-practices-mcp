@@ -6,7 +6,7 @@ The workflows maintain the bounded ten-tool MCP; they do not add runtime service
 
 | Workflow | Trigger and coverage | Required setup |
 | --- | --- | --- |
-| Compatibility and coverage | Pull requests to `main`, pushes to `main`, and manual runs; Python 3.11/3.12 on Ubuntu, macOS and Windows, offline regression/coverage, catalog checks and fresh wheel/sdist installation | GitHub Actions |
+| Compatibility and coverage | Pull requests to `main`, pushes to `main`, and manual runs; Python 3.11/3.12 on Ubuntu, macOS and Windows, formatting, lint and mypy type checks, offline regression/coverage, catalog checks and fresh wheel/sdist installation | GitHub Actions |
 | Fuzzing | PRs/pushes to `main` and manual runs; document and proposal harnesses, 30 seconds each on Linux/Python 3.12 | Optional locked Atheris tooling; [run and reproduce fuzzing](fuzzing.md) |
 | Semantic PR | PR title metadata for PRs targeting `main`; conventional type/title validation | Squash-only merges and PR-title squash defaults make the validated title the commit on `main` |
 | Upstream criteria update | Monday 09:23 UTC and manual runs on `main`; refreshes retained upstream sources, catalog and provenance in one regular PR; deletes the reserved branch after merge | Existing Release App credentials for signed commits/PR events; optional `UPSTREAM_UPDATES_PAUSED=true` pauses updates for manual fixes |
@@ -18,6 +18,12 @@ The workflows maintain the bounded ten-tool MCP; they do not add runtime service
 | Verify published release | Successful `Publish to PyPI` workflow completion, or manual tag and expected commit selection on `main`; runs the commands in the [verification guide](verification.md) and retains troubleshooting logs | Read-only token, default-branch workflow, isolated locked `verification-tools`; human report inspection remains manual; no execution of downloaded release code |
 
 The six compatibility jobs retain their own measured coverage and installation evidence. Each job runs `make test-coverage`, which enforces coverage.py's 95% combined statement/branch total through `fail_under = 95` in `[tool.coverage.report]` in `pyproject.toml`, with two decimal places of precision. Separate statement and branch measurements remain in the reports without independent floors. Test failures, report-generation failures and missing coverage data also fail the check. Below-threshold report commands finish writing their output and exit with status 2; the runner generates the remaining reports and preserves the failure for diagnosis. Environment reports also record the invoked GNU Make version (`make`), or `unavailable` if it cannot be determined; this is provenance information, outside the current OSV scan scope. Codecov shows server coverage trends from one representative matrix job; it does not replace the Windows/macOS results or imply combined multi-platform coverage. Its project and patch percentage statuses remain informational because enforcement occurs in the coverage producer.
+
+## Type checking
+
+`make typecheck` runs mypy with `strict = true`, plus unreachable-code warnings, over the server package and the development scripts. The settings are in `[tool.mypy]` in `pyproject.toml`. It runs in every compatibility job, in `make check` and `make validate`, and as a pre-commit hook.
+
+Tests are exempt from strict mode's annotation requirements: untyped functions, calls to them, bare generic types and `Any` returns are allowed there. Four error codes are also off for tests (`union-attr`, `arg-type`, `attr-defined` and `method-assign`), because they pass fakes for real collaborators and patch attributes. Everything else is checked in tests too.
 
 ## Workflow files
 
@@ -79,6 +85,6 @@ Keep `PYPI_PUBLISH_ENABLED` unset and leave the release App variable unset while
 
 ## Local validation
 
-`make validate` runs lock consistency, quality checks, offline tests and catalog reproduction in one command. It continues with independent checks after failures and returns a failing status if any check fails. See [contributor prerequisites](../CONTRIBUTING.md#validate-the-implementation). OSV runs in CI and is not part of standard contributor validation. For proactive dependency checks, see [optional local scans](#optional-local-dependency-scans). `make check` remains the offline regression/lint interface, and `make test-coverage` measures server coverage locally. CodeQL/Codecov/Scorecard are qualified through their configured GitHub jobs; local configuration checks do not substitute for those executions.
+`make validate` runs lock consistency, quality checks, type checks, offline tests and catalog reproduction in one command. It continues with independent checks after failures and returns a failing status if any check fails. See [contributor prerequisites](../CONTRIBUTING.md#validate-the-implementation). OSV runs in CI and is not part of standard contributor validation. For proactive dependency checks, see [optional local scans](#optional-local-dependency-scans). `make check` remains the offline regression/lint interface, and `make test-coverage` measures server coverage locally. CodeQL/Codecov/Scorecard are qualified through their configured GitHub jobs; local configuration checks do not substitute for those executions.
 
 References: [CodeQL advanced workflow configuration](https://docs.github.com/en/code-security/reference/code-scanning/workflow-configuration-options), [Codecov action and OIDC](https://github.com/codecov/codecov-action), [OSV-Scanner](https://google.github.io/osv-scanner/), [Dependabot configuration](https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference).

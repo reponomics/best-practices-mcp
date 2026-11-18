@@ -60,8 +60,8 @@ def resolve_data_root(
             raise ValueError("LOCALAPPDATA is required for the default draft data directory.")
         root = Path(value)
     else:
-        value = Path(env.get("XDG_DATA_HOME", ""))
-        root = value if value.is_absolute() else home / ".local" / "share"
+        data_home = Path(env.get("XDG_DATA_HOME", ""))
+        root = data_home if data_home.is_absolute() else home / ".local" / "share"
     return _absolute_directory(root / "bestpractices-mcp")
 
 
@@ -94,12 +94,13 @@ def _require_kind(path: Path, *, directory: bool) -> os.stat_result | None:
     correct = stat.S_ISDIR(info.st_mode) if directory else stat.S_ISREG(info.st_mode)
     # Windows junctions can have directory mode despite redirecting elsewhere.
     # An explicitly selected root is resolved first; managed paths cannot redirect.
-    if not correct or getattr(info, "st_reparse_tag", 0):
+    reparse_tag: int = getattr(info, "st_reparse_tag", 0)
+    if not correct or reparse_tag:
         raise OSError("Unsafe storage path type.")
     return info
 
 
-def _storage_identity(project_id: int, draft: dict) -> dict:
+def _storage_identity(project_id: int, draft: dict[str, Any]) -> dict[str, Any]:
     identity = check_identity(project_id, draft)
     return {**identity, "association": "storage_key"}
 
@@ -146,7 +147,7 @@ class DraftStore:
         """List projects that have a draft file, without reading or creating anything."""
         return await asyncio.to_thread(self._stored_projects)
 
-    def _load(self, project_id: int) -> dict | None:
+    def _load(self, project_id: int) -> dict[str, Any] | None:
         path = self.location(project_id)
         try:
             if self._check_layout(path) is None:
@@ -162,7 +163,7 @@ class DraftStore:
         _storage_identity(project_id, draft)
         return draft
 
-    def _read_payload(self, project_id: int, draft: dict) -> dict:
+    def _read_payload(self, project_id: int, draft: dict[str, Any]) -> dict[str, Any]:
         return {
             "schema_version": 1,
             "project_id": project_id,
@@ -173,7 +174,7 @@ class DraftStore:
             "identity": _storage_identity(project_id, draft),
         }
 
-    async def read(self, project_id: int) -> dict:
+    async def read(self, project_id: int) -> dict[str, Any]:
         """Return the whole normalized document, including diagnostic-only values."""
         draft = await asyncio.to_thread(self._load, project_id)
         if draft is None:
@@ -187,7 +188,9 @@ class DraftStore:
         tool_result("read_draft", result)
         return result
 
-    def _prepare_update(self, project_id: int, source: dict | None, patch: dict) -> tuple:
+    def _prepare_update(
+        self, project_id: int, source: dict[str, Any] | None, patch: dict[str, Any]
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
         original = {} if source is None else source
         # Source identity is checked before a patch can remove provenance.
         _storage_identity(project_id, original)
@@ -267,7 +270,7 @@ class DraftStore:
         if cancelled:
             raise asyncio.CancelledError
 
-    async def update(self, project_id: int, changes: dict[str, Any]) -> dict:
+    async def update(self, project_id: int, changes: dict[str, Any]) -> dict[str, Any]:
         """Apply a patch once; never retry a failed or uncertain mutation."""
         self.location(project_id)
         patch = normalize_draft(changes)

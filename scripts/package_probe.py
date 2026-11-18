@@ -7,8 +7,10 @@ import platform
 import sys
 import sysconfig
 from pathlib import Path
+from typing import Any
 
 from mcp import Client, StdioServerParameters
+from mcp.types import TextContent
 
 TOOLS = [
     "build_draft",
@@ -29,10 +31,14 @@ def executable() -> Path:
     return Path(sysconfig.get_path("scripts")) / f"bestpractices-mcp{suffix}"
 
 
-async def call(client, name: str, arguments: dict, error: str | None = None) -> dict:
+async def call(
+    client: Client, name: str, arguments: dict[str, Any], error: str | None = None
+) -> dict[str, Any]:
     result = await client.call_tool(name, arguments)
-    payload = result.structured_content
-    assert json.loads(result.content[0].text) == payload
+    payload: dict[str, Any] = result.structured_content
+    text = result.content[0]
+    assert isinstance(text, TextContent)
+    assert json.loads(text.text) == payload
     assert result.is_error == (error is not None)
     if error:
         assert payload["error"]["code"] == error
@@ -45,6 +51,7 @@ async def catalog_and_storage(params: StdioServerParameters) -> None:
         assert [tool.name for tool in listing] == TOOLS
         assert client.protocol_version == "2026-07-28"
         mutation = next(tool for tool in listing if tool.name == "update_draft")
+        assert mutation.annotations is not None
         assert mutation.annotations.read_only_hint is False
         index = await call(client, "get_criteria", {})
         assert len(index["levels"]) == 6
@@ -64,7 +71,7 @@ async def catalog_and_storage(params: StdioServerParameters) -> None:
         assert (await call(client, "read_draft", {"project_id": 123}))["draft"] == draft
 
 
-async def synthetic_public_workflow(workspace: Path, env: dict) -> None:
+async def synthetic_public_workflow(workspace: Path, env: dict[str, Any]) -> None:
     params = StdioServerParameters(
         command=sys.executable,
         args=["-I", str(workspace / "read_server.py")],

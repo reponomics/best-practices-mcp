@@ -15,6 +15,7 @@ import tarfile
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from check_package import check_archives
 from verification_support import git, source_fingerprint
@@ -51,8 +52,15 @@ def sanitized(text: str, workspace: Path) -> str:
     return re.sub(r"https?://\S+", "<package-url>", text)
 
 
-def stage(report: dict, label: str, command: list[str], cwd: Path, env: dict, log: Path) -> str:
-    record = {"stage": label, "status": "failed"}
+def stage(
+    report: dict[str, Any],
+    label: str,
+    command: list[str],
+    cwd: Path,
+    env: dict[str, Any],
+    log: Path,
+) -> str:
+    record: dict[str, Any] = {"stage": label, "status": "failed"}
     report["stages"].append(record)
     try:
         result = subprocess.run(
@@ -88,7 +96,7 @@ def qualify_artifact(
     artifact: Path,
     sdist: Path,
     workspace: Path,
-    report: dict,
+    report: dict[str, Any],
     log: Path,
     *,
     sbom_python: Path | None = None,
@@ -157,7 +165,7 @@ def qualify_artifact(
         )
 
 
-def execute(report: dict, log: Path) -> None:
+def execute(report: dict[str, Any], log: Path) -> None:
     with tempfile.TemporaryDirectory(prefix="bestpractices-fresh-package-") as temporary:
         workspace = Path(temporary)
         env = clean_environment(workspace)

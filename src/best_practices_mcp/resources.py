@@ -33,7 +33,6 @@ from importlib.resources import files
 from typing import Any
 
 from mcp.server import MCPServer
-from mcp.server.mcpserver import Context
 from mcp.server.mcpserver.exceptions import ResourceError
 from mcp.types import Resource
 
@@ -45,6 +44,7 @@ from best_practices_mcp.criteria import (
 )
 from best_practices_mcp.drafts import VALID_STATUSES
 from best_practices_mcp.errors import DomainError
+from best_practices_mcp.sdk_adapter import ServerContext
 
 MARKDOWN = "text/markdown"
 
@@ -58,13 +58,13 @@ LIST_BLOCK = re.compile(r"\s*<(ul|ol)>(.*?)</\1>\s*", re.DOTALL)
 LINK = re.compile(r'<a\s+href="([^"]*)"\s*>(.*?)</a>', re.DOTALL)
 
 
-def _list(match: re.Match) -> str:
+def _list(match: re.Match[str]) -> str:
     items = [" ".join(item.split()) for item in match[2].replace("</li>", "").split("<li>")[1:]]
     marks = [f"{number}." if match[1] == "ol" else "-" for number in range(1, len(items) + 1)]
     return "\n\n" + "\n".join(f"{mark} {item}" for mark, item in zip(marks, items)) + "\n\n"
 
 
-def _link(level: str, match: re.Match) -> str:
+def _link(level: str, match: re.Match[str]) -> str:
     target, text = match[1], " ".join(match[2].split())
     if target.startswith("#"):
         # An anchor on the BadgeApp form names another criterion of the same level.
@@ -86,7 +86,7 @@ def _level_title(level: str) -> str:
     return level.replace("-", " level ").capitalize()
 
 
-def _rules(criterion: dict) -> str:
+def _rules(criterion: dict[str, Any]) -> str:
     """State the status rules that the validator applies to this criterion."""
     if not criterion["na_allowed"]:
         not_applicable = "N/A is not allowed."
@@ -103,7 +103,7 @@ def _rules(criterion: dict) -> str:
     return f"{met} {not_applicable}"
 
 
-def _criterion_section(criterion: dict, *, heading: str, details: bool) -> list[str]:
+def _criterion_section(criterion: dict[str, Any], *, heading: str, details: bool) -> list[str]:
     level = criterion["level"]
     lines = [
         f"{heading} {criterion['criterion_id']} ({criterion['requirement']})",
@@ -125,8 +125,8 @@ def _source_line() -> str:
     return f"Source: OpenSSF Best Practices criteria at revision {catalog_reference()['revision']}."
 
 
-def _by_category(criteria: list[dict]) -> dict[str, list[dict]]:
-    groups: dict[str, list[dict]] = {}
+def _by_category(criteria: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    groups: dict[str, list[dict[str, Any]]] = {}
     for criterion in criteria:
         groups.setdefault(criterion["category"], []).append(criterion)
     return dict(sorted(groups.items()))
@@ -184,7 +184,7 @@ def criterion_document(level: str, criterion_id: str) -> str:
 
 def _category_named(level: str, slug: str) -> str:
     """Resolve a URI slug to the level's category name."""
-    categories = level_summary(level)["categories"]
+    categories: list[str] = level_summary(level)["categories"]
     for category in categories:
         if category_slug(category) == slug:
             return category
@@ -210,7 +210,7 @@ RETRIEVAL_FAILURE = (
 )
 
 
-def _status_label(answers: dict, criterion: dict) -> str:
+def _status_label(answers: dict[str, Any], criterion: dict[str, Any]) -> str:
     """Name a saved status; BadgeApp saves "?" until an answer is chosen."""
     field = criterion["status_field"]
     if field not in answers:
@@ -227,7 +227,7 @@ def _status_counts(labels: list[str]) -> str:
     return ", ".join(f"{labels.count(label)} {label}" for label in [*known, *other])
 
 
-def _answer_section(criterion: dict, answers: dict) -> list[str]:
+def _answer_section(criterion: dict[str, Any], answers: dict[str, Any]) -> list[str]:
     label = _status_label(answers, criterion)
     lines = [
         f"## {criterion['criterion_id']} ({criterion['requirement']}): {label}",
@@ -245,7 +245,9 @@ def _answer_section(criterion: dict, answers: dict) -> list[str]:
     return lines
 
 
-def project_document(progress: dict, criteria: list[dict], category: str | None) -> str:
+def project_document(
+    progress: dict[str, Any], criteria: list[dict[str, Any]], category: str | None
+) -> str:
     """Pair each selected criterion with the answer in a get_project_answers result."""
     project, answers, level = progress["project"], progress["answers"], progress["level"]
     labels = [_status_label(answers, criterion) for criterion in criteria]
@@ -291,7 +293,7 @@ def _failure(error: DomainError) -> ResourceError:
 
 
 async def _project_resource(
-    context: Context, project_id: str, level: str, slug: str | None = None
+    context: ServerContext, project_id: str, level: str, slug: str | None = None
 ) -> str:
     try:
         if not re.fullmatch(r"[0-9]{1,18}", project_id):
@@ -317,8 +319,10 @@ def repository_file_guide() -> str:
     return files("best_practices_mcp").joinpath("data/repository-file.md").read_text("utf-8")
 
 
-def _add(server: MCPServer, uri: str, read: Any, **metadata: str) -> None:
-    server.resource(uri, mime_type=MARKDOWN, **metadata)(read)
+def _add(
+    server: MCPServer, uri: str, read: Any, *, name: str, title: str, description: str
+) -> None:
+    server.resource(uri, mime_type=MARKDOWN, name=name, title=title, description=description)(read)
 
 
 def register_resources(server: MCPServer) -> None:
@@ -389,7 +393,7 @@ def register_resources(server: MCPServer) -> None:
         ),
         mime_type=MARKDOWN,
     )
-    async def project_level(project_id: str, level: str, ctx: Context) -> str:
+    async def project_level(project_id: str, level: str, ctx: ServerContext) -> str:
         return await _project_resource(ctx, project_id, level)
 
     @server.resource(
@@ -402,5 +406,7 @@ def register_resources(server: MCPServer) -> None:
         ),
         mime_type=MARKDOWN,
     )
-    async def project_category(project_id: str, level: str, category: str, ctx: Context) -> str:
+    async def project_category(
+        project_id: str, level: str, category: str, ctx: ServerContext
+    ) -> str:
         return await _project_resource(ctx, project_id, level, category)

@@ -9,7 +9,7 @@ with atheris.instrument_imports():
     from best_practices_mcp.errors import DomainError
 
 
-@atheris.instrument_func
+@atheris.instrument_func  # type: ignore[untyped-decorator]  # atheris ships no type information
 def test_one_input(data: bytes) -> None:
     try:
         document = parse_document(data)

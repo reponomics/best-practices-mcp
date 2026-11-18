@@ -14,9 +14,11 @@ import sys
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 from urllib.parse import parse_qsl, urlsplit
 
 from mcp import Client, MCPError, StdioServerParameters
+from mcp.types import TextResourceContents
 
 TOOLS = [
     "build_draft",
@@ -64,9 +66,9 @@ class Run:
         self.client = client
         self.project_id = project_id
         self.level = level
-        self.checks: list[dict] = []
-        self.calls: list[dict] = []
-        self.urls: list[dict] = []
+        self.checks: list[dict[str, Any]] = []
+        self.calls: list[dict[str, Any]] = []
+        self.urls: list[dict[str, Any]] = []
 
     def check(self, name: str, passed: bool, detail: str = "") -> None:
         result = "passed" if passed else "failed"
@@ -75,7 +77,9 @@ class Run:
     def unexercised(self, name: str, reason: str = NO_CANDIDATE) -> None:
         self.checks.append({"check": name, "result": "unexercised", "detail": reason})
 
-    async def call(self, tool: str, arguments: dict, expect_error: bool = False) -> dict:
+    async def call(
+        self, tool: str, arguments: dict[str, Any], expect_error: bool = False
+    ) -> dict[str, Any]:
         result = await self.client.call_tool(tool, arguments)
         data = result.structured_content
         self.calls.append(
@@ -88,24 +92,32 @@ class Run:
 
     async def read(self, uri: str) -> str:
         [content] = (await self.client.read_resource(uri)).contents
+        if not isinstance(content, TextResourceContents):
+            raise QAFailure(f"{uri} did not return text content.")
         self.calls.append(
             {"resource": uri, "mime_type": content.mime_type, "characters": len(content.text)}
         )
         return content.text
 
-    async def prepare(self, section: str, draft: dict, overrides: dict) -> dict:
+    async def prepare(
+        self, section: str, draft: dict[str, Any], overrides: dict[str, Any]
+    ) -> dict[str, Any]:
         arguments = {"project_id": self.project_id, "section": section, "draft": draft}
         return await self.call("prepare_update_url", arguments | {"overrides": overrides})
 
 
-def select_roles(answers: dict, criteria: list[dict]) -> tuple[dict, dict]:
+def select_roles(
+    answers: dict[str, Any], criteria: list[dict[str, Any]]
+) -> tuple[dict[str, Any], dict[str, Any]]:
     """Assign criteria to the runbook's roles and unknown-reset cases from the saved answers.
 
     Roles A, B, D, E and F each need a different criterion with a saved status and justification;
     C needs one with neither. The reset cases need a saved status with and without a
     justification. A role is None when no criterion meets its condition.
     """
-    worded, bare, blank = [], [], []
+    worded: list[dict[str, Any]] = []
+    bare: list[dict[str, Any]] = []
+    blank: list[dict[str, Any]] = []
     for criterion in criteria:
         status = answers.get(criterion["status_field"])
         justified = bool((answers.get(criterion["justification_field"]) or "").strip())
@@ -121,9 +133,11 @@ def select_roles(answers: dict, criteria: list[dict]) -> tuple[dict, dict]:
     return roles, resets
 
 
-def proposal(roles: dict, answers: dict, text: str) -> tuple[dict, list[str], list[str]]:
+def proposal(
+    roles: dict[str, Any], answers: dict[str, Any], text: str
+) -> tuple[dict[str, Any], list[str], list[str]]:
     """Return the fields supplied for the assigned roles, URL A's overrides and URL B's addition."""
-    changes: dict = {}
+    changes: dict[str, Any] = {}
     overrides: list[str] = []
     added: list[str] = []
     fields = {
@@ -163,18 +177,23 @@ def category_slug(category: str) -> str:
     return category.lower().replace(" ", "-")
 
 
-def decoded(url: str) -> tuple[str, dict]:
+def decoded(url: str) -> tuple[str, dict[str, Any]]:
     parts = urlsplit(url)
     return parts.path, dict(parse_qsl(parts.query, keep_blank_values=True))
 
 
-def reset_warning_fields(result: dict) -> list[str]:
+def reset_warning_fields(result: dict[str, Any]) -> list[str]:
     warnings = [w for w in result["warnings"] if w["code"] == RESET_WARNING]
     return sorted(field for warning in warnings for field in warning["fields"])
 
 
 def check_url(
-    run: Run, name: str, result: dict, draft: dict, overridden: list[str], expect: list[str]
+    run: Run,
+    name: str,
+    result: dict[str, Any],
+    draft: dict[str, Any],
+    overridden: list[str],
+    expect: list[str],
 ) -> None:
     """Compare a prepare_update_url result with the draft it was given and record its URL.
 
@@ -210,7 +229,7 @@ def check_url(
     run.urls.append({"name": name, "url": artifact["url"], "expect": expect})
 
 
-async def check_reads(run: Run) -> tuple[dict, dict, list[dict]]:
+async def check_reads(run: Run) -> tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]]]:
     tools = sorted(tool.name for tool in (await run.client.list_tools()).tools)
     run.check("tools/list returns the ten tools", tools == TOOLS, ", ".join(tools))
     status = await run.call("get_project_status", {"project_id": run.project_id})
@@ -240,7 +259,9 @@ async def check_reads(run: Run) -> tuple[dict, dict, list[dict]]:
     return status["project"], answers, criteria
 
 
-async def check_proposals(run: Run, roles: dict, answers: dict, text: str) -> dict:
+async def check_proposals(
+    run: Run, roles: dict[str, Any], answers: dict[str, Any], text: str
+) -> dict[str, Any]:
     """Runbook section 1: one document, URL A, then URL B with role A's status overridden."""
     for role, criterion in roles.items():
         if criterion is None:
@@ -248,7 +269,8 @@ async def check_proposals(run: Run, roles: dict, answers: dict, text: str) -> di
     changes, overrides, added = proposal(roles, answers, text)
     if not changes:
         return {}
-    draft = (await run.call("build_draft", {"draft": {}, "changes": changes}))["draft"]
+    built = await run.call("build_draft", {"draft": {}, "changes": changes})
+    draft: dict[str, Any] = built["draft"]
     run.check("build_draft returns the supplied fields unchanged", draft == changes)
     expect = [
         f"{role} `{criterion['criterion_id']}`: {ROLES[role][1]}"
@@ -265,7 +287,7 @@ async def check_proposals(run: Run, roles: dict, answers: dict, text: str) -> di
     return draft
 
 
-async def check_chooser(run: Run, draft: dict) -> None:
+async def check_chooser(run: Run, draft: dict[str, Any]) -> None:
     """Runbook section 2, case 1: a mixed-level document through the section chooser."""
     other = "passing" if run.level.startswith("baseline") else "baseline-1"
     index = await run.call("get_criteria", {"level": other})
@@ -286,7 +308,7 @@ async def check_chooser(run: Run, draft: dict) -> None:
     )
 
 
-async def check_resets(run: Run, resets: dict, answers: dict) -> None:
+async def check_resets(run: Run, resets: dict[str, Any], answers: dict[str, Any]) -> None:
     """Runbook section 2, cases 2 and 3: proposals to reset a saved status to "?"."""
     for condition, criterion in resets.items():
         if criterion is None:
@@ -297,7 +319,7 @@ async def check_resets(run: Run, resets: dict, answers: dict) -> None:
     fields = [criterion["status_field"] for criterion in chosen]
     reset = dict.fromkeys(fields, "?")
     kept = ["each saved status is kept; the reset is not applied"]
-    cases = (
+    cases: tuple[tuple[str, dict[str, Any], dict[str, Any], list[str]], ...] = (
         ("Reset URL, named overrides", reset, {"mode": "fields", "fields": fields}, fields),
         ("Reset URL, override all", reset, {"mode": "all"}, fields),
         ("Reset URL, no override", {fields[0]: "?"}, {"mode": "none"}, []),
@@ -329,7 +351,9 @@ async def check_resets(run: Run, resets: dict, answers: dict) -> None:
     check_url(run, "Control URL", result, control, fields, changed)
 
 
-async def check_resources(run: Run, answers: dict, criteria: list[dict]) -> None:
+async def check_resources(
+    run: Run, answers: dict[str, Any], criteria: list[dict[str, Any]]
+) -> None:
     """Resource listing and documents, and their agreement with the tools' results."""
     client, level, project_id = run.client, run.level, run.project_id
     summary = (await run.call("get_criteria", {}))["levels"]
@@ -372,7 +396,7 @@ async def check_resources(run: Run, answers: dict, criteria: list[dict]) -> None
     guide = await run.read("guide://repository-file")
     run.check("the repository-file guide is readable", ".bestpractices.json" in guide)
 
-    def heading(criterion: dict) -> str:
+    def heading(criterion: dict[str, Any]) -> str:
         status = answers.get(criterion["status_field"])
         label = "unanswered (?)" if status == "?" else status
         return f"## {criterion['criterion_id']} ({criterion['requirement']}): {label}"
@@ -408,12 +432,12 @@ async def check_resources(run: Run, answers: dict, criteria: list[dict]) -> None
     )
 
 
-async def qualify(server: list[str], project_id: int, level: str) -> dict:
+async def qualify(server: list[str], project_id: int, level: str) -> dict[str, Any]:
     """Run every check against one server process and return the report."""
-    roles: dict = {}
-    resets: dict = {}
-    answers: dict = {}
-    project: dict = {"project_id": project_id, "name": None}
+    roles: dict[str, Any] = {}
+    resets: dict[str, Any] = {}
+    answers: dict[str, Any] = {}
+    project: dict[str, Any] = {"project_id": project_id, "name": None}
     with tempfile.TemporaryDirectory() as root:
         parameters = StdioServerParameters(
             command=server[0], args=server[1:], env={"BESTPRACTICES_DATA_DIR": root}
@@ -452,7 +476,7 @@ async def qualify(server: list[str], project_id: int, level: str) -> dict:
     }
 
 
-def _saved(criterion: dict | None, answers: dict) -> dict | None:
+def _saved(criterion: dict[str, Any] | None, answers: dict[str, Any]) -> dict[str, Any] | None:
     if criterion is None:
         return None
     return {
@@ -462,7 +486,7 @@ def _saved(criterion: dict | None, answers: dict) -> dict | None:
     }
 
 
-def render(report: dict) -> str:
+def render(report: dict[str, Any]) -> str:
     """Format a report as Markdown: checks, the criteria chosen, then the browser steps."""
     project = report["project"]
     lines = [

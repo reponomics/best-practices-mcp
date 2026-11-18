@@ -6,6 +6,7 @@ import subprocess
 import sys
 import tomllib
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -40,7 +41,7 @@ def check_tooling(root: Path) -> None:
     print("uv bootstrap requirement and audit inventory agree")
 
 
-def check_first_party_license(root: Path, project: dict, lock: dict) -> None:
+def check_first_party_license(root: Path, project: dict[str, Any], lock: dict[str, Any]) -> None:
     """Bind the version-independent correction to this MIT-licensed local project."""
     if project.get("license") != "MIT":
         raise ValueError("Reassess the first-party OSV override when the project license changes")

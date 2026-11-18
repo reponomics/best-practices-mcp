@@ -46,7 +46,7 @@ def test_empty_document_does_not_imply_whole_application_checked() -> None:
 def test_represented_shape_checks_and_conditional_skips_overlap(
     status: object, reason: str
 ) -> None:
-    draft = {"contribution_justification": "https://a.b"}
+    draft: dict[str, object] = {"contribution_justification": "https://a.b"}
     if status is not None:
         draft["contribution_status"] = status
     result = validate_draft(8, "passing", draft)

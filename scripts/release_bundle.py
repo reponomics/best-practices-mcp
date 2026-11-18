@@ -10,6 +10,7 @@ import re
 import shutil
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from release_check import ROOT, git_output, verify_artifacts
 
@@ -33,7 +34,7 @@ POLICY_INPUTS = (
 )
 
 
-def file_identity(path: Path) -> dict:
+def file_identity(path: Path) -> dict[str, Any]:
     if path.is_symlink() or not path.is_file():
         raise ValueError(f"Expected a regular file: {path.name}")
     content = path.read_bytes()
@@ -47,9 +48,9 @@ def copy_evidence(source: Path, destination: Path) -> None:
     shutil.copyfile(source, destination)
 
 
-def verify_qualification(root: Path, dist: Path, evidence: Path) -> dict:
+def verify_qualification(root: Path, dist: Path, evidence: Path) -> dict[str, Any]:
     file_identity(evidence)
-    report = json.loads(evidence.read_text(encoding="utf-8"))
+    report: dict[str, Any] = json.loads(evidence.read_text(encoding="utf-8"))
     if report.get("status") != "passed" or report.get("installation", {}).get("status") != "passed":
         raise ValueError("Release candidates must pass fresh-install qualification")
     actual = verify_artifacts(root, dist)
@@ -66,11 +67,11 @@ def copy_reports(root: Path, reports: Path, evidence: Path, destination: Path) -
         copy_evidence(source, destination / name)
     copy_evidence(evidence, destination / "qualification.json")
     copy_evidence(evidence.with_suffix(".log"), destination / "qualification.log")
-    for source, name in POLICY_INPUTS:
-        copy_evidence(root / source, destination / name)
+    for relative, name in POLICY_INPUTS:
+        copy_evidence(root / relative, destination / name)
 
 
-def write_manifest(output: Path, metadata: dict) -> None:
+def write_manifest(output: Path, metadata: dict[str, Any]) -> None:
     files = sorted(path for path in output.rglob("*") if path.is_file())
     identities = {path.relative_to(output).as_posix(): file_identity(path) for path in files}
     if len({path.name for path in files}) != len(files):

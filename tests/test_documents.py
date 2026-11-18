@@ -1,6 +1,7 @@
 """Structural parsing is independent of fields, persistence and future patch policy."""
 
 import sys
+from typing import Any
 
 import pytest
 
@@ -59,7 +60,7 @@ def test_byte_budget_includes_newline_and_utf8() -> None:
 
 
 def test_nesting_budget_is_checked_for_memory_and_file_inputs() -> None:
-    value = 1
+    value: object = 1
     for _ in range(MAX_JSON_DEPTH):
         value = [value]
     with pytest.raises(DomainError) as error:
@@ -71,7 +72,11 @@ def test_nesting_budget_is_checked_for_memory_and_file_inputs() -> None:
 
 def test_aliases_normalize_without_mutation_and_only_by_explicit_mapping() -> None:
     aliases = {"DISPLAY_status": "canonical_status"}
-    original = {"DISPLAY_status": "Met", "unknown": {"x": [1]}, "display_status": "?"}
+    original: dict[str, Any] = {
+        "DISPLAY_status": "Met",
+        "unknown": {"x": [1]},
+        "display_status": "?",
+    }
     result = normalize_document(original, aliases)
     assert result == {"canonical_status": "Met", "unknown": {"x": [1]}, "display_status": "?"}
     result["unknown"]["x"].append(2)

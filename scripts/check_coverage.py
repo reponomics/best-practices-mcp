@@ -16,16 +16,18 @@ import sys
 import sysconfig
 import tempfile
 import time
+from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime
 from importlib.metadata import version
 from pathlib import Path
+from typing import Any
 
 from coverage import Coverage
 from verification_support import ROOT, sanitize, source_fingerprint
 
 
-def wait_with_progress(process: subprocess.Popen, stage: str) -> bool:
+def wait_with_progress(process: subprocess.Popen[bytes], stage: str) -> bool:
     """Keep buffered, sanitized output while making long stages visibly active."""
     started = time.monotonic()
     deadline = started + 600
@@ -73,7 +75,7 @@ def command(args: list[str], env: dict[str, str], log: Path) -> int:
 
 
 @contextmanager
-def forward_sdk_coverage():
+def forward_sdk_coverage() -> Iterator[None]:
     """Keep coverage's config through the SDK's intentionally narrow child env.
 
     The temporary hook applies only to this development venv and is removed even
@@ -124,7 +126,9 @@ def clear_reports(output: Path) -> None:
         shutil.rmtree(output / "html")
 
 
-def execute_checks(output: Path, tests: list[str], env: dict[str, str], log: Path) -> list[dict]:
+def execute_checks(
+    output: Path, tests: list[str], env: dict[str, str], log: Path
+) -> list[dict[str, Any]]:
     checks = []
     for args in coverage_commands(output, tests):
         try:
@@ -148,7 +152,7 @@ def run(output: Path, tests: list[str]) -> int:
         "COVERAGE_RCFILE": str(ROOT / "pyproject.toml"),
         "PYTHONUTF8": "1",
     }
-    evidence = {
+    evidence: dict[str, Any] = {
         "started_at": datetime.now(UTC).isoformat(),
         "tested_commit": subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True

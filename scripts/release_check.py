@@ -13,6 +13,7 @@ import tempfile
 import tomllib
 from email.parser import BytesParser
 from pathlib import Path, PurePosixPath
+from typing import Any
 from zipfile import ZipFile
 
 from packaging.utils import canonicalize_name
@@ -25,8 +26,10 @@ FORBIDDEN_PARTS = {"internal", ".git", "venv", ".venv", "node_modules", "__pycac
 UPSTREAM_NOTICE = "src/best_practices_mcp/data/BADGEAPP-LICENSE.txt"
 
 
-def project_metadata(root: Path) -> dict:
-    return tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+def project_metadata(root: Path) -> dict[str, Any]:
+    document = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+    project: dict[str, Any] = document["project"]
+    return project
 
 
 def validate_source(root: Path, tag: str, prerelease: bool) -> Version:
@@ -94,7 +97,7 @@ def verify_paths(files: dict[str, bytes]) -> None:
             raise ValueError(f"Private/development path in release: {name}")
 
 
-def verify_metadata(metadata: bytes, project: dict) -> None:
+def verify_metadata(metadata: bytes, project: dict[str, Any]) -> None:
     headers = BytesParser().parsebytes(metadata)
     if canonicalize_name(headers["Name"] or "") != canonicalize_name(project["name"]):
         raise ValueError("Distribution name does not match project")
@@ -107,14 +110,15 @@ def verify_metadata(metadata: bytes, project: dict) -> None:
     }.items():
         if headers[key] != expected:
             raise ValueError(f"Distribution {key} does not match release metadata")
-    if not headers.get_payload().strip():
+    readme = headers.get_payload()
+    if not isinstance(readme, str) or not readme.strip():
         raise ValueError("Missing distribution README")
     for label, url in project.get("urls", {}).items():
         if f"{label}, {url}" not in headers.get_all("Project-URL", []):
             raise ValueError(f"Missing project URL: {label}")
 
 
-def license_paths(root: Path, project: dict) -> set[str]:
+def license_paths(root: Path, project: dict[str, Any]) -> set[str]:
     paths = {
         path.relative_to(root).as_posix()
         for pattern in project.get("license-files", [])
@@ -126,7 +130,7 @@ def license_paths(root: Path, project: dict) -> set[str]:
     return paths
 
 
-def verify_wheel(files: dict[str, bytes], root: Path, project: dict) -> None:
+def verify_wheel(files: dict[str, bytes], root: Path, project: dict[str, Any]) -> None:
     metadata_paths = [name for name in files if name.endswith(".dist-info/METADATA")]
     if len(metadata_paths) != 1:
         raise ValueError("Expected exactly one wheel METADATA")
@@ -150,7 +154,7 @@ def verify_wheel(files: dict[str, bytes], root: Path, project: dict) -> None:
             raise ValueError(f"Wheel license metadata/content mismatch: {name}")
 
 
-def verify_sdist(files: dict[str, bytes], root: Path, project: dict) -> None:
+def verify_sdist(files: dict[str, bytes], root: Path, project: dict[str, Any]) -> None:
     prefixes = {PurePosixPath(name).parts[0] for name in files}
     if len(prefixes) != 1:
         raise ValueError("Expected one source-distribution root")
@@ -164,7 +168,7 @@ def verify_sdist(files: dict[str, bytes], root: Path, project: dict) -> None:
             raise ValueError(f"Source distribution is missing or changed: {name}")
 
 
-def verify_artifacts(root: Path, dist: Path) -> dict:
+def verify_artifacts(root: Path, dist: Path) -> dict[str, Any]:
     paths = sorted(dist.iterdir())
     wheels = [path for path in paths if path.suffix == ".whl"]
     sdists = [path for path in paths if path.name.endswith(".tar.gz")]
@@ -187,8 +191,12 @@ def verify_artifacts(root: Path, dist: Path) -> dict:
 
 
 def qualify_exact_archives(
-    dist: Path, output: Path, report: dict | None = None, *, sbom_python: Path | None = None
-) -> dict:
+    dist: Path,
+    output: Path,
+    report: dict[str, Any] | None = None,
+    *,
+    sbom_python: Path | None = None,
+) -> dict[str, Any]:
     """Reuse installed-package probes without rebuilding the reviewed candidate."""
     from check_fresh_package import qualify_artifact
 
@@ -213,10 +221,14 @@ def qualify_exact_archives(
 
 def check_candidate(
     root: Path, dist: Path, output: Path, allow_downloads: bool, *, sbom_python: Path | None = None
-) -> dict:
+) -> dict[str, Any]:
     """Replace prior evidence before checking; preserve partial evidence on failure."""
     output.parent.mkdir(parents=True, exist_ok=True)
-    report = {"status": "running", "artifacts": {}, "toolchain": {"make": make_version()}}
+    report: dict[str, Any] = {
+        "status": "running",
+        "artifacts": {},
+        "toolchain": {"make": make_version()},
+    }
     output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     output.with_suffix(".log").write_text("Release candidate validation\n", encoding="utf-8")
     try:

@@ -1,8 +1,9 @@
 """Schema inventory and argument diagnostics for the tools; never tool registration."""
 
-from typing import Literal, get_args, get_origin
+from typing import Any, Literal, get_args, get_origin
 
 from pydantic import TypeAdapter, ValidationError
+from pydantic_core import ErrorDetails
 
 from best_practices_mcp import models
 
@@ -32,7 +33,7 @@ OUTPUT_MODELS: dict[str, type[models.Model]] = {
 }
 
 
-def input_schema(tool: str) -> dict:
+def input_schema(tool: str) -> dict[str, Any]:
     """JSON Schema for strict input shape; no future tool is registered here."""
     return {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -40,12 +41,13 @@ def input_schema(tool: str) -> dict:
     }
 
 
-def output_adapter(tool: str) -> TypeAdapter:
+def output_adapter(tool: str) -> TypeAdapter[Any]:
     """Both success and structured tool errors conform to the published schema."""
-    return TypeAdapter(OUTPUT_MODELS[tool] | models.ErrorResult)
+    # The union is composed at run time, so it has no static type form.
+    return TypeAdapter(OUTPUT_MODELS[tool] | models.ErrorResult)  # type: ignore[arg-type]
 
 
-def output_schema(tool: str) -> dict:
+def output_schema(tool: str) -> dict[str, Any]:
     # Both union branches are objects. Declare that implied constraint explicitly
     # for the SDK's pre-2026 wire schemas, which require an object at the root.
     return {
@@ -55,7 +57,7 @@ def output_schema(tool: str) -> dict:
     }
 
 
-def validate_input(tool: str, arguments: dict) -> models.Model:
+def validate_input(tool: str, arguments: dict[str, Any]) -> models.Model:
     return INPUT_MODELS[tool].model_validate(arguments)
 
 
@@ -73,14 +75,14 @@ PROBLEMS = {
 FIELD_NAME_LIMIT = 64
 
 
-def _allowed_values(annotation: object) -> list:
+def _allowed_values(annotation: object) -> list[Any]:
     """Collect the literal choices of an argument, including those of array items."""
     if get_origin(annotation) is Literal:
         return list(get_args(annotation))
     return [value for part in get_args(annotation) for value in _allowed_values(part)]
 
 
-def _issue(model: type[models.Model], error: dict) -> dict:
+def _issue(model: type[models.Model], error: ErrorDetails) -> dict[str, Any]:
     location, kind = error["loc"], error["type"]
     if kind == "argument":
         return {"field": error["ctx"]["field"], "problem": error["ctx"]["problem"]}
@@ -95,7 +97,7 @@ def _issue(model: type[models.Model], error: dict) -> dict:
             problem = "has an item that " + problem
     else:
         # Nested shapes produce one error per alternative; restate the expected shape.
-        issue = {"field": field, "problem": "is invalid"}
+        issue: dict[str, Any] = {"field": field, "problem": "is invalid"}
         if definition is not None and definition.description:
             issue["expected"] = definition.description
         return issue
@@ -105,14 +107,15 @@ def _issue(model: type[models.Model], error: dict) -> dict:
     return issue
 
 
-def argument_issues(tool: str, error: ValidationError) -> list[dict]:
+def argument_issues(tool: str, error: ValidationError) -> list[dict[str, Any]]:
     """Describe rejected arguments by name, one issue each, without repeating their values."""
-    issues: dict[str, dict] = {}
+    issues: dict[str, dict[str, Any]] = {}
     for item in error.errors():
         issue = _issue(INPUT_MODELS[tool], item)
         issues.setdefault(issue["field"], issue)
     return [issues[field] for field in sorted(issues)]
 
 
-def validate_output(tool: str, payload: dict) -> models.Result:
-    return output_adapter(tool).validate_python(payload)
+def validate_output(tool: str, payload: dict[str, Any]) -> models.Result:
+    result: models.Result = output_adapter(tool).validate_python(payload)
+    return result

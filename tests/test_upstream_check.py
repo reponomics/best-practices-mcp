@@ -9,10 +9,9 @@ from pathlib import Path
 from unittest.mock import Mock
 from urllib.error import HTTPError, URLError
 
+import check_upstream as check
 import pytest
 import yaml
-
-from scripts import check_upstream as check
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
