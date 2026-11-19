@@ -40,8 +40,8 @@ The workflow has four jobs. Each job has only the permissions that it needs.
 | --- | --- |
 | Preflight | Finds the draft release for the tag and confirms that the draft, the tag and the prerelease flag agree. It does not check out code. |
 | Build | Confirms that the tag, the version and the manifest agree and that the commit is on `main`. It runs the contributor checks, builds one wheel and one source distribution, and installs both in fresh environments. It produces SBOMs, runs the [dependency scans](../maintenance/dependencies.md#scanning) and assembles the candidate with checksums. |
-| Publish | Waits for approval. It downloads the candidate, confirms its commit, tag, files and hashes, and creates signed provenance and SBOM attestations. It publishes the unchanged distributions to PyPI through trusted publishing. It does not check out or run project code. |
-| GitHub release | Confirms the draft and the candidate again, attaches the files and publishes the release. |
+| Publish | Waits for approval. It downloads the candidate, confirms its commit, tag, files and hashes, and creates signed provenance for the distributions, `release.json` and `SHA256SUMS`, plus SBOM attestations. It publishes the unchanged distributions to PyPI through trusted publishing. It does not check out or run project code. |
+| GitHub release | Confirms the draft and the candidate again, verifies the manifest and distribution attestations, attaches the files and publishes the release. |
 
 The workflow stops if the tag has moved, if the release is missing or is not a draft, or if a scan reports a finding.
 

@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Published immutable release tag to verify (v0.2.0-beta.3 or newer)
+        description: Published immutable release tag with signed release manifests to verify
         required: true
         type: string
       commit:
@@ -91,6 +91,17 @@ jobs:
           for asset in *; do
             gh release verify-asset "$RELEASE_TAG" "$asset" --repo "$REPOSITORY"
             sleep 0.6
+          done
+      - name: 1b. Verify the signed release manifests
+        run: |
+          exec > >(tee "$RUNNER_TEMP/release-verification/1b-manifests.log") 2>&1
+          cd "$RUNNER_TEMP/release-verification/assets"
+          for manifest in release.json SHA256SUMS; do
+            gh attestation verify "$manifest" --repo "$REPOSITORY" \
+              --signer-workflow "$REPOSITORY/.github/workflows/release.yml" \
+              --cert-oidc-issuer https://token.actions.githubusercontent.com \
+              --source-ref "refs/tags/$RELEASE_TAG" --source-digest "$EXPECTED_SHA" --deny-self-hosted-runners \
+              --bundle provenance.sigstore.json
           done
           sha256sum -c SHA256SUMS
       - name: 2. Verify the distributions' workflow provenance

@@ -3,6 +3,10 @@
 import ast
 import hashlib
 import json
+import os
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -126,6 +130,128 @@ def test_checksum_manifest_is_checked(candidate):
     (candidate / "SHA256SUMS").write_text("incorrect\n")
     with pytest.raises(ValueError, match="Checksum manifest"):
         verification_namespace()["verify"](candidate)
+
+
+@pytest.fixture
+def signed_manifests(candidate, monkeypatch):
+    if not shutil.which("bash") or not shutil.which("sha256sum"):
+        pytest.skip("Release verification runs on Ubuntu and requires bash and sha256sum")
+    root = candidate.parent
+    assets = root / "release-verification/assets"
+    assets.mkdir(parents=True)
+    for path in candidate.rglob("*"):
+        if path.is_file():
+            shutil.copyfile(path, assets / path.name)
+    commands = root / "commands.jsonl"
+    executable = root / "bin/gh"
+    executable.parent.mkdir()
+    executable.write_text(
+        f"#!{sys.executable}\n"
+        "import json, os, sys\n"
+        "from pathlib import Path\n"
+        "args = sys.argv[1:]\n"
+        "with open(os.environ['GH_TEST_LOG'], 'a') as output:\n"
+        "    output.write(json.dumps(args) + '\\n')\n"
+        "if Path(args[2]).name == os.environ.get('GH_TEST_REJECT'):\n"
+        "    sys.exit(23)\n"
+    )
+    executable.chmod(0o755)
+    monkeypatch.setenv("PATH", str(executable.parent) + os.pathsep + os.environ["PATH"])
+    monkeypatch.setenv("GH_TEST_LOG", str(commands))
+    monkeypatch.delenv("GH_TEST_REJECT", raising=False)
+    monkeypatch.setenv("RUNNER_TEMP", str(root))
+    monkeypatch.setenv("GITHUB_REPOSITORY", "reponomics/best-practices-mcp")
+    monkeypatch.setenv("REPOSITORY", "reponomics/best-practices-mcp")
+    monkeypatch.setenv("EXPECTED_SHA", "a" * 40)
+    return root, assets, commands
+
+
+def manifest_verification_source(stage):
+    if stage == "before-publication":
+        return step("github-release", "Verify signatures before release attachment")["run"]
+    workflow = yaml.safe_load((ROOT / ".github/workflows/verify-release.yml").read_text())
+    return next(
+        item["run"]
+        for item in workflow["jobs"]["verify"]["steps"]
+        if item["name"] == "1b. Verify the signed release manifests"
+    )
+
+
+def run_manifest_verification(stage, root):
+    return subprocess.run(
+        [
+            "bash",
+            "--noprofile",
+            "--norc",
+            "-e",
+            "-o",
+            "pipefail",
+            "-c",
+            manifest_verification_source(stage),
+        ],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+
+
+@pytest.mark.parametrize("stage", ["before-publication", "after-publication"])
+def test_manifest_signatures_require_expected_release_identity(signed_manifests, stage):
+    root, _, commands = signed_manifests
+    result = run_manifest_verification(stage, root)
+    assert result.returncode == 0, result.stdout + result.stderr
+    calls = [json.loads(line) for line in commands.read_text().splitlines()]
+    manifests = [call for call in calls if Path(call[2]).name in {"release.json", "SHA256SUMS"}]
+    assert {Path(call[2]).name for call in manifests} == {"release.json", "SHA256SUMS"}
+    expected = {
+        "--repo": "reponomics/best-practices-mcp",
+        "--signer-workflow": "reponomics/best-practices-mcp/.github/workflows/release.yml",
+        "--cert-oidc-issuer": "https://token.actions.githubusercontent.com",
+        "--source-ref": "refs/tags/v0.2.0-beta.1",
+        "--source-digest": "a" * 40,
+    }
+    for call in manifests:
+        assert call[:2] == ["attestation", "verify"]
+        assert "--deny-self-hosted-runners" in call
+        assert Path(call[call.index("--bundle") + 1]).name == "provenance.sigstore.json"
+        for flag, value in expected.items():
+            assert call[call.index(flag) + 1] == value
+
+
+@pytest.mark.parametrize("stage", ["before-publication", "after-publication"])
+@pytest.mark.parametrize("manifest", ["release.json", "SHA256SUMS"])
+def test_manifest_signature_failure_stops_verification(
+    signed_manifests, monkeypatch, stage, manifest
+):
+    root, _, commands = signed_manifests
+    monkeypatch.setenv("GH_TEST_REJECT", manifest)
+    result = run_manifest_verification(stage, root)
+    assert result.returncode == 23
+    calls = [json.loads(line) for line in commands.read_text().splitlines()]
+    assert Path(calls[-1][2]).name == manifest
+
+
+def test_signed_manifest_verification_rejects_changed_release_file(signed_manifests):
+    root, assets, _ = signed_manifests
+    (assets / "runtime-wheel.cdx.json").write_bytes(b"changed report")
+    result = run_manifest_verification("after-publication", root)
+    assert result.returncode != 0
+    assert "runtime-wheel.cdx.json: FAILED" in result.stdout
+
+
+def test_provenance_covers_distributions_and_both_manifests(candidate):
+    subjects = next(item for item in JOBS["publish"]["steps"] if item.get("id") == "provenance")
+    selected = {
+        path.relative_to(candidate).as_posix()
+        for pattern in subjects["with"]["subject-path"].splitlines()
+        for path in candidate.parent.glob(pattern)
+    }
+    assert selected == {
+        *[path.relative_to(candidate).as_posix() for path in (candidate / "dist").iterdir()],
+        "release.json",
+        "SHA256SUMS",
+    }
 
 
 def run_draft_preflight(monkeypatch, tmp_path, *, listed=None, expected_id=None, **changes):

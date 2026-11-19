@@ -257,11 +257,14 @@ jobs:
           with Path(os.environ['GITHUB_OUTPUT']).open('a', encoding='utf-8') as output:
               output.write('wheel=' + wheel.as_posix() + '\nsdist=' + sdist.as_posix() + '\n')
           PY
-      - name: Attest build provenance for both distributions
+      - name: Attest build provenance for distributions and release manifests
         id: provenance
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
-          subject-path: bundle/dist/*
+          subject-path: |
+            bundle/dist/*
+            bundle/release.json
+            bundle/SHA256SUMS
       - name: Attest the wheel reference-installation SBOM
         id: wheel-sbom
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
@@ -331,6 +334,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          for manifest in bundle/release.json bundle/SHA256SUMS; do
+            gh attestation verify "$manifest" --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" \
+              --cert-oidc-issuer https://token.actions.githubusercontent.com \
+              --source-ref "refs/tags/$RELEASE_TAG" --source-digest "$GITHUB_SHA" --deny-self-hosted-runners \
+              --bundle attestations/provenance.sigstore.json
+          done
           for artifact in bundle/dist/*; do
             gh attestation verify "$artifact" --repo "$GITHUB_REPOSITORY" \
               --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" \

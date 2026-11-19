@@ -4,6 +4,8 @@ This guide shows how to check that the files of a release are the ones that the 
 
 Releases before 0.2.0-beta.3 do not have this evidence.
 
+Signed release manifests are added by the next release containing this workflow change. For earlier releases, use the verification guide at that release's tag; the current verification workflow requires signed manifests.
+
 ## What you rely on
 
 No single party vouches for a release. The steps below check three parties against one another.
@@ -14,7 +16,7 @@ No single party vouches for a release. The steps below check three parties again
 | Sigstore | Puts the claims of that token into a short-lived signing certificate and records every signature in a public log |
 | PyPI | Hosts the package and records which publisher uploaded each file |
 
-Step 1 relies on GitHub. Steps 2 and 4 check a Sigstore signature and the identity in its certificate. Step 3 checks the file that you downloaded from GitHub against PyPI's own record, with a tool that GitHub does not publish.
+Step 1 checks GitHub's release record and the Sigstore signatures on the release manifests. Steps 2 and 4 check a Sigstore signature and the identity in its certificate. Step 3 checks the file that you downloaded from GitHub against PyPI's own record, with a tool that GitHub does not publish.
 
 ## Set the values for the release
 
@@ -28,7 +30,7 @@ SDIST=best_practices_mcp-1.2.3.tar.gz
 COMMIT=$(gh api "repos/$REPO/git/ref/tags/$TAG" --jq .object.sha)
 ```
 
-`COMMIT` is the full SHA of the commit that the tag points to. You can also read it from the release page, from your own clone, or with `git ls-remote "https://github.com/$REPO" "refs/tags/$TAG"`. Steps 2 and 4 fail if the signing certificate names a different commit.
+`COMMIT` is the full SHA of the commit that the tag points to. You can also read it from the release page, from your own clone, or with `git ls-remote "https://github.com/$REPO" "refs/tags/$TAG"`. The manifest, provenance and SBOM checks fail if the signing certificate names a different commit.
 
 For a beta such as `v1.2.3-beta.1`, the file names use `1.2.3b1`.
 
@@ -47,7 +49,15 @@ gh release verify-asset "$TAG" SHA256SUMS --repo "$REPO"
 
 Each command must report success. `gh release verify` checks GitHub's signed record of the release. The release is immutable: after publication, GitHub does not allow its tag or its files to change, and the release page shows an **Immutable** label. `gh release verify-asset` checks one downloaded file against that record. Run it for any other file that you intend to use.
 
-Then check every file against the checksum list. Use `sha256sum -c SHA256SUMS` on Linux and `shasum -a 256 -c SHA256SUMS` on macOS. On Windows, compare the output of `Get-FileHash` with the entry in the list.
+Authenticate the checksum manifest with the attached Sigstore bundle, then repeat the command with `release.json` in place of `SHA256SUMS`:
+
+```sh
+gh attestation verify SHA256SUMS --repo "$REPO" --signer-workflow "$REPO/.github/workflows/release.yml" --cert-oidc-issuer https://token.actions.githubusercontent.com --source-ref "refs/tags/$TAG" --source-digest "$COMMIT" --deny-self-hosted-runners --bundle provenance.sigstore.json
+```
+
+Success means that the release workflow signed this exact manifest for the expected tag and commit. Then check every listed file against the authenticated checksum list. Use `sha256sum -c SHA256SUMS` on Linux and `shasum -a 256 -c SHA256SUMS` on macOS. On Windows, compare the output of `Get-FileHash` with the entry in the list.
+
+`SHA256SUMS` covers the distributions, reports and `release.json`. The attestation bundles are generated afterward and are verified through their signatures and GitHub's release record.
 
 The "Source code" archives that GitHub generates are not the source distribution. Use the attached `.tar.gz` file.
 
@@ -110,13 +120,15 @@ The release commit has a verified signature, and the repository accepts only sig
 
 | File | Content |
 | --- | --- |
-| `release.json` | The tag, the commit, the version and the size and hash of each file |
+| `SHA256SUMS` | SHA-256 hashes of the distributions, reports and `release.json`; signed through `provenance.sigstore.json` |
+| `release.json` | The tag, commit and version, plus sizes and hashes of the distributions and reports; signed through `provenance.sigstore.json` |
 | `qualification.json`, `qualification.log` | The result of installing and starting both distributions in fresh environments |
 | `osv-vulnerabilities.sarif`, `osv-licenses.json` | The vulnerability scan and the license check for the release |
 | `osv-scanner.toml` | The scan policy that applied |
 | `runtime-*.cdx.json`, `runtime-*.inventory.json`, `pip-*.json` | The SBOM, the dependency list and the installation record of each reference installation |
 | `tooling.cdx.json`, `uv.lock`, `pyproject.toml` | The inventory of the development tools and the files that define it |
-| `*.sigstore.json` | The attestation bundles |
+| `provenance.sigstore.json` | Signed provenance for the distributions, `release.json` and `SHA256SUMS` |
+| `runtime-*.sigstore.json` | Signed SBOM attestations for the distributions |
 
 An SBOM describes one reference installation on one platform at the time of the release. Your installation can resolve different dependency versions.
 
