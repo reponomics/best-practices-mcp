@@ -134,6 +134,8 @@ def test_checksum_manifest_is_checked(candidate):
 
 @pytest.fixture
 def signed_manifests(candidate, monkeypatch):
+    if os.name == "nt":
+        pytest.skip("These release workflow shell steps run on Ubuntu, not Windows")
     if not shutil.which("bash") or not shutil.which("sha256sum"):
         pytest.skip("Release verification runs on Ubuntu and requires bash and sha256sum")
     root = candidate.parent
@@ -145,8 +147,9 @@ def signed_manifests(candidate, monkeypatch):
     commands = root / "commands.jsonl"
     executable = root / "bin/gh"
     executable.parent.mkdir()
-    executable.write_text(
-        f"#!{sys.executable}\n"
+    executable.write_text('#!/bin/sh\nexec "$GH_TEST_PYTHON" "$GH_TEST_SCRIPT" "$@"\n')
+    script = executable.with_suffix(".py")
+    script.write_text(
         "import json, os, sys\n"
         "from pathlib import Path\n"
         "args = sys.argv[1:]\n"
@@ -157,6 +160,8 @@ def signed_manifests(candidate, monkeypatch):
     )
     executable.chmod(0o755)
     monkeypatch.setenv("PATH", str(executable.parent) + os.pathsep + os.environ["PATH"])
+    monkeypatch.setenv("GH_TEST_PYTHON", sys.executable)
+    monkeypatch.setenv("GH_TEST_SCRIPT", str(script))
     monkeypatch.setenv("GH_TEST_LOG", str(commands))
     monkeypatch.delenv("GH_TEST_REJECT", raising=False)
     monkeypatch.setenv("RUNNER_TEMP", str(root))
@@ -217,6 +222,19 @@ def test_manifest_signatures_require_expected_release_identity(signed_manifests,
         assert Path(call[call.index("--bundle") + 1]).name == "provenance.sigstore.json"
         for flag, value in expected.items():
             assert call[call.index(flag) + 1] == value
+
+
+@pytest.mark.parametrize("stage", ["before-publication", "after-publication"])
+def test_manifest_verification_supports_python_path_with_spaces(
+    signed_manifests, monkeypatch, stage
+):
+    root, _, _ = signed_manifests
+    interpreter = root / "python tools/python"
+    interpreter.parent.mkdir()
+    interpreter.symlink_to(sys.executable)
+    monkeypatch.setenv("GH_TEST_PYTHON", str(interpreter))
+    result = run_manifest_verification(stage, root)
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 @pytest.mark.parametrize("stage", ["before-publication", "after-publication"])
