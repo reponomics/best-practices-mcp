@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   scan:
-    name: Scan resolved Python and actionlint dependencies
+    name: Scan resolved Python dependencies
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -104,8 +104,7 @@ jobs:
         if: >-
           !cancelled() && hashFiles('osv-scanner.sarif') != '' &&
           github.repository == 'reponomics/best-practices-mcp' &&
-          (!github.event.repository.private || vars.PRIVATE_CODE_SCANNING_ENABLED == 'true') &&
-          (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+          (!github.event.repository.private || vars.PRIVATE_CODE_SCANNING_ENABLED == 'true')
         uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           sarif_file: osv-scanner.sarif
