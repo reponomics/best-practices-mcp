@@ -8,6 +8,7 @@ This document says what the project intends to do, and what it does not intend t
 
 ## Proposed
 
+- **Offline criteria search.** Find criteria by topic or wording across the packaged catalog, with an optional level filter and bounded results showing matching requirement text and details.
 - **A tool for project metadata.** One tool that sets the name, description, license and languages in a draft. See the [proposal](project-metadata-tool.md).
 - **Richer project search.** Search by URL prefix, and filters for badge status and progress. See the [proposal](api-coverage.md).
 - **Ecosystem statistics.** One bounded tool for BadgeApp's public participation figures. See the same [proposal](api-coverage.md).
