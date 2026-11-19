@@ -1699,7 +1699,7 @@
   "generator": {
     "format_version": 2,
     "path": "scripts/generate_catalog.py",
-    "sha256": "14be0fad5bce7fe1d0bfb7ac701c8244282b92e7a2c4a3a173b43554034a9bf0"
+    "sha256": "b593e028a3c023c9e39403468225ca9584505851cfeb294fbdcd2dd352ce9f02"
   },
   "license_file": "BADGEAPP-LICENSE.txt",
   "lifecycle_policy": "Criteria that upstream marks obsolete or future are left out of the catalog and named in excluded_criteria.",

@@ -120,7 +120,7 @@ A level alone returns an index, which is small enough to read whole:
 }
 ```
 
-Not shown: `levels`, `catalog`, six further criteria. Naming criteria returns the full text, field names and status rules:
+Not shown: `levels`, `catalog`, six further criteria. Criteria come in the order of BadgeApp's edit form. Naming criteria returns the full text, field names and status rules:
 
 ```json
 {"name": "get_criteria", "arguments": {"level": "passing", "criterion_ids": ["report_process"]}}

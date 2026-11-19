@@ -65,6 +65,11 @@ def catalog_reference() -> dict[str, Any]:
 
 
 def _level_definitions(level: str) -> dict[str, dict[str, Any]]:
+    """Map a level's criterion identifiers to definitions, in the order of the edit form.
+
+    The catalog lists criteria as the upstream criteria files do, and every selection
+    below keeps that order.
+    """
     catalog = _catalog()
     if level not in catalog["levels"]:
         raise DomainError("invalid_level", "Choose one of the supported badge levels.")
@@ -117,9 +122,10 @@ def _selected(
             ),
         )
     identifiers = [identifier for identifier in resolved if identifier is not None]
-    if len(identifiers) != len(set(identifiers)):
+    chosen = set(identifiers)
+    if len(identifiers) != len(chosen):
         raise DomainError("invalid_criterion", "Criterion identifiers must be distinct.")
-    return [definitions[key] for key in sorted(identifiers)]
+    return [definition for key, definition in definitions.items() if key in chosen]
 
 
 def _in_category(
@@ -133,13 +139,12 @@ def _in_category(
             details={"level": level, "allowed": categories},
             recovery="Use one of the allowed category names exactly as written.",
         )
-    return [
-        definitions[key] for key in sorted(definitions) if definitions[key]["category"] == category
-    ]
+    return [definition for definition in definitions.values() if definition["category"] == category]
 
 
 def _categories(definitions: dict[str, dict[str, Any]]) -> list[str]:
-    return sorted({definition["category"] for definition in definitions.values()})
+    """Name the level's categories once each, in the order the edit form presents them."""
+    return list(dict.fromkeys(definition["category"] for definition in definitions.values()))
 
 
 def criterion_definitions(
@@ -162,7 +167,7 @@ def criterion_definitions(
     elif category is not None:
         selected = _in_category(definitions, level, category)
     else:
-        selected = [definitions[key] for key in sorted(definitions)]
+        selected = list(definitions.values())
     return copy.deepcopy(selected)
 
 

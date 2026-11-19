@@ -34,8 +34,9 @@ READ_TOOLS = {
         "the six levels with their criterion counts and categories. With a level, lists that "
         "level's criteria as an index of ID, category and requirement. Add category to narrow "
         'the index. Pass criterion_ids or detail "full" for the official text, draft field '
-        "names and justification rules. A whole level in full detail is large (up to about "
-        "70 KB), so prefer a category or specific IDs."
+        "names and justification rules. Criteria and categories come in the order of "
+        "BadgeApp's edit form. A whole level in full detail is large (up to about 70 KB), so "
+        "prefer a category or specific IDs."
     ),
     "find_project": (
         "Find a project's entry on the OpenSSF Best Practices Badge site (BadgeApp, "

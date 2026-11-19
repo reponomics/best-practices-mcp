@@ -78,6 +78,25 @@ def test_level_document_groups_by_category_without_details() -> None:
     )
 
 
+def test_level_document_keeps_the_catalogs_order_of_sections_and_criteria(
+    arbitrary_catalog,
+) -> None:
+    passing = [
+        (identifier, category)
+        for level, identifier, category in arbitrary_catalog
+        if level == "passing"
+    ]
+    categories = list(dict.fromkeys(category for _, category in passing))
+    document = resources.level_document("passing")
+    assert re.findall(r"^## (.+)$", document, re.MULTILINE) == categories
+    assert re.findall(r"^### (\S+) ", document, re.MULTILINE) == [
+        identifier
+        for section in categories
+        for identifier, category in passing
+        if category == section
+    ]
+
+
 @pytest.mark.parametrize(
     "level,criterion_id,rules",
     [
@@ -235,6 +254,10 @@ def test_resources_over_stdio_read_catalog_and_project_documents(tmp_path: Path)
             level = await read(client, "project://456/passing")
             assert "67 criteria: 1 Unmet, 66 not retrieved." in level
             assert "## description_good (MUST): Unmet" in level
+            passing_segments = [
+                resources.category_slug(category)
+                for category in level_summary("passing")["categories"]
+            ]
             failures = {
                 "criteria://silver/unknown": "does not define the requested criterion",
                 "criteria://baseline-1/OSPS-BR-02.01": "OSPS-BR-02.01 is a criterion of baseline-2",
@@ -242,7 +265,7 @@ def test_resources_over_stdio_read_catalog_and_project_documents(tmp_path: Path)
                 "criteria://unknown": "Unknown resource",
                 "project://abc/passing": "numeric project ID",
                 "project://999/passing": "did not find the requested public project",
-                "project://123/passing/unknown": "Allowed: analysis, basics, change-control",
+                "project://123/passing/unknown": "Allowed: " + ", ".join(passing_segments),
             }
             for uri, message in failures.items():
                 with pytest.raises(MCPError, match=message):
