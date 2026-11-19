@@ -66,7 +66,9 @@ Dependabot opens a pull request when an action has an update, and it changes the
 
 A change to a workflow goes through a pull request like any other change. The release workflows, the upstream update and the release verification do not run on a pull request, so no check exercises a change to them before it merges. Review these changes line by line.
 
-Two repository variables enable optional services. `CODECOV_ENABLED` enables the coverage upload, which authenticates through OIDC and uses no stored token. `PYPI_PUBLISH_ENABLED` enables publication.
+Coverage publication is required for upstream PRs and is not gated on a repository variable, which may be unavailable to fork PRs. Same-repository runs authenticate to Codecov through OIDC; public fork PRs use tokenless upload. Private fork uploads are skipped. OSV reports from public fork PRs are uploaded through GitHub's supported `pull_request` SARIF path.
+
+The repository variable `PYPI_PUBLISH_ENABLED` enables publication.
 
 ## Local checks
 

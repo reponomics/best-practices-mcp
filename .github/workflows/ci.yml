@@ -90,7 +90,6 @@ jobs:
     needs: compatibility
     if: >-
       github.repository == 'reponomics/best-practices-mcp' &&
-      vars.CODECOV_ENABLED == 'true' &&
       (github.event_name != 'pull_request' || !github.event.repository.private ||
       github.event.pull_request.head.repo.full_name == github.repository)
     permissions:
