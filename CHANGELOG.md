@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.7.0](https://github.com/reponomics/best-practices-mcp/compare/v0.6.0...v0.7.0) (2026-11-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* redesign MCP contracts and reorganize documentation ([#35](https://github.com/reponomics/best-practices-mcp/issues/35))
+
+### Features
+
+* redesign MCP contracts and reorganize documentation ([#35](https://github.com/reponomics/best-practices-mcp/issues/35)) ([c9c8223](https://github.com/reponomics/best-practices-mcp/commit/c9c82231a221c807816cb7c7b17c74e4d11d3ac2))
+
+
+### Documentation
+
+* replace relative links with full GitHub URLs ([#34](https://github.com/reponomics/best-practices-mcp/issues/34)) ([9f35174](https://github.com/reponomics/best-practices-mcp/commit/9f35174ebabef745d1e978f4f08e3dd0f1088bb4))
+
 ## [0.6.0](https://github.com/reponomics/best-practices-mcp/compare/v0.5.0...v0.6.0) (2026-11-17)
 
 
