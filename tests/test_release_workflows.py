@@ -147,7 +147,8 @@ def signed_manifests(candidate, monkeypatch):
     commands = root / "commands.jsonl"
     executable = root / "bin/gh"
     executable.parent.mkdir()
-    executable.write_text('#!/bin/sh\nexec "$GH_TEST_PYTHON" "$GH_TEST_SCRIPT" "$@"\n')
+    # The stdlib-only CLI stub does not need site hooks or MCP coverage instrumentation.
+    executable.write_text('#!/bin/sh\nexec "$GH_TEST_PYTHON" -S "$GH_TEST_SCRIPT" "$@"\n')
     script = executable.with_suffix(".py")
     script.write_text(
         "import json, os, sys\n"
