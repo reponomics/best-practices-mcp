@@ -2,19 +2,26 @@
 
 ## [0.7.0](https://github.com/reponomics/best-practices-mcp/compare/v0.6.0...v0.7.0) (2026-11-19)
 
+This release separates project status from saved answers, adds Markdown resources for criteria and project assessments, and makes tool inputs and errors easier for MCP clients to handle.
 
-### ⚠ BREAKING CHANGES
+### Breaking changes
 
-* redesign MCP contracts and reorganize documentation ([#35](https://github.com/reponomics/best-practices-mcp/issues/35))
+* Replace `get_project_progress` and `get_project_badge_status` with `get_project_status(project_id)` for progress across all six levels and `get_project_answers(project_id, level)` for saved answers. Clients using the old tool names or result shapes must update.
+* `get_criteria` now returns `schema_version: 2`. With no arguments, it returns level summaries with criterion counts and categories; with a level, it defaults to a compact criterion index. Pass `detail: "full"` or select `criterion_ids` to retrieve full records. Source references are grouped under `catalog`.
+* Invalid tool arguments now return the structured `invalid_arguments` error, with field-specific issues and recovery guidance. Refresh cached tool definitions and consult the [updated contracts](https://github.com/reponomics/best-practices-mcp/blob/v0.7.0/docs/reference/contracts.md) when upgrading. ([#35](https://github.com/reponomics/best-practices-mcp/pull/35))
 
-### Features
+### Features and usability
 
-* redesign MCP contracts and reorganize documentation ([#35](https://github.com/reponomics/best-practices-mcp/issues/35)) ([c9c8223](https://github.com/reponomics/best-practices-mcp/commit/c9c82231a221c807816cb7c7b17c74e4d11d3ac2))
+* Browse criteria by category, filter saved answers by status or criterion, and omit justification text when only statuses are needed. Project status includes completion percentages and achievement/loss dates for every level.
+* Read criteria and saved answers as Markdown through `criteria://` and `project://` resources. A `guide://repository-file` resource explains BadgeApp's repository-file workflow; storing a project's first draft announces its project resources to the client.
+* Accept criterion lookup variants such as `OSPS-BR-02.01` for `osps_br_02_01`, and numeric IDs supplied as decimal strings or whole-valued numbers. Optional null arguments are treated as omitted, except `draft`: omit it for stored content or pass `{}` for an empty document. Draft field names remain canonical.
+* Expand tool descriptions and server guidance, with more specific errors for invalid criteria, categories, and argument combinations. ([#35](https://github.com/reponomics/best-practices-mcp/pull/35))
 
+### Release verification and maintenance
 
-### Documentation
-
-* replace relative links with full GitHub URLs ([#34](https://github.com/reponomics/best-practices-mcp/issues/34)) ([9f35174](https://github.com/reponomics/best-practices-mcp/commit/9f35174ebabef745d1e978f4f08e3dd0f1088bb4))
+* Include `release.json` and `SHA256SUMS` in GitHub OIDC/Sigstore provenance attestations, and verify their repository, workflow, tag, and commit identity before publication and during release verification. See the [verification guide](https://github.com/reponomics/best-practices-mcp/blob/v0.7.0/docs/release/verification.md).
+* Fix coverage publication and OSV result uploads for public fork pull requests. Remove the actionlint integration and its supporting maintenance code. ([#36](https://github.com/reponomics/best-practices-mcp/pull/36), [#35](https://github.com/reponomics/best-practices-mcp/pull/35))
+* Reorganize documentation into reference, testing, maintenance, release, and security guides, and add a repeatable live QA runner. Use full GitHub URLs in the README so documentation links work on PyPI, retaining the contributor's fix with the new documentation paths. ([#34](https://github.com/reponomics/best-practices-mcp/pull/34), [#35](https://github.com/reponomics/best-practices-mcp/pull/35))
 
 ## [0.6.0](https://github.com/reponomics/best-practices-mcp/compare/v0.5.0...v0.6.0) (2026-11-17)
 
