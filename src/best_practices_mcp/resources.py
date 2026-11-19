@@ -129,7 +129,7 @@ def _by_category(criteria: list[dict[str, Any]]) -> dict[str, list[dict[str, Any
     groups: dict[str, list[dict[str, Any]]] = {}
     for criterion in criteria:
         groups.setdefault(criterion["category"], []).append(criterion)
-    return dict(sorted(groups.items()))
+    return groups
 
 
 def levels_document() -> str:

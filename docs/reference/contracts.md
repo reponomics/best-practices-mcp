@@ -43,10 +43,10 @@ An argument with `?` is optional. Every result also has `schema_version`.
 
 Notes on individual tools:
 
-- **`get_criteria`.** With no arguments it returns the levels. With a level it returns an index: the ID, category and requirement word of each criterion. With `criterion_ids`, or with `detail` set to `full`, it returns the full records. `category`, `criterion_ids` and `detail` each need a level. `category` and `criterion_ids` cannot be combined.
+- **`get_criteria`.** With no arguments it returns the levels. With a level it returns an index: the ID, category and requirement word of each criterion. With `criterion_ids`, or with `detail` set to `full`, it returns the full records. `category`, `criterion_ids` and `detail` each need a level. `category` and `criterion_ids` cannot be combined. Criteria are in the order of BadgeApp's edit form, and `categories` names each category of a level once, where its first criterion appears. This is the order of the pinned upstream revision and can change when the catalog is updated. Criteria named in `criterion_ids` are returned in that order too, not in the order of the request.
 - **`find_project`.** `query_kind` is `id`, `url` or `text`. Each candidate has a `project` and a `match_basis`. The tool returns candidates and does not choose one.
 - **`get_project_status`.** Each entry of `levels` has `level`, `percentage`, `achieved_at` and `lost_at`.
-- **`get_project_answers`.** `answers` is in the draft format. `statuses` and `criterion_ids` narrow the result and can be combined. `statuses_not_retrieved` lists criteria whose status the response lacked.
+- **`get_project_answers`.** `answers` is in the draft format. `statuses` and `criterion_ids` narrow the result and can be combined. `statuses_not_retrieved` lists criteria whose status the response lacked. `answers` and `statuses_not_retrieved` follow the same edit-form order as `get_criteria`.
 - **`get_project_badge_svg`.** `family` is `best_practices` or `baseline`. `artifact` has `svg`, `media_type`, `suggested_filename` and `encoded_size_bytes`.
 - **Draft tools.** In `changes`, a `null` value removes a field. `issues` lists fields that the server does not recognize or that have a wrong type. `update_draft` sets `created` when it stores the first draft of a project.
 - **`validate_draft`.** A finding has `level`, `criterion_id`, `field`, `code`, `requirement` and `message`. The codes are `invalid_type`, `invalid_status`, `unknown_field`, `na_not_allowed`, `missing_required_justification` and `missing_required_url`. `skipped_criteria` gives the criteria that were not checked and the reason.
@@ -71,6 +71,7 @@ Every resource is a Markdown document with the media type `text/markdown`. The r
 - A listed resource appears in `resources/list`. A template appears in `resources/templates/list`, and a client reads it by building the URI.
 - When `update_draft` stores the first draft of a project, the server adds that project's level documents to the list and announces that the list changed.
 - A `project://` resource reads the project record from BadgeApp. The criteria resources and the guide use no network.
+- The criteria and project documents present categories and criteria in the order of BadgeApp's edit form.
 - In a document, upstream HTML is converted to Markdown. The tools return the upstream text unchanged.
 
 A failed read is an MCP error with a message that states the problem and the allowed values. It does not use the result form of the next section.

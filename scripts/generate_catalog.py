@@ -190,8 +190,9 @@ def catalog_content(source_dir: Path) -> dict[str, bytes]:
     criteria = []
     metadata = {}
     excluded = {}
+    # The catalog keeps the order of the criteria files, which is the order of the edit form.
     for level, definitions_at_level in definitions.items():
-        for criterion_id, raw in sorted(definitions_at_level.items()):
+        for criterion_id, raw in definitions_at_level.items():
             if reason := exclusion(raw):
                 excluded[f"{SOURCE_LEVELS[level]}/{criterion_id}"] = reason
                 continue

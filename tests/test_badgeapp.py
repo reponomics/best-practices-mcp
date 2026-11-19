@@ -328,11 +328,11 @@ def test_answers_carry_no_status_figures():
 
 def test_level_filter_preserves_actual_justification_and_missing_fields():
     result, _ = progress(level="passing", ids=["description_good", "contribution"])
-    assert list(result["answers"]) == [
+    assert set(result["answers"]) == {
         "contribution_status",
         "description_good_status",
         "description_good_justification",
-    ]
+    }
     assert (
         result["answers"]["description_good_justification"]
         == fixture()["description_good_justification"]
@@ -418,13 +418,25 @@ def test_status_filter_combines_with_criterion_ids():
     ids = ["contribution", "description_good", "interact"]
     record = complete_record("passing") | {"description_good_status": "Met"}
     result, _ = progress(record, "passing", ids, statuses=["?"])
-    assert answered(result) == ["contribution", "interact"]
+    assert set(answered(result)) == {"contribution", "interact"}
+
+
+def test_answers_and_missing_statuses_keep_the_catalogs_order(arbitrary_catalog):
+    in_catalog = [identifier for level, identifier, _ in arbitrary_catalog if level == "passing"]
+    saved, absent = in_catalog[1::2], in_catalog[0::2]
+    record = fixture() | {f"{identifier}_status": "Met" for identifier in sorted(saved)}
+    result, _ = progress(record, "passing")
+    assert answered(result) == saved
+    assert result["statuses_not_retrieved"] == absent
+    named, _ = progress(record, "passing", sorted(in_catalog, reverse=True))
+    assert answered(named) == saved
 
 
 def test_a_status_missing_from_the_record_is_reported_and_never_matched():
     # The fixture record carries statuses for two passing criteria only.
     unfiltered, _ = progress(level="passing")
-    missing = sorted(set(level_ids("passing")) - {"contribution", "description_good"})
+    retrieved = {"contribution", "description_good"}
+    missing = [identifier for identifier in level_ids("passing") if identifier not in retrieved]
     assert unfiltered["statuses_not_retrieved"] == missing
     assert set(unfiltered["answers"]) == {
         "contribution_status",
@@ -433,7 +445,7 @@ def test_a_status_missing_from_the_record_is_reported_and_never_matched():
     }
     every = ["Met", "Unmet", "N/A", "?"]
     filtered, _ = progress(level="passing", statuses=every)
-    assert answered(filtered) == ["contribution", "description_good"]
+    assert set(answered(filtered)) == retrieved
     assert filtered["statuses_not_retrieved"] == missing
     selected, _ = progress(level="passing", ids=["interact", "contribution"], statuses=["?"])
     assert answered(selected) == ["contribution"]
