@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/reponomics/best-practices-mcp/compare/v0.7.0...v0.8.0) (2026-11-27)
+
+
+### Features
+
+* **criteria:** return criteria and categories in edit-form order ([#39](https://github.com/reponomics/best-practices-mcp/issues/39)) ([e1122dd](https://github.com/reponomics/best-practices-mcp/commit/e1122ddbd381aaeb68c4f44adc4327e823a78e61))
+
 ## [0.7.0](https://github.com/reponomics/best-practices-mcp/compare/v0.6.0...v0.7.0) (2026-11-19)
 
 This release separates project status from saved answers, adds Markdown resources for criteria and project assessments, and makes tool inputs and errors easier for MCP clients to handle.

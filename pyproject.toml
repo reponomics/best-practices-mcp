@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "best-practices-mcp"
-version = "0.7.0"
+version = "0.8.0"
 description = "Independent MCP server for interacting with the OpenSSF Best Practices Badge website"
 readme = "README.md"
 license = "MIT"
