@@ -111,7 +111,11 @@ def test_all_catalog_records_match_yaml_and_english_locale(
     assert result["catalog"]["text_source_url"] == source_url
     assert result["criteria"] == criterion_definitions(level)
     assert len(result["criteria"]) == COUNTS[level]
-    assert {row["criterion_id"] for row in result["criteria"]} == set(expected)
+    # The criteria file's order is the order of BadgeApp's edit form; results keep it.
+    assert [row["criterion_id"] for row in result["criteria"]] == list(expected)
+    assert [row["criterion_id"] for row in get_criteria(level)["criteria"]] == list(expected)
+    categories = [row["category"] for row in result["criteria"]]
+    assert result["levels"][0]["categories"] == list(dict.fromkeys(categories))
     for row in result["criteria"]:
         criterion_id = row["criterion_id"]
         category, raw = expected[criterion_id]
@@ -322,7 +326,7 @@ def test_index_filters_and_caller_mutation_do_not_change_catalog() -> None:
     assert index["criteria"] == []
     assert get_criteria("passing", [])["criteria"] == []
     selected = get_criteria("passing", ["interact", "description_good"])
-    assert [c["criterion_id"] for c in selected["criteria"]] == ["description_good", "interact"]
+    assert {c["criterion_id"] for c in selected["criteria"]} == {"description_good", "interact"}
     selected["criteria"][0]["description"] = "caller changed this"
     index["levels"].clear()
     index["catalog"].clear()
@@ -335,24 +339,125 @@ def test_index_filters_and_caller_mutation_do_not_change_catalog() -> None:
     )
 
 
-def test_level_summaries_name_categories_in_lexical_order() -> None:
-    summaries = {entry["level"]: entry["categories"] for entry in get_criteria()["levels"]}
-    assert summaries["passing"] == [
-        "Analysis",
-        "Basics",
-        "Change Control",
-        "Quality",
-        "Reporting",
-        "Security",
+def test_results_keep_the_catalogs_order_of_criteria_and_categories(arbitrary_catalog) -> None:
+    in_catalog = [identifier for level, identifier, _ in arbitrary_catalog if level == "passing"]
+    categories = [category for level, _, category in arbitrary_catalog if level == "passing"]
+    for detail in ("index", "full"):
+        result = get_criteria("passing", detail=detail)
+        assert [row["criterion_id"] for row in result["criteria"]] == in_catalog
+    [summary] = get_criteria("passing")["levels"]
+    assert summary["categories"] == list(dict.fromkeys(categories))
+    assert get_criteria()["levels"][0] == summary
+
+
+def test_a_category_or_named_criteria_keep_the_catalogs_order(arbitrary_catalog) -> None:
+    passing = [
+        (identifier, category)
+        for level, identifier, category in arbitrary_catalog
+        if level == "passing"
     ]
-    assert "Reporting" not in summaries["gold"]
-    named = set(BASELINE_CATEGORIES.values())
-    assert set(summaries["baseline-1"]) == named - {"Security Assessment"}
-    assert set(summaries["baseline-2"]) == named
-    assert set(summaries["baseline-3"]) == named - {"Legal"}
-    assert get_criteria("gold")["levels"] == [
-        {"level": "gold", "criterion_count": 23, "categories": summaries["gold"]}
+    in_catalog = [identifier for identifier, _ in passing]
+    for category in {category for _, category in passing}:
+        rows = get_criteria("passing", category=category)["criteria"]
+        assert [row["criterion_id"] for row in rows] == [
+            identifier for identifier, member_of in passing if member_of == category
+        ]
+    for named in (sorted(in_catalog), sorted(in_catalog, reverse=True), in_catalog[::2]):
+        rows = get_criteria("passing", named)["criteria"]
+        assert [row["criterion_id"] for row in rows] == [
+            identifier for identifier in in_catalog if identifier in named
+        ]
+
+
+def test_generator_keeps_the_order_of_the_criteria_files(tmp_path, catalog_generator) -> None:
+    source, expected = arbitrary_source(tmp_path, catalog_generator)
+    catalog = json.loads(catalog_generator.catalog_content(source)["catalog.json"])
+    listed: dict[str, list[str]] = {}
+    for row in catalog["criteria"]:
+        listed.setdefault(row["level"], []).append(row["criterion_id"])
+    assert listed == expected
+    # A Baseline category comes from the identifier's code, so it follows its criterion
+    # to wherever the file puts it.
+    assert [row["category"] for row in catalog["criteria"] if row["level"] == "baseline-1"] == [
+        BASELINE_CATEGORIES[identifier.split("_")[1]] for identifier in expected["baseline-1"]
     ]
+
+
+def arbitrary_source(tmp_path: Path, generator) -> tuple[Path, dict[str, list[str]]]:
+    """Write criteria files with made-up identifiers in an unsorted order.
+
+    Returns the source directory and, for each level, the identifiers in file order.
+    """
+    metal = {
+        "0": {"Late Group": {"Second": ["quartz", "amber"]}, "Early Group": {"First": ["zinc"]}},
+        "1": {"Only Group": {"Only": ["yew", "ash", "oak"]}},
+        "2": {"Only Group": {"Only": ["mica"]}},
+    }
+    baseline = {
+        "baseline-1": ["osps_vm_09_01", "osps_ac_03_02", "osps_qa_01_01"],
+        "baseline-2": ["osps_le_02_01", "osps_br_05_01"],
+        "baseline-3": ["osps_sa_01_01"],
+    }
+    lines = ["--- !!omap"]
+    for level, majors in metal.items():
+        lines.append(f"- '{level}': !!omap")
+        for major, minors in majors.items():
+            lines.append(f"  - {major}: !!omap")
+            for minor, identifiers in minors.items():
+                lines.append(f"    - {minor}: !!omap")
+                for identifier in identifiers:
+                    lines += [f"      - {identifier}:", "          category: MUST"]
+    controls = ["---"]
+    for level, identifiers in baseline.items():
+        controls += [f"{level}:", "  General:", "    Controls:"]
+        for identifier in identifiers:
+            controls += [f"      {identifier}:", "        category: MUST"]
+    by_level = {
+        **{
+            level: [i for minors in majors.values() for ids in minors.values() for i in ids]
+            for level, majors in metal.items()
+        },
+        **baseline,
+    }
+    locale = {
+        "en": {
+            "criteria": {
+                level: {
+                    identifier: {"description": f"Describes {identifier}."}
+                    for identifier in identifiers
+                }
+                for level, identifiers in by_level.items()
+            }
+        }
+    }
+    source = tmp_path / "arbitrary-source"
+    files = {
+        "criteria/criteria.yml": "\n".join(lines) + "\n",
+        "criteria/baseline_criteria.yml": "\n".join(controls) + "\n",
+        "config/locales/en.yml": yaml.safe_dump(locale),
+        generator.CATEGORY_GUIDE: (ROOT / "vendor/badgeapp" / generator.CATEGORY_GUIDE).read_text(
+            encoding="utf-8"
+        ),
+        "LICENSE": "Made-up license text.\n",
+    }
+    for name, text in files.items():
+        (source / name).parent.mkdir(parents=True, exist_ok=True)
+        (source / name).write_text(text, encoding="utf-8")
+    manifest = {
+        "files": {name: hashlib.sha256((source / name).read_bytes()).hexdigest() for name in files},
+        "repository": "https://example.test/criteria",
+        "revision": "0" * 40,
+        "generated_at": "2000-01-01T00:00:00Z",
+    }
+    (source / "source.json").write_text(json.dumps(manifest), encoding="utf-8")
+    return source, {
+        generator.SOURCE_LEVELS[level]: identifiers for level, identifiers in by_level.items()
+    }
+
+
+def test_a_level_result_repeats_that_levels_summary_from_the_index() -> None:
+    summaries = {entry["level"]: entry for entry in get_criteria()["levels"]}
+    assert get_criteria("gold")["levels"] == [summaries["gold"]]
 
 
 @pytest.mark.parametrize("level", COUNTS)
@@ -391,11 +496,11 @@ def test_category_narrows_either_form_of_a_level() -> None:
     assert "description" in full["criteria"][0] and "description" not in index["criteria"][0]
     access = get_criteria("baseline-1", category="Access Control")["criteria"]
     assert [row["criterion_id"] for row in access] == [
-        "osps_ac_01_01",
-        "osps_ac_02_01",
-        "osps_ac_03_01",
-        "osps_ac_03_02",
+        row["criterion_id"]
+        for row in get_criteria("baseline-1")["criteria"]
+        if row["category"] == "Access Control"
     ]
+    assert access
     with pytest.raises(DomainError):
         get_criteria("baseline-1", category="General")
 
@@ -406,7 +511,7 @@ def test_unknown_category_lists_the_level_categories() -> None:
     assert error.value.code == "invalid_category"
     assert error.value.details == {
         "level": "gold",
-        "allowed": ["Analysis", "Basics", "Change Control", "Quality", "Security"],
+        "allowed": get_criteria("gold")["levels"][0]["categories"],
     }
     with pytest.raises(DomainError) as error:
         get_criteria("gold", ["hardening"], category="Security")

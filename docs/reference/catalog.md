@@ -21,6 +21,7 @@ Each record has the criterion ID, its level, its category, the requirement word 
 
 The generator copies upstream values and applies these rules:
 
+- **Order.** Within a level, the catalog lists criteria in the order of the criteria YAML, which is the order of BadgeApp's edit form. The server returns criteria in that order and names each category where its first criterion appears. The Metal levels' categories are upstream's own groups, so their order is upstream's. A Baseline category is derived from each identifier (see Category), so the order of Baseline categories follows from the order of the criteria, and nothing upstream keeps the criteria of one category together.
 - **Category.** The category is the major group in the criteria YAML. The Baseline levels are an exception, because upstream puts every Baseline criterion in one group. For those, the generator reads the two-letter code in the identifier and looks it up in the "OSPS category codes" table of the pinned automation proposals document. A code that is not in the table fails the generation.
 - **Aliases.** A Baseline criterion also carries its display identifier as an alias.
 - **Details.** A criterion without details text of its own takes the details of the same criterion at the nearest lower level that has them. BadgeApp applies the same rule.
