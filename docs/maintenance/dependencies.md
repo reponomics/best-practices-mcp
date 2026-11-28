@@ -36,6 +36,8 @@ The reviewer reads the lockfile diff. A change can add packages that the pull re
 
 The uv version appears in two places: `[tool.uv].required-version` and the `audit-tools` group. Change both together. `make tooling-check` fails if they differ.
 
+The workflows also pin the SHA-256 checksums of the uv release archives and enable `require-checksums` in `astral-sh/setup-uv`. When upgrading uv, update the checksum in each workflow that uses the action, including the three platform entries in the compatibility matrix. Ubuntu uses `uv-x86_64-unknown-linux-gnu.tar.gz`, macOS uses `uv-aarch64-apple-darwin.tar.gz`, and Windows uses `uv-x86_64-pc-windows-msvc.zip`. Obtain each digest from the corresponding `.sha256` asset on the [uv release](https://github.com/astral-sh/uv/releases) and cross-check it against the release asset's SHA-256 digest. These archive checksums differ from the PyPI distribution hashes in `uv.lock`. The action version and the uv executable version are separate pins; updating the action alone does not upgrade uv.
+
 ## Updates
 
 Dependabot opens pull requests for new versions each week, for the Python packages and for the GitHub Actions. `.github/dependabot.yml` holds the configuration. It groups minor and patch updates of Python packages into one pull request and opens a separate pull request for each major update. It groups the updates of actions into one pull request. It also opens a pull request when a security advisory affects a dependency.

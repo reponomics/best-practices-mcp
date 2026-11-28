@@ -24,6 +24,17 @@ jobs:
       matrix:
         os: [ubuntu-24.04, macos-15, windows-2025]
         python: ['3.11', '3.12']
+        # SHA-256 of the uv 0.13.10 release archives (not the PyPI wheels).
+        include:
+          - os: ubuntu-24.04
+            # uv-x86_64-unknown-linux-gnu.tar.gz
+            uv-checksum: bf65ac1a0af10f92c522d91ac096c7c0a39657647b155577e7836c2cbbb4526c
+          - os: macos-15
+            # uv-aarch64-apple-darwin.tar.gz
+            uv-checksum: e419bf07533bdbf48795fc793601c834dd79db57a8c49ce8e25cfe3a8639958d
+          - os: windows-2025
+            # uv-x86_64-pc-windows-msvc.zip
+            uv-checksum: 297b3881fe1adfb922becc2c1613202abb41dc83ea5ff43d472aa087ca1f8683
     defaults:
       run:
         shell: ${{ matrix.os == 'windows-2025' && 'pwsh' || 'bash' }}
@@ -46,9 +57,11 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: Set up the pinned environment manager
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version-file: pyproject.toml
+          require-checksums: true
+          checksum: ${{ matrix.uv-checksum }}
           enable-cache: false
       - name: Install native GNU Make on Windows
         if: runner.os == 'Windows'
