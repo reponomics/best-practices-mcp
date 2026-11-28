@@ -39,12 +39,12 @@ dev = [
 # Atheris publishes Linux x86_64 wheels; keep it out of normal development installs.
 fuzz = ["atheris==3.1.0"]
 
-audit-tools = ["uv==0.13.8"]
+audit-tools = ["uv==0.13.10"]
 release-tools = ["cyclonedx-bom==8.0.1"]
 verification-tools = ["pypi-attestations==0.0.31"]
 
 [tool.uv]
-required-version = "==0.13.8"
+required-version = "==0.13.10"
 default-groups = ["dev"]
 
 [tool.uv.dependency-groups]

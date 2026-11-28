@@ -34,7 +34,35 @@ This document states the policy for third-party packages and describes how the p
 
 The reviewer reads the lockfile diff. A change can add packages that the pull request does not name.
 
-The uv version appears in two places: `[tool.uv].required-version` and the `audit-tools` group. Change both together. `make tooling-check` fails if they differ.
+## Upgrading uv
+
+Use this checklist while the workflows contain explicit uv archive checksums. The examples use `0.13.10`; replace it with the version you are adopting.
+
+1. Install that uv version locally and confirm it with `uv --version`. For a standalone installation, use `uv self update 0.13.10`; otherwise use the package manager that installed uv.
+2. Update both `[tool.uv].required-version` and `audit-tools` in `pyproject.toml` to the same exact version. `make tooling-check` checks their agreement with the lockfile.
+3. Open the three checksum URLs below, replacing `0.13.10` in each URL. Each response contains a 64-character SHA-256 digest followed by a filename. Copy only the digest, and cross-check it against the corresponding archive's digest on the [GitHub release](https://github.com/astral-sh/uv/releases/tag/0.13.10), also replacing the version in that URL.
+4. Paste the three digests into the matching `uv-checksum` entries in [ci.yml](../../.github/workflows/ci.yml). Paste the Linux digest into `checksum` in [fuzz.yml](../../.github/workflows/fuzz.yml), [osv-scanner.yml](../../.github/workflows/osv-scanner.yml), [release.yml](../../.github/workflows/release.yml), [upstream-criteria.yml](../../.github/workflows/upstream-criteria.yml), and [verify-release.yml](../../.github/workflows/verify-release.yml). Update the nearby version comments. Keep `require-checksums: true`.
+5. Run `make lock`, `make setup`, and `make validate`, in that order. Review the lockfile for unrelated upgrades, commit the pins, lockfile, and workflow changes together, and require the platform matrix and dependency scans to pass before merging.
+
+The checksum URL follows this pattern:
+
+```text
+https://releases.astral.sh/github/uv/releases/download/<version>/<archive>.sha256
+```
+
+| CI platform | Checksum URL for uv 0.13.10 |
+| --- | --- |
+| Linux x64 | [uv-x86_64-unknown-linux-gnu.tar.gz.sha256](https://releases.astral.sh/github/uv/releases/download/0.13.10/uv-x86_64-unknown-linux-gnu.tar.gz.sha256) |
+| macOS ARM64 | [uv-aarch64-apple-darwin.tar.gz.sha256](https://releases.astral.sh/github/uv/releases/download/0.13.10/uv-aarch64-apple-darwin.tar.gz.sha256) |
+| Windows x64 | [uv-x86_64-pc-windows-msvc.zip.sha256](https://releases.astral.sh/github/uv/releases/download/0.13.10/uv-x86_64-pc-windows-msvc.zip.sha256) |
+
+These hashes verify the executable archives downloaded by `setup-uv`; they are different from the PyPI distribution hashes in `uv.lock`.
+
+### When to retire the manual checksums
+
+The explicit hashes bridge a release-timing gap: `setup-uv` v10.4.0 does not bundle checksums for uv 0.13.10. Retire steps 3–4 once a released `setup-uv` version includes checksums for the chosen uv version on all three CI platforms. Confirm the entries in that action release's [`src/download/checksum/known-checksums.json`](https://github.com/astral-sh/setup-uv/blob/v10.4.0/src/download/checksum/known-checksums.json), replacing `v10.4.0` in the link with the candidate action release.
+
+In one PR, pin that action release by its full commit SHA in all six workflows, remove their explicit `checksum` inputs and the checksum-only `matrix.include` entries in `ci.yml`, and retain `version-file: pyproject.toml` and `require-checksums: true`. Require the platform matrix to pass before merging. Then simplify this checklist to updating the uv pins, regenerating the lockfile, and validating; the action maintains the checksum table. Future uv upgrades must still use an action release that knows the chosen version's checksums. If it has not caught up, wait or temporarily restore explicit hashes. Updating the action alone does not change the uv version.
 
 ## Updates
 
